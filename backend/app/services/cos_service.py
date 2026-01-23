@@ -9,10 +9,16 @@ from fastapi import UploadFile
 class COSService:
     def __init__(self):
         # 强制从环境变量获取，确保不受 .env 缓存或加载顺序影响
-        self.secret_id = os.getenv("TENCENT_COS_SECRET_ID") or settings.TENCENT_COS_SECRET_ID
-        self.secret_key = os.getenv("TENCENT_COS_SECRET_KEY") or settings.TENCENT_COS_SECRET_KEY
-        self.region = os.getenv("TENCENT_COS_REGION") or settings.TENCENT_COS_REGION
-        self.bucket = os.getenv("TENCENT_COS_BUCKET") or settings.TENCENT_COS_BUCKET
+        # 使用 strip() 去除可能存在的首尾空格（这是最常见的配置错误）
+        raw_secret_id = os.getenv("TENCENT_COS_SECRET_ID") or settings.TENCENT_COS_SECRET_ID or ""
+        raw_secret_key = os.getenv("TENCENT_COS_SECRET_KEY") or settings.TENCENT_COS_SECRET_KEY or ""
+        raw_region = os.getenv("TENCENT_COS_REGION") or settings.TENCENT_COS_REGION or ""
+        raw_bucket = os.getenv("TENCENT_COS_BUCKET") or settings.TENCENT_COS_BUCKET or ""
+
+        self.secret_id = raw_secret_id.strip()
+        self.secret_key = raw_secret_key.strip()
+        self.region = raw_region.strip()
+        self.bucket = raw_bucket.strip()
         
         # 打印部分 Key 用于调试 (仅打印前3后3位)
         if self.secret_key and len(self.secret_key) > 6:
@@ -20,7 +26,8 @@ class COSService:
         else:
             masked_key = "None"
             
-        print(f"DEBUG: COS Config - Region: {self.region}, Bucket: {self.bucket}, SecretId: {self.secret_id[:4] if self.secret_id else 'None'}..., SecretKey: {masked_key}")
+        # 使用 repr() 打印 Bucket 名称，这样如果有不可见字符或空格就能看出来了
+        print(f"DEBUG: COS Config - Region: '{self.region}', Bucket: '{self.bucket}', SecretId: {self.secret_id[:4] if self.secret_id else 'None'}..., SecretKey: {masked_key}")
 
         self.client = None
         if self.secret_id and self.secret_key and self.bucket:
