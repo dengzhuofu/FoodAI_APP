@@ -15,6 +15,7 @@ router = APIRouter()
 @router.post("/text-to-recipe")
 async def text_to_recipe(
     request: TextToRecipeRequest,
+    # current_user: User = Depends(get_current_user)
     current_user: User = Depends(get_current_user)
 ):
     result = await ai_service.generate_recipe_from_text(request.description, request.preferences)
