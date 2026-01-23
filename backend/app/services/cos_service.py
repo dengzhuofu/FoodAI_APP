@@ -10,7 +10,9 @@ class COSService:
     def __init__(self):
         # 强制从环境变量获取，确保不受 .env 缓存或加载顺序影响
         # 使用 strip() 去除可能存在的首尾空格（这是最常见的配置错误）
+        # raw_secret_id = os.getenv("TENCENT_COS_SECRET_ID") or settings.TENCENT_COS_SECRET_ID or ""
         raw_secret_id = os.getenv("TENCENT_COS_SECRET_ID") or settings.TENCENT_COS_SECRET_ID or ""
+
         raw_secret_key = os.getenv("TENCENT_COS_SECRET_KEY") or settings.TENCENT_COS_SECRET_KEY or ""
         raw_region = os.getenv("TENCENT_COS_REGION") or settings.TENCENT_COS_REGION or ""
         raw_bucket = os.getenv("TENCENT_COS_BUCKET") or settings.TENCENT_COS_BUCKET or ""
