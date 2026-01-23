@@ -8,11 +8,20 @@ from fastapi import UploadFile
 
 class COSService:
     def __init__(self):
-        self.secret_id = settings.TENCENT_COS_SECRET_ID
-        self.secret_key = settings.TENCENT_COS_SECRET_KEY
-        self.region = settings.TENCENT_COS_REGION
-        self.bucket = settings.TENCENT_COS_BUCKET
+        # 强制从环境变量获取，确保不受 .env 缓存或加载顺序影响
+        self.secret_id = os.getenv("TENCENT_COS_SECRET_ID") or settings.TENCENT_COS_SECRET_ID
+        self.secret_key = os.getenv("TENCENT_COS_SECRET_KEY") or settings.TENCENT_COS_SECRET_KEY
+        self.region = os.getenv("TENCENT_COS_REGION") or settings.TENCENT_COS_REGION
+        self.bucket = os.getenv("TENCENT_COS_BUCKET") or settings.TENCENT_COS_BUCKET
         
+        # 打印部分 Key 用于调试 (仅打印前3后3位)
+        if self.secret_key and len(self.secret_key) > 6:
+            masked_key = f"{self.secret_key[:3]}...{self.secret_key[-3:]}"
+        else:
+            masked_key = "None"
+            
+        print(f"DEBUG: COS Config - Region: {self.region}, Bucket: {self.bucket}, SecretId: {self.secret_id[:4] if self.secret_id else 'None'}..., SecretKey: {masked_key}")
+
         self.client = None
         if self.secret_id and self.secret_key and self.bucket:
             try:
