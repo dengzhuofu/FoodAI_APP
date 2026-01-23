@@ -23,6 +23,7 @@ async def standard_response_middleware(request: Request, call_next):
     if request.url.path.startswith(("/docs", "/redoc", "/openapi.json", "/static")):
         return await call_next(request)
     
+    # start_time = time.time()
     start_time = time.time()
     try:
         response = await call_next(request)
