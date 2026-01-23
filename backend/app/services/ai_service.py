@@ -159,6 +159,14 @@ class AIService:
     async def generate_recipe_from_image(self, image_url: str) -> str:
         """Use LangChain (Vision) to generate recipe from image"""
         processed_url = self._process_image_url(image_url)
+        
+        # 调试：打印处理后的 URL 长度（如果是 base64 会很长）
+        print(f"DEBUG: Processed URL length: {len(processed_url)}")
+        if processed_url.startswith("data:"):
+            print("DEBUG: Image converted to Base64 successfully")
+        else:
+            print(f"DEBUG: Using raw URL: {processed_url}")
+
         message = HumanMessage(
             content=[
                 {"type": "text", "text": "请识别图中的菜品，并生成一个JSON格式的菜谱，包含title, description, ingredients(list), steps(list), nutrition(dict with calories, protein, fat, carbs), cooking_time, difficulty。只返回JSON。"},
@@ -166,12 +174,21 @@ class AIService:
             ]
         )
         
-        response = await self.llm_vision.ainvoke([message])
-        return response.content
+        try:
+            response = await self.llm_vision.ainvoke([message])
+            return response.content
+        except Exception as e:
+            print(f"AI Service Error (Vision): {e}")
+            # 如果是 400 错误，可能是 base64 太长或者格式问题，尝试打印更多信息
+            raise e
         
     async def estimate_calories(self, image_url: str) -> str:
         """Use LangChain (Vision) to estimate calories"""
         processed_url = self._process_image_url(image_url)
+        
+        # 调试日志
+        print(f"DEBUG: Processed URL length: {len(processed_url)}")
+        
         message = HumanMessage(
             content=[
                 {"type": "text", "text": "请识别图中的食物，并估算其总卡路里和营养成分。请返回JSON格式，包含 calories(int), protein(str), fat(str), carbs(str)。只返回JSON。"},
@@ -179,8 +196,12 @@ class AIService:
             ]
         )
         
-        response = await self.llm_vision.ainvoke([message])
-        return response.content
+        try:
+            response = await self.llm_vision.ainvoke([message])
+            return response.content
+        except Exception as e:
+            print(f"AI Service Error (Calories): {e}")
+            raise e
 
     async def fridge_to_recipe(self, items: List[str]) -> str:
         """Use LangChain to recommend recipe from fridge items"""
