@@ -58,6 +58,10 @@ class AIService:
         """
         # Check if it's a relative static path or localhost URL
         local_path = None
+        # 如果 URL 是腾讯云 COS 的地址，直接返回原始 URL，不尝试本地读取
+        if "myqcloud.com" in image_url:
+            return image_url
+            
         if image_url.startswith("/static/"):
             local_path = f"backend{image_url}" # e.g. backend/static/uploads/xxx.jpg
         elif "localhost" in image_url or "127.0.0.1" in image_url or "159.75.135.120" in image_url:
