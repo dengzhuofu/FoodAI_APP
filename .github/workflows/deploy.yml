@@ -36,7 +36,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
           # 如果使用密钥登录，请把 password 换成 key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "backend/*"
+          source: "backend/"
           target: "/var/www/foodai"
           strip_components: 1 # 去掉 backend 这一层目录，直接把内容传到 /var/www/foodai
 
