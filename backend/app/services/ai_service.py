@@ -5,6 +5,7 @@ import json
 import base64
 import os
 
+# ai框架
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.prompts import PromptTemplate
