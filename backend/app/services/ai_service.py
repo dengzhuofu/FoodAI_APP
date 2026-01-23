@@ -54,14 +54,35 @@ class AIService:
         """
         If the image URL is local (starts with /static or http://localhost),
         read the file and convert to base64 data URI.
-        Otherwise, return the original URL.
+        If it's a remote URL (like COS), download it and convert to base64.
         """
-        # Check if it's a relative static path or localhost URL
+        # Case 1: Remote URL (COS, etc.) - Download and convert to Base64
+        if "http" in image_url and "myqcloud.com" in image_url:
+            try:
+                print(f"DEBUG: Downloading remote image from {image_url}")
+                import httpx
+                # Use synchronous download here since this method is synchronous
+                # Ideally this whole chain should be async, but for quick fix:
+                with httpx.Client() as client:
+                    response = client.get(image_url)
+                    response.raise_for_status()
+                    image_data = response.content
+                    
+                    encoded_string = base64.b64encode(image_data).decode('utf-8')
+                    # Simple mime type guessing
+                    mime_type = "image/jpeg"
+                    if image_url.lower().endswith(".png"):
+                        mime_type = "image/png"
+                    elif image_url.lower().endswith(".webp"):
+                        mime_type = "image/webp"
+                        
+                    return f"data:{mime_type};base64,{encoded_string}"
+            except Exception as e:
+                print(f"Error downloading remote image: {e}")
+                return image_url
+
+        # Case 2: Local File Path
         local_path = None
-        # 如果 URL 是腾讯云 COS 的地址，直接返回原始 URL，不尝试本地读取
-        if "myqcloud.com" in image_url:
-            return image_url
-            
         if image_url.startswith("/static/"):
             local_path = f"backend{image_url}" # e.g. backend/static/uploads/xxx.jpg
         elif "localhost" in image_url or "127.0.0.1" in image_url or "159.75.135.120" in image_url:
