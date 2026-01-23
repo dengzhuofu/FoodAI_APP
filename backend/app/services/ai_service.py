@@ -1,0 +1,171 @@
+import httpx
+from app.core.config import settings
+from typing import List, Dict, Any, Optional
+import json
+import base64
+import os
+
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.prompts import PromptTemplate
+
+class AIService:
+    def __init__(self):
+        self.base_url = settings.SILICONFLOW_BASE_URL
+        self.api_key = settings.SILICONFLOW_API_KEY
+        
+        # Initialize ChatOpenAI for Text Generation (Qwen)
+        self.llm_text = ChatOpenAI(
+            base_url=self.base_url,
+            api_key=self.api_key,
+            model="Qwen/Qwen3-8B",
+            temperature=0.7,
+            max_tokens=2048,
+        )
+
+        # Initialize ChatOpenAI for Vision (GLM-4V)
+        # Note: We need to check if LangChain's ChatOpenAI handles GLM-4V's specific image format correctly.
+        # Standard OpenAI vision format uses "image_url". Assuming SiliconFlow follows this.
+        self.llm_vision = ChatOpenAI(
+            base_url=self.base_url,
+            api_key=self.api_key,
+            model="THUDM/GLM-4.1V-9B-Thinking",
+            temperature=0.1,
+            max_tokens=2048,
+        )
+
+    async def _post(self, endpoint: str, json_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Raw HTTP post for endpoints not supported by LangChain ChatOpenAI (like image generation)"""
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                f"{self.base_url}{endpoint}",
+                headers=headers,
+                json=json_data
+            )
+            response.raise_for_status()
+            return response.json()
+
+    def _process_image_url(self, image_url: str) -> str:
+        """
+        If the image URL is local (starts with /static or http://localhost),
+        read the file and convert to base64 data URI.
+        Otherwise, return the original URL.
+        """
+        # Check if it's a relative static path or localhost URL
+        local_path = None
+        if image_url.startswith("/static/"):
+            local_path = f"backend{image_url}" # e.g. backend/static/uploads/xxx.jpg
+        elif "localhost" in image_url or "127.0.0.1" in image_url:
+            # Try to extract the static part
+            if "/static/" in image_url:
+                static_part = image_url.split("/static/")[1]
+                local_path = f"backend/static/{static_part}"
+        
+        if local_path and os.path.exists(local_path):
+            try:
+                with open(local_path, "rb") as image_file:
+                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+                    # Guess mime type based on extension
+                    ext = os.path.splitext(local_path)[1].lower()
+                    mime_type = "image/jpeg" # default
+                    if ext == ".png":
+                        mime_type = "image/png"
+                    elif ext == ".gif":
+                        mime_type = "image/gif"
+                    elif ext == ".webp":
+                        mime_type = "image/webp"
+                    
+                    return f"data:{mime_type};base64,{encoded_string}"
+            except Exception as e:
+                print(f"Error processing local image: {e}")
+                # Fallback to original URL if reading fails
+                return image_url
+        
+        return image_url
+
+    async def generate_image(self, prompt: str, size: str = "1024x1024") -> str:
+        """
+        Generate image using Kolors model.
+        LangChain doesn't have a generic 'ImageGeneration' chat model, 
+        so we stick to raw API call or use DallEAPIWrapper if fully compatible.
+        Here we use raw API for better control over Kolors specific params.
+        """
+        payload = {
+            "model": "Kwai-Kolors/Kolors",
+            "prompt": prompt,
+            "image_size": size,
+            "num_inference_steps": 20
+        }
+        response = await self._post("/images/generations", payload)
+        return response["images"][0]["url"] 
+
+    async def generate_recipe_from_text(self, description: str, preferences: str = "") -> str:
+        """Use LangChain to generate recipe from text"""
+        template = """你是一个专业的厨师。请根据用户的描述生成一个JSON格式的菜谱，包含title, description, ingredients(list), steps(list), nutrition(dict with calories, protein, fat, carbs), cooking_time, difficulty。
+        
+        描述: {description}
+        偏好: {preferences}
+        
+        只返回JSON，不要其他文字。"""
+        
+        prompt = PromptTemplate.from_template(template)
+        chain = prompt | self.llm_text
+        
+        response = await chain.ainvoke({"description": description, "preferences": preferences})
+        return response.content
+
+    async def generate_recipe_from_image(self, image_url: str) -> str:
+        """Use LangChain (Vision) to generate recipe from image"""
+        processed_url = self._process_image_url(image_url)
+        message = HumanMessage(
+            content=[
+                {"type": "text", "text": "请识别图中的菜品，并生成一个JSON格式的菜谱，包含title, description, ingredients(list), steps(list), nutrition(dict with calories, protein, fat, carbs), cooking_time, difficulty。只返回JSON。"},
+                {"type": "image_url", "image_url": {"url": processed_url}},
+            ]
+        )
+        
+        response = await self.llm_vision.ainvoke([message])
+        return response.content
+        
+    async def estimate_calories(self, image_url: str) -> str:
+        """Use LangChain (Vision) to estimate calories"""
+        processed_url = self._process_image_url(image_url)
+        message = HumanMessage(
+            content=[
+                {"type": "text", "text": "请识别图中的食物，并估算其总卡路里和营养成分。请返回JSON格式，包含 calories(int), protein(str), fat(str), carbs(str)。只返回JSON。"},
+                {"type": "image_url", "image_url": {"url": processed_url}},
+            ]
+        )
+        
+        response = await self.llm_vision.ainvoke([message])
+        return response.content
+
+    async def fridge_to_recipe(self, items: List[str]) -> str:
+        """Use LangChain to recommend recipe from fridge items"""
+        template = """我有以下食材: {items_str}。请推荐一道可以用这些食材制作的菜谱。请返回JSON格式，包含title, description, ingredients(list), steps(list), nutrition(dict), cooking_time, difficulty。只返回JSON。"""
+        
+        prompt = PromptTemplate.from_template(template)
+        chain = prompt | self.llm_text
+        
+        response = await chain.ainvoke({"items_str": ", ".join(items)})
+        return response.content
+
+    async def chat_completion(self, messages: List[Dict[str, Any]], model: str = "Qwen/Qwen3-8B") -> str:
+        """General chat using LangChain"""
+        # Convert dict messages to LangChain Message objects
+        lc_messages = []
+        for msg in messages:
+            if msg["role"] == "system":
+                lc_messages.append(SystemMessage(content=msg["content"]))
+            elif msg["role"] == "user":
+                lc_messages.append(HumanMessage(content=msg["content"]))
+            # Add AI/Assistant message support if needed
+        
+        response = await self.llm_text.ainvoke(lc_messages)
+        return response.content
+
+ai_service = AIService()

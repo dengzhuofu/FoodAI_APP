@@ -1,0 +1,42 @@
+name: Deploy Backend to Tencent Cloud
+
+on:
+  push:
+    branches:
+      - main  # 如果你的分支叫 master，请改这里
+    paths:
+      - 'backend/**'  # 只在 backend 文件夹有改动时触发
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy files to server via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          # 如果使用密钥登录，请把 password 换成 key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "backend/*"
+          target: "/var/www/foodai"
+          strip_components: 1 # 去掉 backend 这一层目录，直接把内容传到 /var/www/foodai
+
+      - name: Execute remote commands via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          # key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/foodai
+            # 激活虚拟环境并安装依赖
+            ./venv/bin/pip install -r requirements.txt
+            # 重启服务
+            sudo systemctl restart foodai
+            # 检查状态
+            sudo systemctl status foodai | grep Active
