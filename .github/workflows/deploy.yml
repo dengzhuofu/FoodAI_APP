@@ -5,7 +5,9 @@ on:
     branches:
       - main  # 如果你的分支叫 master，请改这里
     paths:
+      # - 'backend/**'  # 只在 backend 文件夹有改动时触发
       - 'backend/**'  # 只在 backend 文件夹有改动时触发
+
       - '.github/workflows/deploy.yml' # 修改部署脚本也触发
 
 jobs:
