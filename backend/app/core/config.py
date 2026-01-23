@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     SILICONFLOW_API_KEY: str
     SILICONFLOW_BASE_URL: str
 
+    # Tencent COS Configuration
+    TENCENT_COS_SECRET_ID: str = ""
+    TENCENT_COS_SECRET_KEY: str = ""
+    TENCENT_COS_REGION: str = ""
+    TENCENT_COS_BUCKET: str = ""
+
     class Config:
         env_file = ".env"
         env_file_encoding = 'utf-8'

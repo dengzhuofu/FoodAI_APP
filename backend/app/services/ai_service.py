@@ -60,7 +60,7 @@ class AIService:
         local_path = None
         if image_url.startswith("/static/"):
             local_path = f"backend{image_url}" # e.g. backend/static/uploads/xxx.jpg
-        elif "localhost" in image_url or "127.0.0.1" in image_url:
+        elif "localhost" in image_url or "127.0.0.1" in image_url or "159.75.135.120" in image_url:
             # Try to extract the static part
             if "/static/" in image_url:
                 static_part = image_url.split("/static/")[1]

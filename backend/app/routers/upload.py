@@ -3,6 +3,7 @@ import shutil
 import os
 import uuid
 from typing import List
+from app.services.cos_service import cos_service
 
 router = APIRouter()
 
@@ -14,16 +15,27 @@ async def upload_file(file: UploadFile = File(...)):
         # Generate unique filename
         file_extension = os.path.splitext(file.filename)[1]
         unique_filename = f"{uuid.uuid4()}{file_extension}"
+        
+        # Try COS upload first if configured
+        if cos_service.is_configured():
+            try:
+                # We put uploads in an 'uploads/' folder in the bucket to keep it clean
+                key = f"uploads/{unique_filename}"
+                url = await cos_service.upload_file(file, key)
+                return {"url": url}
+            except Exception as e:
+                print(f"COS upload failed, falling back to local: {e}")
+                # Fallback proceeds below, ensure file pointer is reset
+                await file.seek(0)
+        
+        # Local upload (Fallback)
         file_path = os.path.join(UPLOAD_DIR, unique_filename)
         
         # Save file
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
             
-        # Return URL (assuming localhost for now, in prod this would be domain)
-        # Note: Frontend should prepend base URL if we return relative path
-        # Or we can return full URL if we know the host.
-        # Let's return a relative path that the frontend can use.
+        # Return relative URL
         return {"url": f"/static/uploads/{unique_filename}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
