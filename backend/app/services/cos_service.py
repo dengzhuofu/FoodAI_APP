@@ -16,10 +16,14 @@ class COSService:
         self.client = None
         if self.secret_id and self.secret_key and self.bucket:
             try:
+                print(f"Initializing COS Service with bucket: {self.bucket}, region: {self.region}")
                 config = CosConfig(Region=self.region, SecretId=self.secret_id, SecretKey=self.secret_key)
                 self.client = CosS3Client(config)
+                print("COS Service initialized successfully.")
             except Exception as e:
                 print(f"Error initializing COS client: {e}")
+        else:
+            print("COS Service skipped: Missing configuration (SecretId/Key/Bucket).")
 
     def is_configured(self) -> bool:
         return self.client is not None
