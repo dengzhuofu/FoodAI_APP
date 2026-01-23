@@ -57,7 +57,18 @@ class AIService:
         If it's a remote URL (like COS), download it and convert to base64.
         """
         # Case 1: Remote URL (COS, etc.) - Download and convert to Base64
-        if "http" in image_url and "myqcloud.com" in image_url:
+        # 只要是 http 开头，且不是 localhost/127.0.0.1，就认为是远程图片
+        # 这样可以兼容 COS 以及其他任何远程图片链接
+        is_remote = image_url.startswith("http") and \
+                   "localhost" not in image_url and \
+                   "127.0.0.1" not in image_url and \
+                   "159.75.135.120" not in image_url # 排除自己的服务器IP，走本地文件读取更高效
+        
+        # 强制 COS URL 也走下载流程，即便它包含服务器IP（如果将来有变动）
+        if "myqcloud.com" in image_url:
+            is_remote = True
+
+        if is_remote:
             try:
                 print(f"DEBUG: Downloading remote image from {image_url}")
                 import httpx
@@ -79,6 +90,7 @@ class AIService:
                     return f"data:{mime_type};base64,{encoded_string}"
             except Exception as e:
                 print(f"Error downloading remote image: {e}")
+                # 如果下载失败，尝试返回原 URL 给 AI 服务，死马当活马医
                 return image_url
 
         # Case 2: Local File Path
