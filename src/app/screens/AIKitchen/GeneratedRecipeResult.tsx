@@ -260,12 +260,12 @@ const GeneratedRecipeResult = () => {
         {renderHeader()}
         
         <View style={styles.content}>
-          {renderNutrition()}
+          {/* {renderNutrition()} */}
           
-          <View style={styles.section}>
+          {/* <View style={styles.section}>
             {renderTabs()}
             {activeTab === 'ingredients' ? renderIngredients() : renderSteps()}
-          </View>
+          </View> */}
 
           <View style={styles.generationSection}>
             <View style={styles.generationHeader}>

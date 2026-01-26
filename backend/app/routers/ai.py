@@ -56,7 +56,10 @@ async def generate_recipe_image(
     
     if request.image_type == 'final':
         # Generate Final Dish Image
-        prompt = f"Professional food photography of {recipe.title}. {recipe.description}. High resolution, 4k, delicious, restaurant quality."
+        title = recipe.get('title', '')
+        description = recipe.get('description', '')
+        
+        prompt = f"Professional food photography of {title}. {description}. High resolution, 4k, delicious, restaurant quality."
         original_url = await ai_service.generate_image(prompt)
         final_url = await process_and_upload(original_url, "final")
         
@@ -66,7 +69,7 @@ async def generate_recipe_image(
         await AILog.create(
             user=current_user,
             feature="generate-recipe-image-final",
-            input_summary=f"Final Image for {recipe.title}",
+            input_summary=f"Final Image for {title}",
             output_result=result_data
         )
         return result_data
@@ -74,10 +77,13 @@ async def generate_recipe_image(
     elif request.image_type == 'steps':
         # Generate Step Images
         steps_images = []
-        for index, step_text in enumerate(recipe.steps):
+        title = recipe.get('title', '')
+        steps = recipe.get('steps', [])
+        
+        for index, step_text in enumerate(steps):
             # To save time/cost, maybe limit to first 5 steps or similar? 
             # For now, generate all.
-            step_prompt = f"Cooking step {index+1} for {recipe.title}: {step_text}. Close up shot, professional food photography, bright lighting."
+            step_prompt = f"Cooking step {index+1} for {title}: {step_text}. Close up shot, professional food photography, bright lighting."
             try:
                 original_url = await ai_service.generate_image(step_prompt)
                 step_url = await process_and_upload(original_url, f"step_{index+1}")
@@ -97,7 +103,7 @@ async def generate_recipe_image(
         await AILog.create(
             user=current_user,
             feature="generate-recipe-image-steps",
-            input_summary=f"Step Images for {recipe.title}",
+            input_summary=f"Step Images for {title}",
             output_result=result_data
         )
         return result_data
