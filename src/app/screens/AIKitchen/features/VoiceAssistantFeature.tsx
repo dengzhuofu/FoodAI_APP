@@ -1,14 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { theme } from '../../../styles/theme';
+import { getHistory, AILog } from '../../../../api/ai';
 
 const VoiceAssistantFeature = () => {
   const navigation = useNavigation();
   const [isListening, setIsListening] = useState(false);
   const [scaleAnim] = useState(new Animated.Value(1));
+  const [history, setHistory] = useState<AILog[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const fetchHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const data = await getHistory(5, 0, 'voice-assistant');
+      setHistory(data);
+    } catch (error) {
+      console.error('Failed to fetch history:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   useEffect(() => {
     if (isListening) {
@@ -55,6 +74,23 @@ const VoiceAssistantFeature = () => {
                 </Text>
               </View>
             </View>
+
+            {/* History Section - Hidden if empty */}
+            {history.length > 0 && (
+              <View style={styles.historySection}>
+                <Text style={styles.historySectionTitle}>历史对话</Text>
+                <View style={styles.historyList}>
+                  {history.map((item) => (
+                    <View key={item.id} style={styles.historyItem}>
+                      <Ionicons name="chatbubble-outline" size={16} color="#666" />
+                      <Text style={styles.historyText} numberOfLines={1}>
+                        {item.input_summary || '对话记录'}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
           </View>
 
           <View style={styles.bottomSection}>
@@ -185,6 +221,35 @@ const styles = StyleSheet.create({
   },
   micButtonActive: {
     backgroundColor: '#FF5252',
+  },
+  historySection: {
+    marginTop: 32,
+    paddingTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+  },
+  historySectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#999',
+    marginBottom: 12,
+    marginLeft: 4,
+  },
+  historyList: {
+    gap: 12,
+  },
+  historyItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    gap: 12,
+  },
+  historyText: {
+    fontSize: 14,
+    color: '#333',
+    flex: 1,
   },
 });
 

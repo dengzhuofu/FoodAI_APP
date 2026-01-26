@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,13 +6,31 @@ import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../../../styles/theme';
 import { uploadFile } from '../../../../api/upload';
-import { imageToCalorie, CalorieResult } from '../../../../api/ai';
+import { imageToCalorie, CalorieResult, getHistory, AILog } from '../../../../api/ai';
 
 const ImageToCalorieFeature = () => {
   const navigation = useNavigation();
   const [image, setImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CalorieResult | null>(null);
+  const [history, setHistory] = useState<AILog[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const fetchHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const data = await getHistory(5, 0, 'image-to-calorie');
+      setHistory(data);
+    } catch (error) {
+      console.error('Failed to fetch history:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   const handlePickImage = async () => {
     // Request permission
@@ -42,11 +60,32 @@ const ImageToCalorieFeature = () => {
       const imageUrl = await uploadFile(image);
       const data = await imageToCalorie(imageUrl);
       setResult(data);
+      fetchHistory(); // Refresh history
     } catch (error) {
       console.error(error);
       Alert.alert('分析失败', '请稍后再试');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleHistoryPress = (item: AILog) => {
+    // For calorie feature, we just populate the result state
+    // We assume the output_result is compatible with CalorieResult
+    if (item.output_result) {
+        // If the result is a string (legacy), we might need parsing, 
+        // but our updated backend returns object/dict.
+        // Assuming CalorieResult structure match.
+        try {
+            const res = typeof item.output_result === 'string' 
+                ? JSON.parse(item.output_result) 
+                : item.output_result;
+            setResult(res);
+            // Optionally scroll to result or alert
+            Alert.alert('History Loaded', 'Showing historical analysis result.');
+        } catch (e) {
+            console.error('Failed to parse history result', e);
+        }
     }
   };
 
@@ -128,6 +167,39 @@ const ImageToCalorieFeature = () => {
           </View>
 
           {renderResult()}
+
+          {/* History Section */}
+          <View style={styles.historySection}>
+            <Text style={styles.historySectionTitle}>分析记录</Text>
+            {loadingHistory ? (
+              <ActivityIndicator color="#1A1A1A" style={{ marginTop: 20 }} />
+            ) : history.length > 0 ? (
+              <View style={styles.historyList}>
+                {history.map((item) => (
+                  <TouchableOpacity 
+                    key={item.id} 
+                    style={styles.historyItem}
+                    onPress={() => handleHistoryPress(item)}
+                  >
+                    <View style={styles.historyIcon}>
+                      <Ionicons name="flame-outline" size={20} color="#666" />
+                    </View>
+                    <View style={styles.historyContent}>
+                      <Text style={styles.historyTitle} numberOfLines={1}>
+                        {item.input_summary || '未命名分析'}
+                      </Text>
+                      <Text style={styles.historyDate}>
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color="#CCC" />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.emptyHistoryText}>暂无分析记录</Text>
+            )}
+          </View>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -292,6 +364,60 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#1A1A1A',
+  },
+  historySection: {
+    padding: 20,
+    paddingTop: 0,
+    marginTop: 10,
+  },
+  historySectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 16,
+  },
+  historyList: {
+    gap: 12,
+  },
+  historyItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  historyIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  historyContent: {
+    flex: 1,
+  },
+  historyTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 4,
+  },
+  historyDate: {
+    fontSize: 12,
+    color: '#999',
+  },
+  emptyHistoryText: {
+    textAlign: 'center',
+    color: '#999',
+    fontSize: 14,
+    marginTop: 20,
   },
 });
 

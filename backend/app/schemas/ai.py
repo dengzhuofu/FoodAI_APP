@@ -20,3 +20,4 @@ class FridgeToRecipeRequest(BaseModel):
 class GenerateRecipeImageRequest(BaseModel):
     recipe_data: dict
     image_type: str = "final"  # final or steps
+    source_log_id: Optional[int] = None

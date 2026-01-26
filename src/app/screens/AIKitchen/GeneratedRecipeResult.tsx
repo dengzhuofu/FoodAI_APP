@@ -15,7 +15,7 @@ const { width } = Dimensions.get('window');
 const GeneratedRecipeResult = () => {
   const navigation = useNavigation();
   const route = useRoute<GeneratedRecipeResultRouteProp>();
-  const { recipe } = route.params;
+  const { recipe, logId } = route.params; // Get logId from params
   
   const [activeTab, setActiveTab] = useState<'ingredients' | 'steps'>('ingredients');
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -25,9 +25,21 @@ const GeneratedRecipeResult = () => {
   const [history, setHistory] = useState<AILog[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [activeStepIndex, setActiveStepIndex] = useState(0);
+  const [hasGeneratedSteps, setHasGeneratedSteps] = useState(false);
 
   React.useEffect(() => {
-    fetchHistory();
+    // Check if recipe already has image_url (from history)
+    if (recipe.image_url) {
+        setGeneratedImage(recipe.image_url);
+    } else {
+        // Auto-trigger final image generation if no image
+        handleGenerateImage('final');
+    }
+    
+    if (recipe.step_images && recipe.step_images.length > 0) {
+        setStepImages(recipe.step_images);
+        setHasGeneratedSteps(true);
+    }
   }, []);
 
   const fetchHistory = async () => {
@@ -43,25 +55,33 @@ const GeneratedRecipeResult = () => {
   };
 
   const handleGenerateImage = async (type: 'final' | 'steps') => {
+    if (type === 'steps' && hasGeneratedSteps) {
+        Alert.alert('Notice', 'Step images have already been generated.');
+        return;
+    }
+    
     setIsGeneratingImage(true);
     setLoadingText(type === 'steps' ? 'Generating step images (this may take a while)...' : 'Creating final dish...');
     try {
-      const data = await generateRecipeImage(recipe, type);
+      // Pass logId to link image to original log
+      const data = await generateRecipeImage(recipe, type, logId);
       
       if (type === 'final' && data.image_url) {
         setGeneratedImage(data.image_url);
-        // Clear step images if switching to final view, or keep both? 
-        // Let's keep specific view logic simple: showing one overrides/hides others or we show based on what exists.
-        // For now, let's just set the data.
       } else if (type === 'steps' && data.images) {
         setStepImages(data.images);
-        setGeneratedImage(null); // Clear final image to show steps carousel
+        setHasGeneratedSteps(true);
+        setActiveStepIndex(0); // Reset carousel to start
       }
       
-      Alert.alert('Success', 'Images generated successfully!');
-      fetchHistory();
+      if (type === 'steps') {
+         Alert.alert('Success', 'Step images generated successfully!');
+      }
     } catch (error) {
-      Alert.alert('Error', 'Failed to generate images. Please try again.');
+      // Don't alert error for auto-generation to avoid annoying popup on load if it fails silently
+      if (type === 'steps') {
+          Alert.alert('Error', 'Failed to generate images. Please try again.');
+      }
     } finally {
       setIsGeneratingImage(false);
       setLoadingText('');
@@ -70,34 +90,60 @@ const GeneratedRecipeResult = () => {
 
   const renderHeader = () => (
     <View style={styles.header}>
-      <TouchableOpacity 
-        style={styles.backButton} 
-        onPress={() => navigation.goBack()}
-      >
-        <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
-      </TouchableOpacity>
-      
-      <View style={styles.headerTitleContainer}>
-        <View style={styles.aiBadge}>
-          <Ionicons name="sparkles" size={14} color="#1A1A1A" />
-          <Text style={styles.aiBadgeText}>AI GENERATED</Text>
+      {generatedImage ? (
+        <View style={styles.heroImageContainer}>
+          <Image source={{ uri: generatedImage }} style={styles.heroImage} />
+          <TouchableOpacity 
+            style={styles.backButtonAbsolute} 
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#FFF" />
+          </TouchableOpacity>
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.8)']}
+            style={styles.heroGradient}
+          />
         </View>
-        <Text style={styles.title}>{recipe.title}</Text>
-        <Text style={styles.description}>{recipe.description}</Text>
-        
-        <View style={styles.metaRow}>
-          {recipe.difficulty && (
-            <View style={styles.metaTag}>
-              <Ionicons name="bar-chart-outline" size={14} color="#666" />
-              <Text style={styles.metaText}>{recipe.difficulty}</Text>
+      ) : (
+        <View style={styles.placeholderHeader}>
+             <TouchableOpacity 
+                style={styles.backButton} 
+                onPress={() => navigation.goBack()}
+            >
+                <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+            </TouchableOpacity>
+            {isGeneratingImage && loadingText.includes('final') && (
+                <View style={styles.generatingOverlay}>
+                    <ActivityIndicator size="large" color="#1A1A1A" />
+                    <Text style={styles.generatingText}>Creating final dish...</Text>
+                </View>
+            )}
+        </View>
+      )}
+      
+      <View style={styles.headerContent}>
+        <View style={styles.headerTitleContainer}>
+            <View style={styles.aiBadge}>
+            <Ionicons name="sparkles" size={14} color="#1A1A1A" />
+            <Text style={styles.aiBadgeText}>AI GENERATED</Text>
             </View>
-          )}
-          {recipe.cooking_time && (
-            <View style={styles.metaTag}>
-              <Ionicons name="time-outline" size={14} color="#666" />
-              <Text style={styles.metaText}>{recipe.cooking_time}</Text>
+            <Text style={styles.title}>{recipe.title}</Text>
+            <Text style={styles.description}>{recipe.description}</Text>
+            
+            <View style={styles.metaRow}>
+            {recipe.difficulty && (
+                <View style={styles.metaTag}>
+                <Ionicons name="bar-chart-outline" size={14} color="#666" />
+                <Text style={styles.metaText}>{recipe.difficulty}</Text>
+                </View>
+            )}
+            {recipe.cooking_time && (
+                <View style={styles.metaTag}>
+                <Ionicons name="time-outline" size={14} color="#666" />
+                <Text style={styles.metaText}>{recipe.cooking_time}</Text>
+                </View>
+            )}
             </View>
-          )}
         </View>
       </View>
     </View>
@@ -278,50 +324,28 @@ const GeneratedRecipeResult = () => {
             
             <View style={styles.generationButtons}>
               <TouchableOpacity 
-                style={[styles.genButton, isGeneratingImage && styles.disabledButton]} 
-                onPress={() => handleGenerateImage('final')}
-                disabled={isGeneratingImage}
-              >
-                {isGeneratingImage ? (
-                   <ActivityIndicator color="#1A1A1A" size="small" />
-                ) : (
-                  <>
-                    <Ionicons name="camera" size={18} color="#1A1A1A" />
-                    <Text style={styles.genButtonText}>Final Dish</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.genButton, styles.secondaryGenButton, isGeneratingImage && styles.disabledButton]} 
+                style={[styles.genButton, styles.secondaryGenButton, isGeneratingImage && styles.disabledButton, hasGeneratedSteps && styles.disabledButton]} 
                 onPress={() => handleGenerateImage('steps')}
-                disabled={isGeneratingImage}
+                disabled={isGeneratingImage || hasGeneratedSteps}
               >
-                 {isGeneratingImage ? (
+                 {isGeneratingImage && loadingText.includes('step') ? (
                    <ActivityIndicator color="#FFFFFF" size="small" />
                  ) : (
                    <>
                      <Ionicons name="list" size={18} color="#FFFFFF" />
-                     <Text style={styles.secondaryGenButtonText}>Steps</Text>
+                     <Text style={styles.secondaryGenButtonText}>
+                         {hasGeneratedSteps ? 'Steps Generated' : 'Generate Steps'}
+                     </Text>
                    </>
                  )}
               </TouchableOpacity>
             </View>
 
-            {isGeneratingImage && (
+            {isGeneratingImage && loadingText.includes('step') && (
                 <Text style={styles.loadingStatusText}>{loadingText}</Text>
             )}
-            
-            {generatedImage && (
-              <View style={styles.generatedImageContainer}>
-                <Image source={{ uri: generatedImage }} style={styles.generatedImage} />
-                <View style={styles.generatedLabel}>
-                  <Text style={styles.generatedLabelText}>FINAL DISH</Text>
-                </View>
-              </View>
-            )}
 
-            {stepImages.length > 0 && !generatedImage && (
+            {stepImages.length > 0 && (
                 <View style={styles.carouselContainer}>
                     <ScrollView
                         horizontal
@@ -370,7 +394,6 @@ const GeneratedRecipeResult = () => {
              <Text style={styles.saveButtonText}>Save to Collection</Text>
           </TouchableOpacity>
 
-          {renderHistory()}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -386,10 +409,69 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingHorizontal: 0,
+    paddingTop: 0,
     paddingBottom: 20,
     backgroundColor: '#FFFFFF',
+  },
+  headerContent: {
+    paddingHorizontal: 20,
+  },
+  heroImageContainer: {
+    height: 320,
+    width: width,
+    position: 'relative',
+    marginBottom: 20,
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  heroGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 120,
+  },
+  backButtonAbsolute: {
+    position: 'absolute',
+    top: 20, // Adjust based on safe area if needed, but safeview handles container
+    left: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  placeholderHeader: {
+    paddingTop: 10,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    position: 'relative',
+    minHeight: 80,
+    justifyContent: 'center',
+  },
+  generatingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    zIndex: 5,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  generatingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1A1A1A',
   },
   backButton: {
     width: 40,

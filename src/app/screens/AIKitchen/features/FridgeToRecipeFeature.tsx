@@ -1,15 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { theme } from '../../../styles/theme';
-import { fridgeToRecipe } from '../../../../api/ai';
+import { fridgeToRecipe, getHistory, AILog } from '../../../../api/ai';
 
 const FridgeToRecipeFeature = () => {
   const navigation = useNavigation<any>();
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState<AILog[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const fetchHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const data = await getHistory(5, 0, 'fridge-to-recipe');
+      setHistory(data);
+    } catch (error) {
+      console.error('Failed to fetch history:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   // Mock fridge inventory
   const inventory = [
@@ -37,12 +55,19 @@ const FridgeToRecipeFeature = () => {
 
     setLoading(true);
     try {
-      const result = await fridgeToRecipe(selectedItems);
-      navigation.navigate('GeneratedRecipeResult', { recipe: result });
+      const data = await fridgeToRecipe(selectedItems);
+      navigation.navigate('GeneratedRecipeResult', { recipe: data.result, logId: data.log_id });
+      fetchHistory(); // Refresh history
     } catch (error) {
       Alert.alert('生成失败', '请稍后再试');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleHistoryPress = (item: AILog) => {
+    if (item.output_result) {
+      navigation.navigate('GeneratedRecipeResult', { recipe: item.output_result, logId: item.id });
     }
   };
 
@@ -94,6 +119,39 @@ const FridgeToRecipeFeature = () => {
                 </TouchableOpacity>
               );
             })}
+          </View>
+
+          {/* History Section */}
+          <View style={styles.historySection}>
+            <Text style={styles.historySectionTitle}>推荐记录</Text>
+            {loadingHistory ? (
+              <ActivityIndicator color="#1A1A1A" style={{ marginTop: 20 }} />
+            ) : history.length > 0 ? (
+              <View style={styles.historyList}>
+                {history.map((item) => (
+                  <TouchableOpacity 
+                    key={item.id} 
+                    style={styles.historyItem}
+                    onPress={() => handleHistoryPress(item)}
+                  >
+                    <View style={styles.historyIcon}>
+                      <Ionicons name="nutrition-outline" size={20} color="#666" />
+                    </View>
+                    <View style={styles.historyContent}>
+                      <Text style={styles.historyTitle} numberOfLines={1}>
+                        {item.output_result?.title || item.input_summary || '未命名推荐'}
+                      </Text>
+                      <Text style={styles.historyDate}>
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color="#CCC" />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.emptyHistoryText}>暂无推荐记录</Text>
+            )}
           </View>
         </ScrollView>
 
@@ -235,6 +293,59 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.7,
+  },
+  historySection: {
+    marginTop: 24,
+    marginBottom: 20,
+  },
+  historySectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 16,
+  },
+  historyList: {
+    gap: 12,
+  },
+  historyItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  historyIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  historyContent: {
+    flex: 1,
+  },
+  historyTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 4,
+  },
+  historyDate: {
+    fontSize: 12,
+    color: '#999',
+  },
+  emptyHistoryText: {
+    textAlign: 'center',
+    color: '#999',
+    fontSize: 14,
+    marginTop: 20,
   },
 });
 

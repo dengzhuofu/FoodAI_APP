@@ -1,28 +1,58 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { theme } from '../../../styles/theme';
+import { textToImage, getHistory, AILog } from '../../../../api/ai';
 
 const TextToImageFeature = () => {
   const navigation = useNavigation();
   const [prompt, setPrompt] = useState('');
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState<AILog[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
-  const handleGenerate = () => {
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const fetchHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const data = await getHistory(5, 0, 'text-to-image');
+      setHistory(data);
+    } catch (error) {
+      console.error('Failed to fetch history:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleGenerate = async () => {
     if (!prompt.trim()) {
       Alert.alert('请输入描述', '请先输入您想要生成的美食描述');
       return;
     }
-    Alert.alert('AI绘画中', '正在根据您的描述生成美食图片...', [
-      { 
-        text: '确定', 
-        onPress: () => {
-          setGeneratedImage('https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&auto=format&fit=crop&q=60');
-        } 
-      }
-    ]);
+    
+    setLoading(true);
+    try {
+      const url = await textToImage(prompt);
+      setGeneratedImage(url);
+      fetchHistory();
+    } catch (error) {
+      Alert.alert('生成失败', '请稍后再试');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleHistoryPress = (item: AILog) => {
+    if (item.output_result && item.output_result.url) {
+      setGeneratedImage(item.output_result.url);
+      setPrompt(item.input_summary); // Restore prompt
+    }
   };
 
   return (
@@ -64,9 +94,19 @@ const TextToImageFeature = () => {
               ))}
             </View>
 
-            <TouchableOpacity style={styles.generateButton} onPress={handleGenerate}>
-              <Text style={styles.buttonText}>开始绘制</Text>
-              <Ionicons name="brush" size={18} color="white" style={{ marginLeft: 8 }} />
+            <TouchableOpacity 
+              style={[styles.generateButton, loading && styles.buttonDisabled]} 
+              onPress={handleGenerate}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <>
+                  <Text style={styles.buttonText}>开始绘制</Text>
+                  <Ionicons name="brush" size={18} color="white" style={{ marginLeft: 8 }} />
+                </>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -85,6 +125,39 @@ const TextToImageFeature = () => {
               </View>
             </View>
           )}
+
+          {/* History Section */}
+          <View style={styles.historySection}>
+            <Text style={styles.historySectionTitle}>绘图记录</Text>
+            {loadingHistory ? (
+              <ActivityIndicator color="#1A1A1A" style={{ marginTop: 20 }} />
+            ) : history.length > 0 ? (
+              <View style={styles.historyList}>
+                {history.map((item) => (
+                  <TouchableOpacity 
+                    key={item.id} 
+                    style={styles.historyItem}
+                    onPress={() => handleHistoryPress(item)}
+                  >
+                    <View style={styles.historyIcon}>
+                      <Ionicons name="image-outline" size={20} color="#666" />
+                    </View>
+                    <View style={styles.historyContent}>
+                      <Text style={styles.historyTitle} numberOfLines={1}>
+                        {item.input_summary || '未命名图片'}
+                      </Text>
+                      <Text style={styles.historyDate}>
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color="#CCC" />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.emptyHistoryText}>暂无绘图记录</Text>
+            )}
+          </View>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -219,6 +292,63 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#1A1A1A',
+  },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
+  historySection: {
+    padding: 20,
+    paddingTop: 0,
+  },
+  historySectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 16,
+  },
+  historyList: {
+    gap: 12,
+  },
+  historyItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  historyIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  historyContent: {
+    flex: 1,
+  },
+  historyTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 4,
+  },
+  historyDate: {
+    fontSize: 12,
+    color: '#999',
+  },
+  emptyHistoryText: {
+    textAlign: 'center',
+    color: '#999',
+    fontSize: 14,
+    marginTop: 20,
+    marginBottom: 40,
   },
 });
 

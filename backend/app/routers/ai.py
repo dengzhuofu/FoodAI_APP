@@ -18,9 +18,13 @@ router = APIRouter()
 async def get_history(
     current_user: User = Depends(get_current_user),
     limit: int = 20,
-    offset: int = 0
+    offset: int = 0,
+    feature: str = None
 ):
-    logs = await AILog.filter(user=current_user).order_by("-created_at").offset(offset).limit(limit)
+    query = AILog.filter(user=current_user)
+    if feature:
+        query = query.filter(feature=feature)
+    logs = await query.order_by("-created_at").offset(offset).limit(limit)
     return {"history": logs}
 
 @router.post("/generate-recipe-image")
@@ -72,6 +76,20 @@ async def generate_recipe_image(
             input_summary=f"Final Image for {title}",
             output_result=result_data
         )
+
+        # Update source log if exists
+        if request.source_log_id:
+            try:
+                source_log = await AILog.get_or_none(id=request.source_log_id, user=current_user)
+                if source_log and source_log.output_result:
+                    # Update the image_url in the original recipe result
+                    updated_result = dict(source_log.output_result)
+                    updated_result["image_url"] = final_url
+                    source_log.output_result = updated_result
+                    await source_log.save()
+            except Exception as e:
+                print(f"Failed to update source log: {e}")
+
         return result_data
         
     elif request.image_type == 'steps':
@@ -106,6 +124,21 @@ async def generate_recipe_image(
             input_summary=f"Step Images for {title}",
             output_result=result_data
         )
+
+        # Update source log if exists
+        if request.source_log_id:
+            try:
+                source_log = await AILog.get_or_none(id=request.source_log_id, user=current_user)
+                if source_log and source_log.output_result:
+                    # Update step images in the original recipe result
+                    updated_result = dict(source_log.output_result)
+                    # Maybe store as 'step_images' field
+                    updated_result["step_images"] = steps_images
+                    source_log.output_result = updated_result
+                    await source_log.save()
+            except Exception as e:
+                print(f"Failed to update source log: {e}")
+
         return result_data
     
     return {"error": "Invalid image type"}
@@ -118,14 +151,14 @@ async def text_to_recipe(
     result = await ai_service.generate_recipe_from_text(request.description, request.preferences)
     
     # Log to DB
-    await AILog.create(
+    log = await AILog.create(
         user=current_user,
         feature="text-to-recipe",
         input_summary=request.description[:100],
         output_result=result
     )
     
-    return {"result": result}
+    return {"result": result, "log_id": log.id}
 
 @router.post("/text-to-image")
 async def text_to_image(
@@ -133,6 +166,15 @@ async def text_to_image(
     current_user: User = Depends(get_current_user)
 ):
     url = await ai_service.generate_image(request.prompt)
+    
+    # Log to DB
+    await AILog.create(
+        user=current_user,
+        feature="text-to-image",
+        input_summary=request.prompt,
+        output_result={"url": url}
+    )
+    
     return {"url": url}
 
 @router.post("/image-to-recipe")
@@ -143,7 +185,16 @@ async def image_to_recipe(
     # In a real app, user uploads file, backend uploads to storage (S3), gets URL, then calls AI
     # Here we assume frontend sends URL (e.g. from previously uploaded image)
     result = await ai_service.generate_recipe_from_image(request.image_url)
-    return {"result": result}
+    
+    # Log to DB
+    log = await AILog.create(
+        user=current_user,
+        feature="image-to-recipe",
+        input_summary="Image Analysis",
+        output_result=result
+    )
+    
+    return {"result": result, "log_id": log.id}
 
 @router.post("/image-to-calorie")
 async def image_to_calorie(
@@ -154,6 +205,15 @@ async def image_to_calorie(
         print(f"DEBUG: Processing image-to-calorie request for URL: {request.image_url}")
         result = await ai_service.estimate_calories(request.image_url)
         print("DEBUG: AI Service result received")
+        
+        # Log to DB
+        await AILog.create(
+            user=current_user,
+            feature="image-to-calorie",
+            input_summary="Calorie Estimation",
+            output_result=result
+        )
+        
         return {"result": result}
     except Exception as e:
         import traceback
@@ -168,4 +228,13 @@ async def fridge_to_recipe(
     current_user: User = Depends(get_current_user)
 ):
     result = await ai_service.fridge_to_recipe(request.items)
-    return {"result": result}
+    
+    # Log to DB
+    log = await AILog.create(
+        user=current_user,
+        feature="fridge-to-recipe",
+        input_summary=", ".join(request.items)[:100],
+        output_result=result
+    )
+    
+    return {"result": result, "log_id": log.id}

@@ -13,6 +13,8 @@ export interface RecipeResult {
   };
   cooking_time: string;
   difficulty: string;
+  image_url?: string; // Optional final image
+  step_images?: Array<{step_index: number, image_url: string, text: string}>; // Optional step images
 }
 
 export interface CalorieResult {
@@ -30,32 +32,34 @@ export interface AILog {
   created_at: string;
 }
 
-export const getHistory = async (limit: number = 20, offset: number = 0): Promise<AILog[]> => {
+export const getHistory = async (limit: number = 20, offset: number = 0, feature?: string): Promise<AILog[]> => {
   const response = await client.get('/ai/history', {
-    params: { limit, offset }
+    params: { limit, offset, feature }
   });
   return response.data.history;
 };
 
-export const generateRecipeImage = async (recipeData: RecipeResult, imageType: 'final' | 'steps' = 'final'): Promise<any> => {
+export const generateRecipeImage = async (recipeData: RecipeResult, imageType: 'final' | 'steps' = 'final', sourceLogId?: number): Promise<any> => {
   const response = await client.post('/ai/generate-recipe-image', {
     recipe_data: recipeData,
-    image_type: imageType
+    image_type: imageType,
+    source_log_id: sourceLogId
   });
   return response.data;
 };
 
 // Text to Recipe
-export const textToRecipe = async (description: string, preferences: string = ''): Promise<RecipeResult> => {
+export const textToRecipe = async (description: string, preferences: string = ''): Promise<{result: RecipeResult, log_id: number}> => {
   const response = await client.post('/ai/text-to-recipe', {
     description,
     preferences
   });
   
   try {
-    return typeof response.data.result === 'string' 
+    const result = typeof response.data.result === 'string' 
       ? JSON.parse(response.data.result) 
       : response.data.result;
+    return { result, log_id: response.data.log_id };
   } catch (e) {
     console.error("Failed to parse AI result", e);
     throw e;
@@ -71,15 +75,16 @@ export const textToImage = async (prompt: string): Promise<string> => {
 };
 
 // Image to Recipe
-export const imageToRecipe = async (imageUrl: string): Promise<RecipeResult> => {
+export const imageToRecipe = async (imageUrl: string): Promise<{result: RecipeResult, log_id: number}> => {
   const response = await client.post('/ai/image-to-recipe', {
     image_url: imageUrl
   });
 
   try {
-    return typeof response.data.result === 'string' 
+    const result = typeof response.data.result === 'string' 
       ? JSON.parse(response.data.result) 
       : response.data.result;
+    return { result, log_id: response.data.log_id };
   } catch (e) {
     console.error("Failed to parse AI result", e);
     throw e;
@@ -103,15 +108,16 @@ export const imageToCalorie = async (imageUrl: string): Promise<CalorieResult> =
 };
 
 // Fridge to Recipe
-export const fridgeToRecipe = async (items: string[]): Promise<RecipeResult> => {
+export const fridgeToRecipe = async (items: string[]): Promise<{result: RecipeResult, log_id: number}> => {
   const response = await client.post('/ai/fridge-to-recipe', {
     items
   });
 
   try {
-    return typeof response.data.result === 'string' 
+    const result = typeof response.data.result === 'string' 
       ? JSON.parse(response.data.result) 
       : response.data.result;
+    return { result, log_id: response.data.log_id };
   } catch (e) {
     console.error("Failed to parse AI result", e);
     throw e;

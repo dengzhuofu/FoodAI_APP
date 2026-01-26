@@ -22,7 +22,7 @@ export type RootStackParamList = {
   TextToRecipe: undefined;
   FridgeToRecipe: undefined;
   VoiceAssistant: undefined;
-  GeneratedRecipeResult: { recipe: any }; // Using any for now to avoid circular dependency
+  GeneratedRecipeResult: { recipe: any; logId?: number }; // Using any for now to avoid circular dependency
   AIGenerationHistory: undefined;
   
   // Profile Sub-pages
