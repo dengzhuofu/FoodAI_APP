@@ -83,12 +83,23 @@ async def generate_recipe_image(
                 source_log = await AILog.get_or_none(id=request.source_log_id, user=current_user)
                 if source_log and source_log.output_result:
                     # Update the image_url in the original recipe result
-                    updated_result = dict(source_log.output_result)
-                    updated_result["image_url"] = final_url
-                    source_log.output_result = updated_result
-                    await source_log.save()
+                    # Ensure output_result is a dict
+                    updated_result = source_log.output_result
+                    if isinstance(updated_result, str):
+                        import json
+                        updated_result = json.loads(updated_result)
+                    
+                    if isinstance(updated_result, dict):
+                        updated_result["image_url"] = final_url
+                        source_log.output_result = updated_result
+                        await source_log.save(update_fields=['output_result'])
+                        print(f"Successfully updated log {request.source_log_id} with image_url")
+                    else:
+                        print(f"Cannot update log {request.source_log_id}: output_result is not a dict")
             except Exception as e:
                 print(f"Failed to update source log: {e}")
+                import traceback
+                traceback.print_exc()
 
         return result_data
         
@@ -131,13 +142,23 @@ async def generate_recipe_image(
                 source_log = await AILog.get_or_none(id=request.source_log_id, user=current_user)
                 if source_log and source_log.output_result:
                     # Update step images in the original recipe result
-                    updated_result = dict(source_log.output_result)
-                    # Maybe store as 'step_images' field
-                    updated_result["step_images"] = steps_images
-                    source_log.output_result = updated_result
-                    await source_log.save()
+                    updated_result = source_log.output_result
+                    if isinstance(updated_result, str):
+                        import json
+                        updated_result = json.loads(updated_result)
+                        
+                    if isinstance(updated_result, dict):
+                        # Maybe store as 'step_images' field
+                        updated_result["step_images"] = steps_images
+                        source_log.output_result = updated_result
+                        await source_log.save(update_fields=['output_result'])
+                        print(f"Successfully updated log {request.source_log_id} with step_images")
+                    else:
+                        print(f"Cannot update log {request.source_log_id}: output_result is not a dict")
             except Exception as e:
                 print(f"Failed to update source log: {e}")
+                import traceback
+                traceback.print_exc()
 
         return result_data
     
