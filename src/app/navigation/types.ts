@@ -8,6 +8,8 @@ export type RootStackParamList = {
   
   // Explore
   WhatToEat: undefined;
+  Search: undefined;
+  SearchResult: { keyword: string };
   
   // Details
   RecipeDetail: { id: string };

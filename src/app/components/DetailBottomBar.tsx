@@ -165,7 +165,8 @@ const DetailBottomBar: React.FC<DetailBottomBarProps> = ({
           onPress={handleCloseInput}
         >
           <KeyboardAvoidingView 
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            behavior={Platform.OS === 'web' ? undefined : 'padding'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
             style={styles.keyboardAvoidingView}
           >
             <TouchableOpacity activeOpacity={1} style={styles.inputArea}>
@@ -267,6 +268,7 @@ const styles = StyleSheet.create({
   placeholderText: {
     fontSize: 13,
     color: '#999',
+    includeFontPadding: false, // Android fix
   },
   placeholderIcons: {
     flexDirection: 'row',
@@ -348,6 +350,7 @@ const styles = StyleSheet.create({
     minHeight: 40,
     maxHeight: 120,
     fontSize: 16,
+    textAlignVertical: 'center', // Android fix
   },
   iconButton: {
     padding: 8,
@@ -370,6 +373,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 14,
+    includeFontPadding: false, // Android fix
   },
 });
 

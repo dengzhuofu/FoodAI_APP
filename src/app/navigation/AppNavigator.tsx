@@ -44,6 +44,10 @@ import FlavorProfilePage from '../screens/Profile/FlavorProfilePage';
 import PublishRecipeScreen from '../screens/Publish/PublishRecipeScreen';
 import PublishStoreScreen from '../screens/Publish/PublishStoreScreen';
 
+// Search Screen
+import SearchScreen from '../screens/Search/SearchScreen';
+import SearchResultScreen from '../screens/Search/SearchResultScreen';
+
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -170,6 +174,8 @@ const AppNavigator = () => {
             
             {/* Explore */}
             <Stack.Screen name="WhatToEat" component={WhatToEatScreen} options={{ title: '今天吃什么' }} />
+            <Stack.Screen name="Search" component={SearchScreen} options={{ headerShown: false, animationEnabled: false }} />
+            <Stack.Screen name="SearchResult" component={SearchResultScreen} options={{ headerShown: false }} />
             
             {/* Details */}
             <Stack.Screen name="RecipeDetail" component={RecipeDetailPage} options={{ title: '菜谱详情' }} />

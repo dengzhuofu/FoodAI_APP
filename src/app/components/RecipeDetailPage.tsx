@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, Alert, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,6 +16,7 @@ type RecipeDetailRouteProp = RouteProp<RootStackParamList, 'RecipeDetail'>;
 const { width } = Dimensions.get('window');
 
 const RecipeDetailPage = () => {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute<RecipeDetailRouteProp>();
   const { id } = route.params;
@@ -135,7 +136,7 @@ const RecipeDetailPage = () => {
         style={styles.gradient}
       />
       <TouchableOpacity 
-        style={styles.backButtonAbsolute} 
+        style={[styles.backButtonAbsolute, { top: insets.top + 10 }]} 
         onPress={() => navigation.goBack()}
       >
         <View style={styles.blurButton}>
@@ -312,7 +313,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   scrollContent: {
-    paddingBottom: 80,
+    paddingBottom: 120,
   },
   centerContent: {
     flex: 1,

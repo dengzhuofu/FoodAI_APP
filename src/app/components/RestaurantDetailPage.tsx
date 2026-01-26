@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, Linking, Alert, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,6 +16,7 @@ type RestaurantDetailRouteProp = RouteProp<RootStackParamList, 'RestaurantDetail
 const { width } = Dimensions.get('window');
 
 const RestaurantDetailPage = () => {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute<RestaurantDetailRouteProp>();
   const { id } = route.params;
@@ -134,7 +135,7 @@ const RestaurantDetailPage = () => {
         style={styles.gradient}
       />
       <TouchableOpacity 
-        style={styles.backButtonAbsolute} 
+        style={[styles.backButtonAbsolute, { top: insets.top + 10 }]} 
         onPress={() => navigation.goBack()}
       >
         <View style={styles.blurButton}>
@@ -142,7 +143,7 @@ const RestaurantDetailPage = () => {
         </View>
       </TouchableOpacity>
       <TouchableOpacity 
-        style={styles.collectButtonAbsolute} 
+        style={[styles.collectButtonAbsolute, { top: insets.top + 10 }]} 
         onPress={handleCollection}
       >
         <View style={styles.blurButton}>

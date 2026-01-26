@@ -1,17 +1,19 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, RefreshControl, ActivityIndicator, Modal, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, RefreshControl, ActivityIndicator, Modal, TouchableWithoutFeedback, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../navigation/types';
 import { theme } from '../../styles/theme';
 import { getRecommendations, getPopularTags, getHealthNews, FeedItem, HealthNews } from '../../../api/explore';
+import FeedCard from '../../components/FeedCard';
 
 type ExploreScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 const { width } = Dimensions.get('window');
-const COLUMN_WIDTH = (width - theme.spacing.md * 1.3) / 2; // Reduced side padding to theme.spacing.md
+const SPACING = theme.spacing.sm;
+const COLUMN_WIDTH = (width - theme.spacing.screenHorizontal * 2 - SPACING) / 2;
 
 const CATEGORIES = ['AI推荐', '探店', '菜谱', '健康'];
 
@@ -89,16 +91,19 @@ const ExploreScreen = () => {
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <View style={styles.dropdownContainer}>
+                <View style={styles.dropdownHeader}>
+                  <Text style={styles.dropdownMainTitle}>筛选与排序</Text>
+                  <TouchableOpacity onPress={() => setIsFilterOpen(false)}>
+                    <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+
                 <Text style={styles.dropdownTitle}>排序方式</Text>
                 <View style={styles.dropdownSection}>
                   {sorts.map((sort) => (
                     <TouchableOpacity 
                       key={sort.value} 
-                      onPress={() => {
-                        setSortBy(sort.value);
-                        // Optional: Close on sort change or wait for explicit close?
-                        // setIsFilterOpen(false); 
-                      }}
+                      onPress={() => setSortBy(sort.value)}
                       style={[styles.dropdownItem, sortBy === sort.value && styles.activeDropdownItem]}
                     >
                       <Text style={[styles.dropdownItemText, sortBy === sort.value && styles.activeDropdownItemText]}>
@@ -114,9 +119,7 @@ const ExploreScreen = () => {
                     <TouchableOpacity 
                       key={index} 
                       style={[styles.dropdownItem, selectedTag === tag && styles.activeDropdownItem]}
-                      onPress={() => {
-                        setSelectedTag(selectedTag === tag ? undefined : tag);
-                      }}
+                      onPress={() => setSelectedTag(selectedTag === tag ? undefined : tag)}
                     >
                       <Text style={[styles.dropdownItemText, selectedTag === tag && styles.activeDropdownItemText]}>
                         {tag}
@@ -156,7 +159,7 @@ const ExploreScreen = () => {
       {activeTab !== '健康' && (
         <TouchableOpacity style={styles.filterButton} onPress={() => setIsFilterOpen(true)}>
           <Ionicons name="options-outline" size={20} color={theme.colors.textSecondary} />
-          <Text style={styles.filterButtonText}>筛选</Text>
+          {/* <Text style={styles.filterButtonText}>筛选</Text> */}
         </TouchableOpacity>
       )}
     </View>
@@ -165,12 +168,24 @@ const ExploreScreen = () => {
   const renderHealthNewsList = () => (
     <View style={styles.contentContainer}>
       {healthNews.map(item => (
-        <TouchableOpacity key={item.id} style={styles.newsCard}>
+        <TouchableOpacity 
+          key={item.id} 
+          style={styles.newsCard} 
+          activeOpacity={0.8}
+          // Currently we don't have a dedicated news detail page, so we can mock navigation or alert
+          // In a real app, this would navigate to a WebView or NewsDetail screen
+          onPress={() => console.log('Navigate to news', item.id)}
+        >
           <Image source={{ uri: item.image }} style={styles.newsImage} />
           <View style={styles.newsContent}>
-            <Text style={styles.newsTitle}>{item.title}</Text>
-            <Text style={styles.newsSummary}>{item.summary}</Text>
-            <Text style={styles.newsDate}>{item.date}</Text>
+            <View style={styles.newsHeader}>
+              <View style={styles.newsTag}>
+                <Text style={styles.newsTagText}>健康</Text>
+              </View>
+              <Text style={styles.newsDate}>{item.date}</Text>
+            </View>
+            <Text style={styles.newsTitle} numberOfLines={2}>{item.title}</Text>
+            <Text style={styles.newsSummary} numberOfLines={2}>{item.summary}</Text>
           </View>
         </TouchableOpacity>
       ))}
@@ -189,62 +204,23 @@ const ExploreScreen = () => {
     return (
       <View style={styles.masonryContainer}>
         <View style={styles.column}>
-          {feedItems.filter((_, i) => i % 2 === 0).map((item) => (
-            <TouchableOpacity 
-              key={`${item.type}-${item.id}`} 
-              style={styles.feedCard}
+          {feedItems.filter((_, i) => i % 2 === 0).map((item, index) => (
+            <FeedCard
+              key={`${item.type}-${item.id}`}
+              item={item}
+              height={200 + (item.id % 5) * 20}
               onPress={() => navigation.navigate(item.type === 'restaurant' ? 'RestaurantDetail' : 'RecipeDetail', { id: `${item.id}` })}
-              activeOpacity={0.9}
-            >
-              <Image 
-                source={{ uri: item.image || 'https://via.placeholder.com/300' }} 
-                // Random height for waterfall effect, using id to keep it consistent
-                style={[styles.feedImage, { height: 200 + (item.id % 5) * 20 }]} 
-                resizeMode="cover"
-              />
-              <View style={styles.feedContent}>
-                <Text style={styles.feedTitle} numberOfLines={2}>{item.title}</Text>
-                <View style={styles.feedFooter}>
-                  <View style={styles.authorInfo}>
-                    <View style={styles.avatarPlaceholder} />
-                    <Text style={styles.authorName} numberOfLines={1}>{item.author}</Text>
-                  </View>
-                  <View style={styles.likeInfo}>
-                    <Ionicons name="heart-outline" size={12} color={theme.colors.textSecondary} />
-                    <Text style={styles.likeCount}>{item.likes}</Text>
-                  </View>
-                </View>
-              </View>
-            </TouchableOpacity>
+            />
           ))}
         </View>
         <View style={styles.column}>
-          {feedItems.filter((_, i) => i % 2 === 1).map((item) => (
-            <TouchableOpacity 
-              key={`${item.type}-${item.id}`} 
-              style={styles.feedCard}
+          {feedItems.filter((_, i) => i % 2 === 1).map((item, index) => (
+            <FeedCard
+              key={`${item.type}-${item.id}`}
+              item={item}
+              height={200 + ((item.id + 2) % 5) * 20}
               onPress={() => navigation.navigate(item.type === 'restaurant' ? 'RestaurantDetail' : 'RecipeDetail', { id: `${item.id}` })}
-              activeOpacity={0.9}
-            >
-              <Image 
-                source={{ uri: item.image || 'https://via.placeholder.com/300' }} 
-                style={[styles.feedImage, { height: 200 + ((item.id + 2) % 5) * 20 }]} 
-                resizeMode="cover"
-              />
-              <View style={styles.feedContent}>
-                <Text style={styles.feedTitle} numberOfLines={2}>{item.title}</Text>
-                <View style={styles.feedFooter}>
-                  <View style={styles.authorInfo}>
-                    <View style={styles.avatarPlaceholder} />
-                    <Text style={styles.authorName} numberOfLines={1}>{item.author}</Text>
-                  </View>
-                  <View style={styles.likeInfo}>
-                    <Ionicons name="heart-outline" size={12} color={theme.colors.textSecondary} />
-                    <Text style={styles.likeCount}>{item.likes}</Text>
-                  </View>
-                </View>
-              </View>
-            </TouchableOpacity>
+            />
           ))}
         </View>
       </View>
@@ -255,7 +231,7 @@ const ExploreScreen = () => {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color={theme.colors.textSecondary} />
+          <Ionicons name="search-outline" size={20} color={theme.colors.textSecondary} />
           <Text style={styles.searchPlaceholder}>搜索菜品、餐厅、风味...</Text>
         </View>
       </View>
@@ -267,11 +243,15 @@ const ExploreScreen = () => {
         contentContainerStyle={styles.scrollContent} 
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
         }
       >
         {activeTab === '健康' ? (
-          // Health news list has its own container
           renderHealthNewsList() 
         ) : (
           <View style={styles.contentContainer}>
@@ -288,105 +268,38 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  tagsContainer: {
-    backgroundColor: theme.colors.white,
-    paddingBottom: theme.spacing.sm,
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
   },
-  tagsContent: {
-    paddingHorizontal: theme.spacing.lg,
-  },
-  tagChip: {
-    backgroundColor: '#F5F5F5',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
-  },
-  activeTagChip: {
-    backgroundColor: theme.colors.primary,
-  },
-  tagText: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-  },
-  activeTagText: {
-    color: theme.colors.white,
-  },
-  sortBar: {
-    flexDirection: 'row',
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.sm,
-    backgroundColor: theme.colors.white,
-  },
-  sortItem: {
-    marginRight: theme.spacing.lg,
-  },
-  sortText: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-  },
-  activeSortText: {
-    color: theme.colors.primary,
-    fontWeight: 'bold',
-  },
-  newsCard: {
-    flexDirection: 'row',
-    backgroundColor: theme.colors.white,
-    borderRadius: 8,
-    marginBottom: theme.spacing.md,
-    overflow: 'hidden',
-    ...theme.shadows.sm,
-  },
-  newsImage: {
-    width: 100,
-    height: 100,
-  },
-  newsContent: {
-    flex: 1,
-    padding: 12,
-  },
-  newsTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-    marginBottom: 4,
-  },
-  newsSummary: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    marginBottom: 8,
-    lineHeight: 18,
-  },
-  newsDate: {
-    fontSize: 10,
-    color: '#999',
-  },
+  
+  // Header & Search
   header: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.sm,
-    paddingBottom: theme.spacing.sm,
-    backgroundColor: theme.colors.white,
+    paddingHorizontal: theme.spacing.screenHorizontal,
+    paddingVertical: theme.spacing.sm,
+    backgroundColor: theme.colors.background,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: theme.spacing.md,
-    height: 40,
-    borderRadius: 20,
+    height: 44,
+    borderRadius: theme.borderRadius.xl,
+    ...theme.shadows.sm,
   },
   searchPlaceholder: {
     ...theme.typography.body,
-    color: theme.colors.textSecondary,
+    color: theme.colors.textTertiary,
     marginLeft: theme.spacing.sm,
     fontSize: 14,
   },
+  
+  // Tabs
   tabContainer: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.background,
     paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    paddingHorizontal: theme.spacing.screenHorizontal,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -394,29 +307,133 @@ const styles = StyleSheet.create({
   tabScrollContent: {
     flexGrow: 1,
   },
-  filterButton: {
-    flexDirection: 'row',
+  tabItem: {
+    paddingHorizontal: 4,
+    paddingVertical: 6,
+    marginRight: theme.spacing.lg,
     alignItems: 'center',
-    paddingLeft: theme.spacing.md,
-    borderLeftWidth: 1,
-    borderLeftColor: '#F0F0F0',
+    position: 'relative',
   },
-  filterButtonText: {
-    fontSize: 14,
+  activeTabItem: {
+    // Add specific styles if needed
+  },
+  tabText: {
+    fontSize: 16,
     color: theme.colors.textSecondary,
-    marginLeft: 4,
+    fontWeight: '500',
   },
+  activeTabText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+  },
+  activeTabIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    width: 20,
+    height: 3,
+    backgroundColor: theme.colors.primary,
+    borderRadius: 2,
+  },
+  filterButton: {
+    padding: 8,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 20,
+    ...theme.shadows.sm,
+  },
+  
+  // Content Layout
+  scrollContent: {
+    paddingBottom: 100,
+  },
+  contentContainer: {
+    paddingHorizontal: theme.spacing.screenHorizontal,
+    paddingTop: theme.spacing.sm,
+  },
+  masonryContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  column: {
+    width: COLUMN_WIDTH,
+  },
+  
+  // News Card
+  newsCard: {
+    flexDirection: 'row',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    marginBottom: theme.spacing.md,
+    overflow: 'hidden',
+    ...theme.shadows.sm,
+    height: 110,
+  },
+  newsImage: {
+    width: 110,
+    height: '100%',
+  },
+  newsContent: {
+    flex: 1,
+    padding: 12,
+    justifyContent: 'space-between',
+  },
+  newsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  newsTag: {
+    backgroundColor: 'rgba(11, 232, 129, 0.1)', // accent color with opacity
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  newsTagText: {
+    fontSize: 10,
+    color: theme.colors.accent,
+    fontWeight: 'bold',
+  },
+  newsTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  newsSummary: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    lineHeight: 16,
+  },
+  newsDate: {
+    fontSize: 10,
+    color: theme.colors.textTertiary,
+  },
+  
+  // Filter Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-start',
-    paddingTop: 120, // Adjust based on header + tabs height
+    justifyContent: 'flex-end', // Bottom sheet style
   },
   dropdownContainer: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     padding: theme.spacing.lg,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+  },
+  dropdownHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  dropdownMainTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.colors.text,
   },
   dropdownTitle: {
     fontSize: 14,
@@ -431,126 +448,36 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   dropdownItem: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#F5F5F5',
-    marginRight: 8,
-    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: theme.colors.surfaceVariant,
+    marginRight: 10,
+    marginBottom: 10,
   },
   activeDropdownItem: {
     backgroundColor: theme.colors.primary,
   },
   dropdownItemText: {
-    fontSize: 12,
+    fontSize: 13,
     color: theme.colors.textSecondary,
   },
   activeDropdownItemText: {
     color: theme.colors.white,
+    fontWeight: '600',
   },
   confirmButton: {
     backgroundColor: theme.colors.primary,
-    paddingVertical: 12,
-    borderRadius: 24,
+    paddingVertical: 14,
+    borderRadius: 28,
     alignItems: 'center',
-    marginTop: theme.spacing.md,
+    marginTop: theme.spacing.lg,
+    ...theme.shadows.primaryGlow,
   },
   confirmButtonText: {
     color: theme.colors.white,
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  tabItem: {
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: 6,
-    marginRight: theme.spacing.sm,
-    alignItems: 'center',
-  },
-  activeTabItem: {
-    // Add specific styles if needed
-  },
-  tabText: {
-    fontSize: 16,
-    color: theme.colors.textSecondary,
-  },
-  activeTabText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-  },
-  activeTabIndicator: {
-    width: 20,
-    height: 3,
-    backgroundColor: theme.colors.primary,
-    borderRadius: 2,
-    marginTop: 4,
-  },
-  scrollContent: {
-    paddingBottom: 100,
-  },
-  contentContainer: {
-    padding: theme.spacing.sm, // Reduced padding
-  },
-  masonryContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  column: {
-    width: COLUMN_WIDTH,
-  },
-  feedCard: {
-    backgroundColor: theme.colors.white,
-    borderRadius: 5,
-    marginBottom: theme.spacing.sm,
-    overflow: 'hidden',
-    ...theme.shadows.sm,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-  },
-  feedImage: {
-    width: '100%',
-    backgroundColor: theme.colors.border,
-  },
-  feedContent: {
-    padding: 8,
-  },
-  feedTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  feedFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  authorInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  avatarPlaceholder: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#ddd',
-    marginRight: 4,
-  },
-  authorName: {
-    fontSize: 10,
-    color: '#666',
-    flex: 1,
-  },
-  likeInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  likeCount: {
-    fontSize: 10,
-    color: '#666',
-    marginLeft: 2,
   },
 });
 

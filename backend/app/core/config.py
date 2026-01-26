@@ -37,7 +37,8 @@ class Settings(BaseSettings):
                         "app.models.restaurants",
                         "app.models.inventory",
                         "app.models.ai_logs",
-                        "app.models.notifications"
+                        "app.models.notifications",
+                        "app.models.search"
                     ],
                     "default_connection": "default",
                 },

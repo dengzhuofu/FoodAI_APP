@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, RefreshControl, ActivityIndicator, StatusBar, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../styles/theme';
@@ -8,12 +8,16 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../navigation/types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getRecommendations, getHealthNews, HealthNews, FeedItem } from '../../../api/explore';
+import { BlurView } from 'expo-blur';
+import FeedCard from '../../components/FeedCard';
+
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 const { width } = Dimensions.get('window');
-const COLUMN_WIDTH = (width - theme.spacing.md * 1.3) / 2; // Reduced side padding to theme.spacing.md
-
+// 计算列宽，考虑间距
+const SPACING = theme.spacing.sm;
+const COLUMN_WIDTH = (width - theme.spacing.screenHorizontal * 2 - SPACING) / 2;
 
 const RecommendScreen = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -52,23 +56,32 @@ const RecommendScreen = () => {
     <View style={styles.header}>
       <View style={styles.headerTop}>
         <View>
-          <Text style={theme.typography.caption}>👋 早上好</Text>
-          <Text style={theme.typography.h2}>今天想吃点什么？</Text>
+          <Text style={styles.greetingText}>早安，美食家 ☀️</Text>
+          <Text style={styles.titleText}>今天想探索什么美味？</Text>
         </View>
-        <TouchableOpacity style={styles.avatarContainer} onPress={() => navigation.navigate('Profile')}>
+        <TouchableOpacity 
+          style={styles.avatarContainer} 
+          onPress={() => navigation.navigate('Profile')}
+          activeOpacity={0.8}
+        >
           <Image 
             source={{ uri: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&auto=format&fit=crop&q=60' }} 
             style={styles.avatar} 
           />
+          <View style={styles.notificationDot} />
         </TouchableOpacity>
       </View>
       
       <TouchableOpacity 
         style={styles.searchBar}
-        onPress={() => navigation.navigate('Explore')}
+        onPress={() => navigation.navigate('Search')}
+        activeOpacity={0.9}
       >
-        <Ionicons name="search" size={20} color={theme.colors.textSecondary} />
-        <Text style={styles.searchText}>搜索食谱、食材或餐厅...</Text>
+        <Ionicons name="search-outline" size={20} color={theme.colors.textSecondary} />
+        <Text style={styles.searchText}>搜索菜谱、食材或餐厅...</Text>
+        <View style={styles.searchIconContainer}>
+          <Ionicons name="options-outline" size={16} color={theme.colors.white} />
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -80,120 +93,98 @@ const RecommendScreen = () => {
       activeOpacity={0.9}
     >
       <LinearGradient
-        colors={['#FF6B6B', '#FF8E53']}
+        colors={[theme.colors.primary, '#FF8E53']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.whatToEatGradient}
       >
-        <View>
+        <View style={styles.whatToEatContent}>
+          <View style={styles.whatToEatBadge}>
+            <Text style={styles.whatToEatBadgeText}>✨ 拯救选择困难</Text>
+          </View>
           <Text style={styles.whatToEatTitle}>今天吃什么？</Text>
-          <Text style={styles.whatToEatSubtitle}>转动轮盘，拯救选择困难症</Text>
+          <Text style={styles.whatToEatSubtitle}>转动幸运轮盘，发现今日灵感</Text>
         </View>
-        <View style={styles.rouletteIcon}>
-          <Text style={{ fontSize: 32 }}>🎡</Text>
+        <View style={styles.rouletteIconContainer}>
+          <Text style={{ fontSize: 40 }}>🎡</Text>
         </View>
+        
+        {/* 装饰性圆圈 */}
+        <View style={[styles.decorativeCircle, { top: -20, right: -20, width: 80, height: 80 }]} />
+        <View style={[styles.decorativeCircle, { bottom: -30, left: 40, width: 60, height: 60, opacity: 0.1 }]} />
       </LinearGradient>
     </TouchableOpacity>
   );
 
   const renderBanner = () => (
-    <View style={styles.bannerContainer}>
-      <LinearGradient
-        colors={['#FF9A9E', '#FECFEF']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.banner}
-      >
-        <View style={styles.bannerContent}>
-          <Text style={styles.bannerTitle}>
-            {banners.length > 0 ? banners[0].title : '健康饮食新趋势'}
-          </Text>
-          <Text style={styles.bannerSubtitle}>
-            {banners.length > 0 ? banners[0].summary : '探索更多营养搭配'}
-          </Text>
-          <TouchableOpacity style={styles.bannerButton} onPress={() => {
-            // Optional: navigate to details
-          }}>
-            <Text style={styles.bannerButtonText}>查看详情</Text>
-          </TouchableOpacity>
-        </View>
-        <Image 
-          source={{ uri: banners.length > 0 ? banners[0].image : 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=500' }} 
-          style={styles.bannerImage} 
-        />
-      </LinearGradient>
+    <View style={styles.sectionContainer}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>健康趋势</Text>
+        <TouchableOpacity>
+          <Text style={styles.seeMoreText}>查看全部</Text>
+        </TouchableOpacity>
+      </View>
+      
+      <View style={styles.bannerContainer}>
+        <LinearGradient
+          colors={['#FFF0F0', '#FFE4E4']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.banner}
+        >
+          <View style={styles.bannerContent}>
+            <View style={styles.bannerTag}>
+              <Text style={styles.bannerTagText}>本周热门</Text>
+            </View>
+            <Text style={styles.bannerTitle} numberOfLines={2}>
+              {banners.length > 0 ? banners[0].title : '轻食主义：如何搭配营养均衡的早餐'}
+            </Text>
+            <TouchableOpacity style={styles.bannerButton} onPress={() => {
+              // Placeholder for banner navigation
+              console.log('Navigate to banner details');
+            }}>
+              <Text style={styles.bannerButtonText}>阅读文章</Text>
+              <Ionicons name="arrow-forward" size={12} color={theme.colors.primary} />
+            </TouchableOpacity>
+          </View>
+          <Image 
+            source={{ uri: banners.length > 0 ? banners[0].image : 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=500' }} 
+            style={styles.bannerImage} 
+          />
+        </LinearGradient>
+      </View>
     </View>
   );
 
-  const renderFeed = () => {
-    // Merge recipes and restaurants for the feed, or display them separately
-    // For now, let's display recipes in a masonry layout
-    // We can simply alternate columns
+  const renderFeedItem = (item: FeedItem, index: number) => {
+    // 随机高度，模拟真实瀑布流效果 (在实际项目中应由后端返回宽高比)
+    // 这里简单根据 ID 或 index 决定一些变化
+    const isRestaurant = item.type === 'restaurant';
+    const randomHeight = 180 + (item.id % 5) * 30; // 180, 210, 240, 270, 300
     
     return (
-      <View style={styles.feedContainer}>
-        <Text style={[theme.typography.h3, styles.sectionTitle]}>为你精选</Text>
+      <FeedCard 
+        key={item.id}
+        item={item}
+        height={randomHeight}
+        onPress={() => navigation.navigate(isRestaurant ? 'RestaurantDetail' : 'RecipeDetail', { id: item.id.toString() })}
+      />
+    );
+  };
+
+  const renderFeed = () => {
+    return (
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>为你推荐</Text>
         {loading ? (
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 20 }} />
         ) : (
           <View style={styles.masonryContainer}>
             <View style={styles.column}>
-              {recipes.filter((_, i) => i % 2 === 0).map((item) => (
-                <TouchableOpacity 
-                  key={item.id} 
-                  style={styles.feedCard}
-                  onPress={() => navigation.navigate(item.type === 'restaurant' ? 'RestaurantDetail' : 'RecipeDetail', { id: item.id.toString() })}
-                  activeOpacity={0.9}
-                >
-                  <Image 
-                    source={{ uri: item.image }} 
-                    style={[styles.feedImage, { height: 200 }]} // Fixed height for now, or dynamic if available
-                    resizeMode="cover"
-                  />
-                  <View style={styles.feedContent}>
-                    <Text style={styles.feedTitle} numberOfLines={2}>{item.title}</Text>
-                    <View style={styles.feedFooter}>
-                      <View style={styles.authorInfo}>
-                        <Image source={{ uri: 'https://via.placeholder.com/150' }} style={styles.smallAvatar} />
-                        <Text style={styles.authorName} numberOfLines={1}>{item.author}</Text>
-                      </View>
-                      <View style={styles.likeInfo}>
-                        <Ionicons name="heart-outline" size={14} color={theme.colors.textSecondary} />
-                        <Text style={styles.likeCount}>{item.likes}</Text>
-                      </View>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
+              {recipes.filter((_, i) => i % 2 === 0).map((item, index) => renderFeedItem(item, index))}
             </View>
             <View style={styles.column}>
-              {recipes.filter((_, i) => i % 2 === 1).map((item) => (
-                <TouchableOpacity 
-                  key={item.id} 
-                  style={styles.feedCard}
-                  onPress={() => navigation.navigate(item.type === 'restaurant' ? 'RestaurantDetail' : 'RecipeDetail', { id: item.id.toString() })}
-                  activeOpacity={0.9}
-                >
-                  <Image 
-                    source={{ uri: item.image }} 
-                    style={[styles.feedImage, { height: 220 }]} 
-                    resizeMode="cover"
-                  />
-                  <View style={styles.feedContent}>
-                    <Text style={styles.feedTitle} numberOfLines={2}>{item.title}</Text>
-                    <View style={styles.feedFooter}>
-                      <View style={styles.authorInfo}>
-                        <Image source={{ uri: 'https://via.placeholder.com/150' }} style={styles.smallAvatar} />
-                        <Text style={styles.authorName} numberOfLines={1}>{item.author}</Text>
-                      </View>
-                      <View style={styles.likeInfo}>
-                        <Ionicons name="heart-outline" size={14} color={theme.colors.textSecondary} />
-                        <Text style={styles.likeCount}>{item.likes}</Text>
-                      </View>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
+              {recipes.filter((_, i) => i % 2 === 1).map((item, index) => renderFeedItem(item, index))}
             </View>
           </View>
         )}
@@ -202,20 +193,28 @@ const RecommendScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent} 
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
-        }
-      >
-        {renderHeader()}
-        {renderWhatToEat()}
-        {renderBanner()}
-        {renderFeed()}
-      </ScrollView>
-    </SafeAreaView>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent} 
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh} 
+              colors={[theme.colors.primary]} 
+              tintColor={theme.colors.primary}
+            />
+          }
+        >
+          {renderHeader()}
+          {renderWhatToEat()}
+          {renderBanner()}
+          {renderFeed()}
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 };
 
@@ -224,52 +223,89 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
+  safeArea: {
+    flex: 1,
+  },
   scrollContent: {
     paddingBottom: 100,
   },
+  
+  // Header Styles
   header: {
-    paddingHorizontal: theme.spacing.p10,
-    paddingTop: theme.spacing.md,
-    marginBottom: theme.spacing.md,
+    paddingHorizontal: theme.spacing.screenHorizontal,
+    paddingTop: theme.spacing.sm,
+    marginBottom: theme.spacing.lg,
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: theme.spacing.lg,
   },
+  greetingText: {
+    ...theme.typography.caption,
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginBottom: 4,
+  },
+  titleText: {
+    ...theme.typography.h1,
+    fontSize: 26,
+    color: theme.colors.text,
+  },
   avatarContainer: {
+    position: 'relative',
     ...theme.shadows.sm,
-    borderRadius: 20,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 2,
     borderColor: theme.colors.white,
   },
+  notificationDot: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: theme.colors.error,
+    borderWidth: 2,
+    borderColor: theme.colors.background,
+  },
+  
+  // Search Bar
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.colors.white,
-    paddingHorizontal: theme.spacing.p10,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: theme.borderRadius.xl,
     ...theme.shadows.sm,
   },
   searchText: {
     ...theme.typography.body,
-    color: theme.colors.textSecondary,
+    color: theme.colors.textTertiary,
     marginLeft: theme.spacing.sm,
-    fontSize: 14,
+    flex: 1,
   },
+  searchIconContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  // What to Eat
   whatToEatButtonContainer: {
-    marginHorizontal: theme.spacing.p10,
-    marginBottom: theme.spacing.lg,
-    ...theme.shadows.md,
+    marginHorizontal: theme.spacing.screenHorizontal,
+    marginBottom: theme.spacing.xl,
+    ...theme.shadows.primaryGlow,
     borderRadius: theme.borderRadius.lg,
   },
   whatToEatGradient: {
@@ -278,35 +314,86 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: theme.spacing.lg,
     borderRadius: theme.borderRadius.lg,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  whatToEatContent: {
+    flex: 1,
+    zIndex: 1,
+  },
+  whatToEatBadge: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: theme.borderRadius.sm,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  whatToEatBadgeText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   whatToEatTitle: {
     ...theme.typography.h2,
-    color: theme.colors.white,
+    color: '#FFF',
     marginBottom: 4,
+    fontSize: 22,
   },
   whatToEatSubtitle: {
-    ...theme.typography.caption,
+    ...theme.typography.bodySmall,
     color: 'rgba(255,255,255,0.9)',
   },
-  rouletteIcon: {
-    width: 48,
-    height: 48,
+  rouletteIconContainer: {
+    width: 56,
+    height: 56,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 28,
+    marginLeft: 16,
+    zIndex: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
+  decorativeCircle: {
+    position: 'absolute',
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  
+  // Section Shared
+  sectionContainer: {
+    paddingHorizontal: theme.spacing.screenHorizontal,
+    marginBottom: theme.spacing.xl,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  sectionTitle: {
+    ...theme.typography.h2,
+    fontSize: 20,
+  },
+  seeMoreText: {
+    ...theme.typography.caption,
+    color: theme.colors.primary,
+    fontWeight: '600',
+  },
+  
+  // Banner
   bannerContainer: {
-    paddingHorizontal: theme.spacing.p10,
-    marginBottom: theme.spacing.lg,
+    ...theme.shadows.md,
+    borderRadius: theme.borderRadius.lg,
   },
   banner: {
-    height: 140,
-    backgroundColor: '#FFEAA7',
+    height: 150,
     borderRadius: theme.borderRadius.lg,
     flexDirection: 'row',
     overflow: 'hidden',
-    ...theme.shadows.sm,
+    backgroundColor: '#FFF0F0',
   },
   bannerContent: {
     flex: 1,
@@ -316,54 +403,41 @@ const styles = StyleSheet.create({
   },
   bannerTag: {
     backgroundColor: theme.colors.primary,
-    paddingHorizontal: theme.spacing.p10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: theme.borderRadius.sm,
+    borderRadius: 4,
     alignSelf: 'flex-start',
-    marginBottom: theme.spacing.sm,
+    marginBottom: 8,
   },
   bannerTagText: {
-    color: theme.colors.white,
+    color: '#FFF',
     fontSize: 10,
     fontWeight: 'bold',
   },
   bannerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-    marginBottom: 4,
-  },
-  bannerSubtitle: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
+    ...theme.typography.h3,
+    fontSize: 16,
+    marginBottom: 12,
+    lineHeight: 22,
   },
   bannerButton: {
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: theme.spacing.p10,
-    paddingVertical: 6,
-    borderRadius: theme.borderRadius.lg,
-    alignSelf: 'flex-start',
-    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   bannerButtonText: {
-    color: theme.colors.white,
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    color: theme.colors.primary,
+    marginRight: 4,
   },
   bannerImage: {
-    width: '50%',
+    width: '45%',
     height: '100%',
-    position: 'absolute',
-    right: 0,
-    top: 0,
+    borderTopLeftRadius: 40,
+    borderBottomLeftRadius: 40,
   },
-  feedContainer: {
-    paddingHorizontal: theme.spacing.sm,
-  },
-  sectionTitle: {
-    marginBottom: theme.spacing.md,
-    fontSize: 18,
-  },
+  
+  // Feed
   masonryContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -371,60 +445,6 @@ const styles = StyleSheet.create({
   column: {
     width: COLUMN_WIDTH,
   },
-  feedCard: {
-    backgroundColor: theme.colors.white,
-    borderRadius: 5,
-    marginBottom: theme.spacing.sm,
-    overflow: 'hidden',
-    ...theme.shadows.sm,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-  },
-  feedImage: {
-    width: '100%',
-    backgroundColor: theme.colors.border,
-  },
-  feedContent: {
-    padding: 8,
-  },
-  feedTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  feedFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  authorInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  smallAvatar: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    marginRight: 4,
-  },
-  authorName: {
-    fontSize: 10,
-    color: '#666',
-    flex: 1,
-  },
-  likeInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  likeCount: {
-    fontSize: 10,
-    color: '#666',
-    marginLeft: 2,
-  },
 });
-
 
 export default RecommendScreen;

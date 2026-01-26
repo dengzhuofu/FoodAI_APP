@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../styles/theme';
 import { Comment } from '../../api/content';
 import { BASE_URL } from '../../api/client';
+import { formatDate } from '../../utils/date';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -59,7 +60,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ comments, targetId, t
            )}
            
            <View style={styles.footerRow}>
-              <Text style={styles.dateText}>{new Date(item.created_at).toLocaleDateString()}</Text>
+              <Text style={styles.dateText}>{formatDate(item.created_at)}</Text>
               <TouchableOpacity onPress={() => onReply(item)}>
                  <Text style={styles.actionText}>回复</Text>
               </TouchableOpacity>
@@ -108,7 +109,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ comments, targetId, t
 
           <View style={styles.footerRow}>
             <Text style={styles.dateText}>
-              {new Date(item.created_at).toLocaleDateString()}
+              {formatDate(item.created_at)}
             </Text>
             <TouchableOpacity onPress={() => onReply(item)}>
               <Text style={styles.actionText}>
