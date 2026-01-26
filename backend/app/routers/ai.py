@@ -9,7 +9,8 @@ from app.schemas.ai import (
     ImageToRecipeRequest, 
     ImageToCalorieRequest,
     FridgeToRecipeRequest,
-    GenerateRecipeImageRequest
+    GenerateRecipeImageRequest,
+    RecognizeFridgeRequest
 )
 
 router = APIRouter()
