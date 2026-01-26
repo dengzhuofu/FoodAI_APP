@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { theme } from '../../styles/theme';
 import { register } from '../../../api/auth';
 import { useNavigation } from '@react-navigation/native';
@@ -14,6 +15,7 @@ type RegisterScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Reg
 
 const RegisterScreen = () => {
   const navigation = useNavigation<RegisterScreenNavigationProp>();
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [nickname, setNickname] = useState('');
@@ -22,19 +24,19 @@ const RegisterScreen = () => {
 
   const handleRegister = async () => {
     if (!username || !password || !nickname) {
-      Alert.alert('提示', '请填写完整信息');
+      Alert.alert(t('common.tip'), t('auth.alertInputAll'));
       return;
     }
 
     setLoading(true);
     try {
       await register(username, password, nickname);
-      Alert.alert('成功', '注册成功，请登录', [
-        { text: '去登录', onPress: () => navigation.goBack() }
+      Alert.alert(t('common.success'), t('auth.registerSuccess'), [
+        { text: t('auth.goLogin'), onPress: () => navigation.goBack() }
       ]);
     } catch (error: any) {
-      const msg = error.response?.data?.detail || '注册失败，请稍后重试';
-      Alert.alert('错误', msg);
+      const msg = error.response?.data?.detail || t('auth.registerFail');
+      Alert.alert(t('common.error'), msg);
     } finally {
       setLoading(false);
     }
@@ -59,13 +61,13 @@ const RegisterScreen = () => {
             </View>
 
             <View style={styles.mainSection}>
-              <Text style={styles.title}>创建你的账号</Text>
+              <Text style={styles.title}>{t('auth.createAccount')}</Text>
 
               <View style={styles.form}>
                 <View style={styles.inputWrapper}>
                   <TextInput
                     style={styles.input}
-                    placeholder="用户名"
+                    placeholder={t('auth.usernamePlaceholder')}
                     placeholderTextColor={theme.colors.textTertiary}
                     value={username}
                     onChangeText={setUsername}
@@ -76,7 +78,7 @@ const RegisterScreen = () => {
                 <View style={styles.inputWrapper}>
                   <TextInput
                     style={styles.input}
-                    placeholder="昵称"
+                    placeholder={t('auth.nicknamePlaceholder')}
                     placeholderTextColor={theme.colors.textTertiary}
                     value={nickname}
                     onChangeText={setNickname}
@@ -86,7 +88,7 @@ const RegisterScreen = () => {
                 <View style={styles.inputWrapper}>
                   <TextInput
                     style={styles.input}
-                    placeholder="密码"
+                    placeholder={t('auth.passwordPlaceholder')}
                     placeholderTextColor={theme.colors.textTertiary}
                     value={password}
                     onChangeText={setPassword}
@@ -113,14 +115,14 @@ const RegisterScreen = () => {
                 {loading ? (
                   <ActivityIndicator color="white" />
                 ) : (
-                  <Text style={styles.registerButtonText}>注册</Text>
+                  <Text style={styles.registerButtonText}>{t('auth.register')}</Text>
                 )}
               </TouchableOpacity>
 
               <View style={styles.footer}>
-                <Text style={styles.footerText}>已有账号？</Text>
+                <Text style={styles.footerText}>{t('auth.hasAccount')}</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                  <Text style={styles.linkText}>登录</Text>
+                  <Text style={styles.linkText}>{t('auth.loginLink')}</Text>
                 </TouchableOpacity>
               </View>
             </View>

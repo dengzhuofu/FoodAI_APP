@@ -6,6 +6,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
+import { useTranslation } from 'react-i18next';
 import { RootStackParamList } from '../navigation/types';
 import { theme } from '../styles/theme';
 import { getMe } from '../../api/auth';
@@ -18,6 +19,7 @@ type ProfilePageNavigationProp = StackNavigationProp<RootStackParamList>;
 
 const ProfilePage = () => {
   const navigation = useNavigation<ProfilePageNavigationProp>();
+  const { t } = useTranslation();
   const { signOut } = useAuth();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -64,7 +66,7 @@ const ProfilePage = () => {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
       if (permissionResult.granted === false) {
-        Alert.alert("需要权限", "需要访问相册权限来更换头像");
+        Alert.alert(t('common.needPermission'), t('profile.permissionAvatar'));
         return;
       }
 
@@ -86,10 +88,10 @@ const ProfilePage = () => {
           
           // 3. Update local state
           setUser(updatedUser);
-          Alert.alert("成功", "头像更新成功");
+          Alert.alert(t('common.success'), t('profile.avatarSuccess'));
         } catch (error) {
           console.error("Failed to update avatar", error);
-          Alert.alert("错误", "头像上传失败，请稍后重试");
+          Alert.alert(t('common.error'), t('profile.avatarFail'));
         } finally {
           setUploading(false);
         }
@@ -102,7 +104,7 @@ const ProfilePage = () => {
 
   const handleSaveProfile = async () => {
     if (!editNickname.trim()) {
-      Alert.alert("提示", "昵称不能为空");
+      Alert.alert(t('common.tip'), t('profile.nicknameEmpty'));
       return;
     }
 
@@ -114,20 +116,20 @@ const ProfilePage = () => {
       });
       setUser(updatedUser);
       setEditModalVisible(false);
-      Alert.alert("成功", "个人资料已更新");
+      Alert.alert(t('common.success'), t('profile.profileUpdated'));
     } catch (error) {
       console.error("Failed to update profile", error);
-      Alert.alert("错误", "更新失败，请稍后重试");
+      Alert.alert(t('common.error'), t('profile.updateFail'));
     } finally {
       setSavingProfile(false);
     }
   };
 
   const handleLogout = async () => {
-    Alert.alert('退出登录', '确定要退出登录吗？', [
-      { text: '取消', style: 'cancel' },
+    Alert.alert(t('auth.logout'), t('auth.logoutConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
       { 
-        text: '确定', 
+        text: t('common.confirm'), 
         style: 'destructive',
         onPress: async () => {
           await signOut();
@@ -138,27 +140,27 @@ const ProfilePage = () => {
   };
 
   const statsList = [
-    { label: '发布', value: stats.recipes_count.toString() },
-    { label: '粉丝', value: stats.followers_count.toString() },
-    { label: '关注', value: stats.following_count.toString() },
+    { label: t('profile.statsPost'), value: stats.recipes_count.toString() },
+    { label: t('profile.statsFollowers'), value: stats.followers_count.toString() },
+    { label: t('profile.statsFollowing'), value: stats.following_count.toString() },
   ];
 
   const menuGroups = [
     {
-      title: '我的内容',
+      title: t('profile.groupMyContent'),
       items: [
-        { name: '我的收藏', route: 'Collections', icon: 'heart', color: '#FF6B6B' },
-        { name: '购物清单', route: 'ShoppingList', icon: 'cart', color: '#FFA502' },
-        { name: '我的评价', route: 'MyComments', icon: 'chatbox-ellipses', color: '#20C997' },
-        { name: '风味画像', route: 'FlavorProfile', icon: 'pie-chart', color: '#3498DB' },
+        { name: t('profile.myCollections'), route: 'Collections', icon: 'heart', color: '#FF6B6B' },
+        { name: t('profile.shoppingList'), route: 'ShoppingList', icon: 'cart', color: '#FFA502' },
+        { name: t('profile.myComments'), route: 'MyComments', icon: 'chatbox-ellipses', color: '#20C997' },
+        { name: t('profile.flavorProfile'), route: 'FlavorProfile', icon: 'pie-chart', color: '#3498DB' },
       ]
     },
     {
-      title: '更多服务',
+      title: t('profile.groupMoreServices'),
       items: [
-        { name: 'PRO 会员', route: 'Settings', icon: 'diamond', color: '#9B59B6', badge: '升级' },
-        { name: '帮助中心', route: 'Settings', icon: 'help-circle', color: '#2ECC71' },
-        { name: '设置', route: 'Settings', icon: 'settings', color: '#95A5A6' },
+        { name: t('profile.proMember'), route: 'Settings', icon: 'diamond', color: '#9B59B6', badge: t('profile.badgeUpgrade') },
+        { name: t('profile.helpCenter'), route: 'Settings', icon: 'help-circle', color: '#2ECC71' },
+        { name: t('profile.settings'), route: 'Settings', icon: 'settings', color: '#95A5A6' },
       ]
     },
   ];
@@ -199,7 +201,7 @@ const ProfilePage = () => {
             </View>
             
             <View style={styles.userInfoContainer}>
-              <Text style={styles.userName}>{user?.nickname || '未登录'}</Text>
+              <Text style={styles.userName}>{user?.nickname || t('auth.notLoggedIn')}</Text>
               <TouchableOpacity 
                 style={styles.editProfileIcon}
                 onPress={() => setEditModalVisible(true)}
@@ -208,7 +210,7 @@ const ProfilePage = () => {
               </TouchableOpacity>
             </View>
             
-            <Text style={styles.userBio}>{user?.bio || '热爱美食，热爱生活 🥑'}</Text>
+            <Text style={styles.userBio}>{user?.bio || t('profile.defaultBio')}</Text>
             
             <View style={styles.tagsRow}>
                {profile?.preferences?.slice(0, 3).map((pref: string, index: number) => (
@@ -243,12 +245,12 @@ const ProfilePage = () => {
                   <Ionicons name="sparkles" size={24} color="#FFD700" />
                 </View>
                 <View style={styles.proTexts}>
-                  <Text style={styles.proTitle}>解锁 PRO 会员</Text>
-                  <Text style={styles.proSubtitle}>无限次 AI 生成，专属营养分析</Text>
+                  <Text style={styles.proTitle}>{t('profile.unlockPro')}</Text>
+                  <Text style={styles.proSubtitle}>{t('profile.proSubtitle')}</Text>
                 </View>
               </View>
               <TouchableOpacity style={styles.proButton}>
-                <Text style={styles.proButtonText}>立即升级</Text>
+                <Text style={styles.proButtonText}>{t('profile.upgradeNow')}</Text>
                 <Ionicons name="chevron-forward" size={12} color="#333" />
               </TouchableOpacity>
             </LinearGradient>
@@ -291,7 +293,7 @@ const ProfilePage = () => {
           ))}
           
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutText}>退出登录</Text>
+            <Text style={styles.logoutText}>{t('auth.logout')}</Text>
           </TouchableOpacity>
           
           <View style={styles.versionInfo}>
@@ -313,30 +315,30 @@ const ProfilePage = () => {
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>编辑个人资料</Text>
+              <Text style={styles.modalTitle}>{t('profile.editProfileTitle')}</Text>
               <TouchableOpacity onPress={() => setEditModalVisible(false)}>
                 <Ionicons name="close" size={24} color={theme.colors.text} />
               </TouchableOpacity>
             </View>
             
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>昵称</Text>
+              <Text style={styles.inputLabel}>{t('profile.labelNickname')}</Text>
               <TextInput
                 style={styles.input}
                 value={editNickname}
                 onChangeText={setEditNickname}
-                placeholder="请输入昵称"
+                placeholder={t('profile.placeholderNickname')}
                 maxLength={20}
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>简介</Text>
+              <Text style={styles.inputLabel}>{t('profile.labelBio')}</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={editBio}
                 onChangeText={setEditBio}
-                placeholder="介绍一下自己吧..."
+                placeholder={t('profile.placeholderBio')}
                 multiline
                 numberOfLines={3}
                 maxLength={100}
@@ -352,7 +354,7 @@ const ProfilePage = () => {
               {savingProfile ? (
                 <ActivityIndicator color="white" />
               ) : (
-                <Text style={styles.saveButtonText}>保存修改</Text>
+                <Text style={styles.saveButtonText}>{t('common.saveChanges')}</Text>
               )}
             </TouchableOpacity>
           </View>

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { theme } from '../../styles/theme';
 import { useAuth } from '../../../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
@@ -16,6 +17,7 @@ const { width } = Dimensions.get('window');
 
 const LoginScreen = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
+  const { t } = useTranslation();
   const { signIn } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -24,7 +26,7 @@ const LoginScreen = () => {
 
   const handleLogin = async () => {
     if (!username || !password) {
-      Alert.alert('提示', '请输入用户名和密码');
+      Alert.alert(t('common.tip'), t('auth.alertInputUserPass'));
       return;
     }
 
@@ -32,8 +34,8 @@ const LoginScreen = () => {
     try {
       await signIn(username, password);
     } catch (error: any) {
-      const msg = error.response?.data?.detail || '登录失败，请检查网络或账号密码';
-      Alert.alert('错误', msg);
+      const msg = error.response?.data?.detail || t('auth.loginFail');
+      Alert.alert(t('common.error'), msg);
     } finally {
       setLoading(false);
     }
@@ -58,13 +60,13 @@ const LoginScreen = () => {
             </View>
 
             <View style={styles.mainSection}>
-              <Text style={styles.title}>登录 FoodAI</Text>
+              <Text style={styles.title}>{t('auth.loginTitle')}</Text>
               
               <View style={styles.form}>
                 <View style={styles.inputWrapper}>
                   <TextInput
                     style={styles.input}
-                    placeholder="用户名"
+                    placeholder={t('auth.usernamePlaceholder')}
                     placeholderTextColor={theme.colors.textTertiary}
                     value={username}
                     onChangeText={setUsername}
@@ -75,7 +77,7 @@ const LoginScreen = () => {
                 <View style={styles.inputWrapper}>
                   <TextInput
                     style={styles.input}
-                    placeholder="密码"
+                    placeholder={t('auth.passwordPlaceholder')}
                     placeholderTextColor={theme.colors.textTertiary}
                     value={password}
                     onChangeText={setPassword}
@@ -99,20 +101,20 @@ const LoginScreen = () => {
                   {loading ? (
                     <ActivityIndicator color="white" />
                   ) : (
-                    <Text style={styles.loginButtonText}>下一步</Text>
+                    <Text style={styles.loginButtonText}>{t('auth.nextStep')}</Text>
                   )}
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.forgotPassword}>
-                  <Text style={styles.forgotPasswordText}>忘记密码？</Text>
+                  <Text style={styles.forgotPasswordText}>{t('auth.forgotPassword')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>还没有账号？</Text>
+              <Text style={styles.footerText}>{t('auth.noAccount')}</Text>
               <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                <Text style={styles.linkText}>注册</Text>
+                <Text style={styles.linkText}>{t('auth.registerLink')}</Text>
               </TouchableOpacity>
             </View>
           </View>
