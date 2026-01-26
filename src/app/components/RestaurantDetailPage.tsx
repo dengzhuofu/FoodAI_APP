@@ -131,40 +131,43 @@ const RestaurantDetailPage = () => {
     <View style={styles.imageContainer}>
       <Image source={{ uri: restaurant.images[0] || 'https://via.placeholder.com/400x300' }} style={styles.heroImage} resizeMode="cover" />
       <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.7)']}
+        colors={['transparent', 'rgba(0,0,0,0.8)']}
         style={styles.gradient}
       />
-      <TouchableOpacity 
-        style={[styles.backButtonAbsolute, { top: insets.top + 10 }]} 
-        onPress={() => navigation.goBack()}
-      >
-        <View style={styles.blurButton}>
-          <Ionicons name="arrow-back" size={24} color="#FFF" />
-        </View>
-      </TouchableOpacity>
-      <TouchableOpacity 
-        style={[styles.collectButtonAbsolute, { top: insets.top + 10 }]} 
-        onPress={handleCollection}
-      >
-        <View style={styles.blurButton}>
-          <Ionicons name={isCollected ? "heart" : "heart-outline"} size={24} color={isCollected ? "#FF6B6B" : "#FFF"} />
-        </View>
-      </TouchableOpacity>
+      
+      {/* Top Bar */}
+      <View style={[styles.topBar, { top: insets.top }]}>
+        <TouchableOpacity 
+          style={styles.iconButton} 
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={20} color="#FFF" />
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.iconButton} 
+          onPress={handleCollection}
+        >
+          <Ionicons name={isCollected ? "heart" : "heart-outline"} size={20} color={isCollected ? "#FF6B6B" : "#FFF"} />
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.headerContent}>
         <View style={styles.tagContainer}>
           <View style={styles.ratingTag}>
-            <Ionicons name="star" size={12} color="#FFF" />
-            <Text style={styles.tagText}>{restaurant.rating || '-'}</Text>
+            <Ionicons name="star" size={12} color="#1A1A1A" />
+            <Text style={styles.ratingText}>{restaurant.rating || '-'}</Text>
+          </View>
+          <View style={styles.statusTag}>
+            <Text style={styles.statusText}>OPEN NOW</Text>
           </View>
         </View>
+        
         <Text style={styles.title}>{restaurant.title}</Text>
+        
         <View style={styles.authorRow}>
           <Image source={{ uri: restaurant.author.avatar || 'https://via.placeholder.com/150' }} style={styles.avatar} />
           <Text style={styles.authorName}>{restaurant.author.username}</Text>
-          <View style={styles.likesContainer}>
-            <Ionicons name="heart" size={16} color="#FF6B6B" />
-            <Text style={styles.likesText}>{restaurant.likes_count}</Text>
-          </View>
         </View>
       </View>
     </View>
@@ -172,22 +175,34 @@ const RestaurantDetailPage = () => {
 
   const renderInfo = () => (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>餐厅信息</Text>
+      <Text style={styles.sectionTitle}>INFORMATION</Text>
       <View style={styles.infoCard}>
         <View style={styles.infoRow}>
-          <Ionicons name="location-outline" size={20} color={theme.colors.primary} />
-          <Text style={styles.infoText}>{restaurant.address || '暂无地址信息'}</Text>
+          <View style={styles.iconBox}>
+            <Ionicons name="location" size={18} color="#1A1A1A" />
+          </View>
+          <Text style={styles.infoText}>{restaurant.address || 'No address provided'}</Text>
         </View>
+        
         <View style={styles.divider} />
+        
         <View style={styles.infoRow}>
-          <Ionicons name="time-outline" size={20} color={theme.colors.primary} />
-          <Text style={styles.infoText}>{restaurant.hours || '暂无营业时间'}</Text>
+          <View style={styles.iconBox}>
+            <Ionicons name="time" size={18} color="#1A1A1A" />
+          </View>
+          <Text style={styles.infoText}>{restaurant.hours || 'No hours provided'}</Text>
         </View>
+        
         <View style={styles.divider} />
-        <TouchableOpacity style={styles.infoRow} onPress={handleCall}>
-          <Ionicons name="call-outline" size={20} color={theme.colors.primary} />
-          <Text style={styles.infoText}>{restaurant.phone || '暂无电话'}</Text>
-          <Ionicons name="chevron-forward" size={16} color={theme.colors.textSecondary} style={{ marginLeft: 'auto' }} />
+        
+        <TouchableOpacity style={styles.infoRow} onPress={handleCall} activeOpacity={0.7}>
+          <View style={styles.iconBox}>
+            <Ionicons name="call" size={18} color="#1A1A1A" />
+          </View>
+          <Text style={styles.infoText}>{restaurant.phone || 'No phone number'}</Text>
+          <View style={styles.actionIcon}>
+             <Ionicons name="arrow-forward" size={14} color="#FFF" />
+          </View>
         </TouchableOpacity>
       </View>
     </View>
@@ -240,26 +255,18 @@ const RestaurantDetailPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#F9F9F9',
   },
   scrollContent: {
-    paddingBottom: 140,
+    paddingBottom: 120,
   },
   centerContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    height: 50,
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.lg,
-  },
-  backButton: {
-    padding: 4,
-  },
   imageContainer: {
-    height: 300,
+    height: 400,
     width: '100%',
     position: 'relative',
   },
@@ -272,179 +279,169 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: 150,
+    height: 240,
   },
-  backButtonAbsolute: {
+  topBar: {
     position: 'absolute',
-    top: 50,
-    left: 20,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
     zIndex: 10,
+    marginTop: 10,
   },
-  collectButtonAbsolute: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    zIndex: 10,
-  },
-  blurButton: {
+  iconButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: 'rgba(255,255,255,0.3)',
+    backdropFilter: 'blur(10px)',
   },
   headerContent: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: theme.spacing.lg,
+    padding: 24,
+    paddingBottom: 40,
   },
   tagContainer: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: 16,
+    gap: 8,
   },
   ratingTag: {
-    backgroundColor: '#FFD700',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginRight: 8,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 100,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  tagText: {
-    color: '#FFF',
+  ratingText: {
+    color: '#1A1A1A',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '800',
+  },
+  statusTag: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 100,
+  },
+  statusText: {
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 36,
+    fontWeight: '900',
     color: '#FFF',
-    marginBottom: 12,
+    marginBottom: 20,
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    textShadowOffset: { width: 0, height: 4 },
+    textShadowRadius: 12,
+    lineHeight: 42,
+    letterSpacing: -1,
   },
   authorRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   avatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
     borderColor: '#FFF',
-    marginRight: 8,
+    marginRight: 12,
   },
   authorName: {
     color: '#FFF',
-    fontSize: 14,
-    fontWeight: '500',
-    flex: 1,
-  },
-  likesContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  likesText: {
-    color: '#FFF',
-    fontSize: 12,
-    marginLeft: 4,
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   content: {
-    padding: theme.spacing.lg,
-    marginTop: -20,
-    backgroundColor: theme.colors.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    padding: 24,
+    marginTop: -32,
+    backgroundColor: '#F9F9F9',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
   },
   description: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
-    marginBottom: 24,
-    lineHeight: 22,
+    fontSize: 16,
+    color: '#555',
+    marginBottom: 36,
+    lineHeight: 26,
+    fontWeight: '400',
+    letterSpacing: 0.2,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 40,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-    marginBottom: 16,
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#1A1A1A',
+    marginBottom: 20,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
   },
   infoCard: {
     backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    ...theme.shadows.sm,
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.03,
+    shadowRadius: 16,
+    elevation: 2,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    gap: 12,
+    paddingVertical: 16,
+    gap: 16,
+  },
+  iconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   infoText: {
     flex: 1,
-    fontSize: 14,
-    color: theme.colors.text,
-    lineHeight: 20,
+    fontSize: 16,
+    color: '#1A1A1A',
+    fontWeight: '500',
+    lineHeight: 24,
+  },
+  actionIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#1A1A1A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    transform: [{ rotate: '-45deg' }],
   },
   divider: {
     height: 1,
     backgroundColor: '#F0F0F0',
-  },
-  commentItem: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    paddingBottom: 16,
-  },
-  commentAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
-  },
-  commentContent: {
-    flex: 1,
-  },
-  commentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  commentUser: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-  },
-  commentDate: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    marginBottom: 6,
-  },
-  commentText: {
-    fontSize: 14,
-    color: '#444',
-    lineHeight: 20,
+    marginLeft: 56,
   },
 });
 

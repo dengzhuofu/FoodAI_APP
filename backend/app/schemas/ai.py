@@ -16,3 +16,7 @@ class ImageToCalorieRequest(BaseModel):
 
 class FridgeToRecipeRequest(BaseModel):
     items: List[str]
+
+class GenerateRecipeImageRequest(BaseModel):
+    recipe_data: dict
+    image_type: str = "final"  # final or steps

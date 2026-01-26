@@ -19,7 +19,7 @@ const PublishPage = () => {
 
   return (
     <View style={styles.container}>
-      <BlurView intensity={90} tint="light" style={StyleSheet.absoluteFill} />
+      <BlurView intensity={100} tint="light" style={StyleSheet.absoluteFill} />
       
       <SafeAreaView style={styles.content}>
         <View style={styles.header}>
@@ -27,50 +27,72 @@ const PublishPage = () => {
             style={styles.closeButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="close" size={32} color={theme.colors.text} />
+            <Ionicons name="close" size={24} color="#1A1A1A" />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.optionsContainer}>
+        <View style={styles.mainContent}>
           <View style={styles.titleContainer}>
-            <Text style={theme.typography.h1}>发布内容</Text>
-            <Text style={styles.subtitle}>记录美食，分享生活</Text>
+            <Text style={styles.pageTitle}>CREATE</Text>
+            <Text style={styles.pageSubtitle}>Share your culinary journey</Text>
           </View>
 
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.optionButton} onPress={handlePostRecipe}>
-              <View style={[styles.iconContainer, { backgroundColor: '#FF6B6B' }]}>
-                <Ionicons name="restaurant" size={32} color="white" />
+          <View style={styles.cardsContainer}>
+            <TouchableOpacity 
+              style={styles.optionCard} 
+              onPress={handlePostRecipe}
+              activeOpacity={0.9}
+            >
+              <View style={[styles.cardIconBox, { backgroundColor: '#FFF5F5' }]}>
+                <Ionicons name="restaurant" size={32} color="#FF6B6B" />
               </View>
-              <Text style={styles.optionTitle}>发菜谱</Text>
-              <Text style={styles.optionDesc}>分享烹饪心得</Text>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardTitle}>New Recipe</Text>
+                <Text style={styles.cardDesc}>Share your secret ingredients and cooking steps</Text>
+              </View>
+              <View style={styles.arrowIcon}>
+                <Ionicons name="arrow-forward" size={20} color="#1A1A1A" />
+              </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.optionButton} onPress={handlePostStore}>
-              <View style={[styles.iconContainer, { backgroundColor: '#FFA502' }]}>
-                <Ionicons name="location" size={32} color="white" />
+            <TouchableOpacity 
+              style={styles.optionCard} 
+              onPress={handlePostStore}
+              activeOpacity={0.9}
+            >
+              <View style={[styles.cardIconBox, { backgroundColor: '#FFF8E1' }]}>
+                <Ionicons name="location" size={32} color="#FFA502" />
               </View>
-              <Text style={styles.optionTitle}>发探店</Text>
-              <Text style={styles.optionDesc}>记录美味足迹</Text>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardTitle}>New Review</Text>
+                <Text style={styles.cardDesc}>Recommend a restaurant or a hidden gem</Text>
+              </View>
+              <View style={styles.arrowIcon}>
+                <Ionicons name="arrow-forward" size={20} color="#1A1A1A" />
+              </View>
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.draftsContainer}>
-          <View style={styles.draftHeader}>
-            <Text style={styles.draftTitle}>草稿箱</Text>
-            <Ionicons name="chevron-forward" size={16} color={theme.colors.textSecondary} />
-          </View>
-          <TouchableOpacity style={styles.draftItem}>
-            <Image 
-              source={{ uri: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100' }} 
-              style={styles.draftImage} 
-            />
-            <View style={styles.draftInfo}>
-              <Text style={styles.draftName}>未命名的菜谱草稿</Text>
-              <Text style={styles.draftTime}>上次编辑：2小时前</Text>
+        <View style={styles.footer}>
+          <View style={styles.draftSection}>
+            <View style={styles.draftHeader}>
+              <Text style={styles.draftTitle}>DRAFTS</Text>
+              <TouchableOpacity>
+                <Text style={styles.seeAllText}>See All</Text>
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+            <TouchableOpacity style={styles.draftItem}>
+              <View style={styles.draftIcon}>
+                <Ionicons name="document-text-outline" size={20} color="#666" />
+              </View>
+              <View style={styles.draftInfo}>
+                <Text style={styles.draftName}>Untitled Recipe</Text>
+                <Text style={styles.draftTime}>Edited 2 hours ago</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color="#CCC" />
+            </TouchableOpacity>
+          </View>
         </View>
       </SafeAreaView>
     </View>
@@ -80,103 +102,150 @@ const PublishPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: '#FFFFFF',
   },
   content: {
     flex: 1,
-    padding: theme.spacing.lg,
+    justifyContent: 'space-between',
   },
   header: {
     alignItems: 'flex-end',
-    zIndex: 10,
+    paddingHorizontal: 20,
+    paddingTop: 10,
   },
   closeButton: {
-    padding: theme.spacing.sm,
-    backgroundColor: 'rgba(255,255,255,0.5)',
-    borderRadius: 20,
-  },
-  optionsContainer: {
-    flex: 1,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: -100,
+  },
+  mainContent: {
+    paddingHorizontal: 24,
+    justifyContent: 'center',
+    flex: 1,
+    marginTop: -40,
   },
   titleContainer: {
-    alignItems: 'center',
-    marginBottom: theme.spacing.xxl,
+    marginBottom: 40,
   },
-  subtitle: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.sm,
+  pageTitle: {
+    fontSize: 48,
+    fontWeight: '900',
+    color: '#1A1A1A',
+    letterSpacing: -1,
+    lineHeight: 48,
+    marginBottom: 8,
   },
-  buttonRow: {
+  pageSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
+    letterSpacing: 0.5,
+  },
+  cardsContainer: {
+    gap: 20,
+  },
+  optionCard: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  optionButton: {
     alignItems: 'center',
-    marginHorizontal: theme.spacing.xl,
+    backgroundColor: '#FFFFFF',
+    padding: 24,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 16,
+    elevation: 4,
   },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  cardIconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: theme.spacing.md,
-    ...theme.shadows.md,
+    marginRight: 20,
   },
-  optionTitle: {
+  cardContent: {
+    flex: 1,
+    marginRight: 10,
+  },
+  cardTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.colors.text,
+    fontWeight: '800',
+    color: '#1A1A1A',
     marginBottom: 4,
   },
-  optionDesc: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
+  cardDesc: {
+    fontSize: 13,
+    color: '#999',
+    lineHeight: 18,
   },
-  draftsContainer: {
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
-    ...theme.shadows.sm,
+  arrowIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F9F9F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  footer: {
+    paddingHorizontal: 24,
+    paddingBottom: 20,
+  },
+  draftSection: {
+    backgroundColor: '#F9F9F9',
+    borderRadius: 24,
+    padding: 20,
   },
   draftHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.md,
+    marginBottom: 16,
   },
   draftTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: theme.colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#999',
+    letterSpacing: 1,
+  },
+  seeAllText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1A1A1A',
   },
   draftItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#FFF',
+    padding: 12,
+    borderRadius: 16,
   },
-  draftImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    backgroundColor: theme.colors.background,
-    marginRight: theme.spacing.md,
+  draftIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   draftInfo: {
     flex: 1,
   },
   draftName: {
     fontSize: 14,
-    color: theme.colors.text,
+    fontWeight: '700',
+    color: '#1A1A1A',
     marginBottom: 2,
   },
   draftTime: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
+    fontSize: 11,
+    color: '#999',
   },
 });
 

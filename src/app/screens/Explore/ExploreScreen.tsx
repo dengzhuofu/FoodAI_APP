@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, RefreshControl, ActivityIndicator, Modal, TouchableWithoutFeedback, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, RefreshControl, ActivityIndicator, Modal, TouchableWithoutFeedback, Platform, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -12,8 +12,8 @@ import FeedCard from '../../components/FeedCard';
 type ExploreScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 const { width } = Dimensions.get('window');
-const SPACING = theme.spacing.sm;
-const COLUMN_WIDTH = (width - theme.spacing.screenHorizontal * 2 - SPACING) / 2;
+const SPACING = 12;
+const COLUMN_WIDTH = (width - 30 - SPACING) / 2;
 
 const CATEGORIES = ['AI推荐', '探店', '菜谱', '健康'];
 
@@ -93,8 +93,8 @@ const ExploreScreen = () => {
               <View style={styles.dropdownContainer}>
                 <View style={styles.dropdownHeader}>
                   <Text style={styles.dropdownMainTitle}>筛选与排序</Text>
-                  <TouchableOpacity onPress={() => setIsFilterOpen(false)}>
-                    <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
+                  <TouchableOpacity onPress={() => setIsFilterOpen(false)} style={styles.closeButton}>
+                    <Ionicons name="close" size={20} color="#1A1A1A" />
                   </TouchableOpacity>
                 </View>
 
@@ -150,16 +150,15 @@ const ExploreScreen = () => {
             key={index} 
             style={[styles.tabItem, activeTab === cat && styles.activeTabItem]}
             onPress={() => setActiveTab(cat)}
+            activeOpacity={0.7}
           >
             <Text style={[styles.tabText, activeTab === cat && styles.activeTabText]}>{cat}</Text>
-            {activeTab === cat && <View style={styles.activeTabIndicator} />}
           </TouchableOpacity>
         ))}
       </ScrollView>
       {activeTab !== '健康' && (
         <TouchableOpacity style={styles.filterButton} onPress={() => setIsFilterOpen(true)}>
-          <Ionicons name="options-outline" size={20} color={theme.colors.textSecondary} />
-          {/* <Text style={styles.filterButtonText}>筛选</Text> */}
+          <Ionicons name="options" size={20} color="#1A1A1A" />
         </TouchableOpacity>
       )}
     </View>
@@ -167,25 +166,29 @@ const ExploreScreen = () => {
 
   const renderHealthNewsList = () => (
     <View style={styles.contentContainer}>
-      {healthNews.map(item => (
+      {healthNews.map((item, index) => (
         <TouchableOpacity 
           key={item.id} 
           style={styles.newsCard} 
-          activeOpacity={0.8}
-          // Currently we don't have a dedicated news detail page, so we can mock navigation or alert
-          // In a real app, this would navigate to a WebView or NewsDetail screen
+          activeOpacity={0.9}
           onPress={() => console.log('Navigate to news', item.id)}
         >
           <Image source={{ uri: item.image }} style={styles.newsImage} />
           <View style={styles.newsContent}>
             <View style={styles.newsHeader}>
               <View style={styles.newsTag}>
-                <Text style={styles.newsTagText}>健康</Text>
+                <Text style={styles.newsTagText}>TRENDING</Text>
               </View>
               <Text style={styles.newsDate}>{item.date}</Text>
             </View>
             <Text style={styles.newsTitle} numberOfLines={2}>{item.title}</Text>
-            <Text style={styles.newsSummary} numberOfLines={2}>{item.summary}</Text>
+            <View style={styles.readMoreRow}>
+               <Text style={styles.readMoreText}>Read Story</Text>
+               <Ionicons name="arrow-forward" size={12} color="#1A1A1A" />
+            </View>
+          </View>
+          <View style={styles.newsIndex}>
+             <Text style={styles.newsIndexText}>0{index + 1}</Text>
           </View>
         </TouchableOpacity>
       ))}
@@ -196,7 +199,7 @@ const ExploreScreen = () => {
     if (loading && !refreshing) {
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ActivityIndicator size="large" color="#1A1A1A" />
         </View>
       );
     }
@@ -228,38 +231,41 @@ const ExploreScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search-outline" size={20} color={theme.colors.textSecondary} />
-          <Text style={styles.searchPlaceholder}>搜索菜品、餐厅、风味...</Text>
-        </View>
-      </View>
-
-      {renderTabs()}
-      {renderFilterDropdown()}
-
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent} 
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh} 
-            colors={[theme.colors.primary]}
-            tintColor={theme.colors.primary}
-          />
-        }
-      >
-        {activeTab === '健康' ? (
-          renderHealthNewsList() 
-        ) : (
-          <View style={styles.contentContainer}>
-            {renderWaterfallFlow()}
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.header}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search-outline" size={20} color="#666" />
+            <Text style={styles.searchPlaceholder}>搜索菜品、餐厅、风味...</Text>
           </View>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+        </View>
+
+        {renderTabs()}
+        {renderFilterDropdown()}
+
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent} 
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh} 
+              colors={['#1A1A1A']}
+              tintColor="#1A1A1A"
+            />
+          }
+        >
+          {activeTab === '健康' ? (
+            renderHealthNewsList() 
+          ) : (
+            <View style={styles.contentContainer}>
+              {renderWaterfallFlow()}
+            </View>
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 };
 
@@ -268,78 +274,98 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
+  safeArea: {
+    flex: 1,
+  },
   loadingContainer: {
-    padding: 20,
+    padding: 40,
     alignItems: 'center',
   },
   
   // Header & Search
   header: {
-    paddingHorizontal: theme.spacing.screenHorizontal,
-    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: theme.colors.background,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    paddingHorizontal: theme.spacing.md,
+    backgroundColor: '#FFF',
+    paddingHorizontal: 16,
     height: 44,
-    borderRadius: theme.borderRadius.xl,
-    ...theme.shadows.sm,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
+    elevation: 1,
   },
   searchPlaceholder: {
-    ...theme.typography.body,
-    color: theme.colors.textTertiary,
-    marginLeft: theme.spacing.sm,
+    color: '#999',
+    marginLeft: 10,
     fontSize: 14,
+    fontWeight: '500',
   },
   
   // Tabs
   tabContainer: {
     backgroundColor: theme.colors.background,
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.screenHorizontal,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    zIndex: 1,
   },
   tabScrollContent: {
-    flexGrow: 1,
+    paddingRight: 16,
   },
   tabItem: {
-    paddingHorizontal: 4,
-    paddingVertical: 6,
-    marginRight: theme.spacing.lg,
-    alignItems: 'center',
-    position: 'relative',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 10,
+    borderRadius: 12,
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
   },
   activeTabItem: {
-    // Add specific styles if needed
+    backgroundColor: '#1A1A1A',
+    borderColor: '#1A1A1A',
+    shadowColor: '#1A1A1A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+    transform: [{ scale: 1.02 }],
   },
   tabText: {
-    fontSize: 16,
-    color: theme.colors.textSecondary,
-    fontWeight: '500',
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '600',
   },
   activeTabText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-  },
-  activeTabIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    width: 20,
-    height: 3,
-    backgroundColor: theme.colors.primary,
-    borderRadius: 2,
+    color: '#FFF',
+    fontWeight: '700',
   },
   filterButton: {
-    padding: 8,
-    backgroundColor: theme.colors.surface,
-    borderRadius: 20,
-    ...theme.shadows.sm,
+    width: 40,
+    height: 40,
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+    marginLeft: 10,
   },
   
   // Content Layout
@@ -347,8 +373,8 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   contentContainer: {
-    paddingHorizontal: theme.spacing.screenHorizontal,
-    paddingTop: theme.spacing.sm,
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
   masonryContainer: {
     flexDirection: 'row',
@@ -361,12 +387,18 @@ const styles = StyleSheet.create({
   // News Card
   newsCard: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    marginBottom: theme.spacing.md,
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    marginBottom: 16,
     overflow: 'hidden',
-    ...theme.shadows.sm,
-    height: 110,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
+    height: 120,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   newsImage: {
     width: 110,
@@ -374,109 +406,144 @@ const styles = StyleSheet.create({
   },
   newsContent: {
     flex: 1,
-    padding: 12,
+    padding: 16,
     justifyContent: 'space-between',
   },
   newsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   newsTag: {
-    backgroundColor: 'rgba(11, 232, 129, 0.1)', // accent color with opacity
+    backgroundColor: '#1A1A1A',
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: 4,
   },
   newsTagText: {
-    fontSize: 10,
-    color: theme.colors.accent,
-    fontWeight: 'bold',
+    fontSize: 9,
+    color: '#FFF',
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   newsTitle: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-    marginBottom: 4,
-    lineHeight: 20,
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    marginBottom: 6,
+    lineHeight: 22,
   },
   newsSummary: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    lineHeight: 16,
+    display: 'none',
+  },
+  readMoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  readMoreText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    textDecorationLine: 'underline',
   },
   newsDate: {
-    fontSize: 10,
-    color: theme.colors.textTertiary,
+    fontSize: 11,
+    color: '#999',
+    fontWeight: '500',
+  },
+  newsIndex: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#F9F9F9',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderTopLeftRadius: 12,
+  },
+  newsIndexText: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#E0E0E0',
   },
   
   // Filter Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end', // Bottom sheet style
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'flex-end',
   },
   dropdownContainer: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#FFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: theme.spacing.lg,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    padding: 20,
+    paddingBottom: Platform.OS === 'ios' ? 32 : 20,
   },
   dropdownHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.lg,
+    marginBottom: 20,
   },
   dropdownMainTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.colors.text,
+    fontWeight: '800',
+    color: '#1A1A1A',
+  },
+  closeButton: {
+    padding: 4,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
   },
   dropdownTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-    marginBottom: theme.spacing.md,
-    marginTop: theme.spacing.sm,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 10,
+    marginTop: 8,
   },
   dropdownSection: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: theme.spacing.md,
+    marginBottom: 16,
   },
   dropdownItem: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: theme.colors.surfaceVariant,
-    marginRight: 10,
-    marginBottom: 10,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
+    marginRight: 8,
+    marginBottom: 8,
   },
   activeDropdownItem: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#1A1A1A',
   },
   dropdownItemText: {
     fontSize: 13,
-    color: theme.colors.textSecondary,
+    color: '#666',
+    fontWeight: '500',
   },
   activeDropdownItemText: {
-    color: theme.colors.white,
+    color: '#FFF',
     fontWeight: '600',
   },
   confirmButton: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#1A1A1A',
     paddingVertical: 14,
-    borderRadius: 28,
+    borderRadius: 16,
     alignItems: 'center',
-    marginTop: theme.spacing.lg,
-    ...theme.shadows.primaryGlow,
+    marginTop: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 2,
   },
   confirmButtonText: {
-    color: theme.colors.white,
-    fontSize: 16,
+    color: '#FFF',
+    fontSize: 15,
     fontWeight: 'bold',
   },
 });

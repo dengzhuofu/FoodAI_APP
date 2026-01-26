@@ -21,8 +21,6 @@ const TextToRecipeFeature = () => {
     setLoading(true);
     try {
       const result = await textToRecipe(ingredients, preference);
-      // Navigate to result screen with the generated recipe
-      // Assuming we have a GeneratedRecipeResult screen configured in navigation
       // @ts-ignore
       navigation.navigate('GeneratedRecipeResult', { recipe: result });
     } catch (error) {
@@ -36,154 +34,165 @@ const TextToRecipeFeature = () => {
   const preferences = ['清淡', '香辣', '酸甜', '低脂', '快手'];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-        <Text style={theme.typography.h2}>文 → 菜谱</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.description}>
-          输入您手头的食材，选择口味偏好，AI为您生成创意菜谱。
-        </Text>
-
-        <Text style={styles.label}>主要食材</Text>
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="例如：鸡胸肉、西兰花、鸡蛋..."
-            placeholderTextColor={theme.colors.textSecondary}
-            multiline
-            value={ingredients}
-            onChangeText={setIngredients}
-            textAlignVertical="top"
-          />
+    <View style={styles.container}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>定制菜谱</Text>
+          <View style={{ width: 40 }} />
         </View>
 
-        <Text style={styles.label}>口味偏好</Text>
-        <View style={styles.tagsContainer}>
-          {preferences.map((item, index) => (
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.card}>
+            <Text style={styles.label}>核心食材</Text>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="例如：鸡胸肉、西兰花、鸡蛋..."
+                placeholderTextColor="#999"
+                multiline
+                value={ingredients}
+                onChangeText={setIngredients}
+                textAlignVertical="top"
+              />
+            </View>
+
+            <Text style={styles.label}>口味偏好</Text>
+            <View style={styles.tagsContainer}>
+              {preferences.map((item, index) => (
+                <TouchableOpacity 
+                  key={index} 
+                  style={[
+                    styles.tag, 
+                    preference === item && styles.tagActive
+                  ]} 
+                  onPress={() => setPreference(item)}
+                >
+                  <Text style={[
+                    styles.tagText,
+                    preference === item && styles.tagTextActive
+                  ]}>{item}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
             <TouchableOpacity 
-              key={index} 
-              style={[
-                styles.tag, 
-                preference === item && styles.tagActive
-              ]} 
-              onPress={() => setPreference(item)}
+              style={[styles.generateButton, loading && styles.buttonDisabled]} 
+              onPress={handleGenerate}
+              disabled={loading}
             >
-              <Text style={[
-                styles.tagText,
-                preference === item && styles.tagTextActive
-              ]}>{item}</Text>
+              {loading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.buttonText}>生成创意菜谱</Text>
+              )}
             </TouchableOpacity>
-          ))}
-        </View>
-
-        <TouchableOpacity 
-          style={[styles.generateButton, loading && styles.buttonDisabled]} 
-          onPress={handleGenerate}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="white" style={{ marginRight: 8 }} />
-          ) : (
-            <Ionicons name="restaurant" size={20} color="white" style={{ marginRight: 8 }} />
-          )}
-          <Text style={styles.buttonText}>{loading ? '生成中...' : '生成菜谱'}</Text>
-        </TouchableOpacity>
-
-      </ScrollView>
-    </SafeAreaView>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#F5F5F5',
+  },
+  safeArea: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.white,
-    ...theme.shadows.sm,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   backButton: {
-    padding: theme.spacing.sm,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1A1A',
   },
   content: {
-    padding: theme.spacing.lg,
+    padding: 20,
   },
-  description: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.xl,
-    textAlign: 'center',
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
   },
   label: {
-    ...theme.typography.h3,
-    marginBottom: theme.spacing.md,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 12,
   },
   inputContainer: {
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.xl,
-    ...theme.shadows.sm,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
     minHeight: 100,
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
   },
   input: {
     flex: 1,
     fontSize: 16,
-    color: theme.colors.text,
+    color: '#1A1A1A',
     lineHeight: 24,
   },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: theme.spacing.xl,
+    marginBottom: 32,
   },
   tag: {
-    backgroundColor: theme.colors.white,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borderRadius.round,
-    marginRight: theme.spacing.md,
-    marginBottom: theme.spacing.md,
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginRight: 10,
+    marginBottom: 10,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: '#EEEEEE',
   },
   tagActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
+    backgroundColor: '#1A1A1A',
+    borderColor: '#1A1A1A',
   },
   tagText: {
-    color: theme.colors.text,
+    color: '#666',
     fontSize: 14,
   },
   tagTextActive: {
     color: 'white',
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   generateButton: {
-    flexDirection: 'row',
-    backgroundColor: '#84FAB0',
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.round,
+    backgroundColor: '#1A1A1A',
+    paddingVertical: 16,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: theme.spacing.lg,
-    ...theme.shadows.md,
   },
   buttonText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   buttonDisabled: {

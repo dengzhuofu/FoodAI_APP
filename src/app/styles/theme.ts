@@ -13,9 +13,9 @@ export const theme = {
     accent: '#0BE881', // 薄荷绿，用于健康/素食标签
     
     // 背景色体系
-    background: '#FAFBFC', // 极淡的冷灰白，比纯白更有质感
+    background: '#F9F9F9', // 温暖、明亮的灰白
     surface: '#FFFFFF',
-    surfaceVariant: '#F1F3F5', // 用于次级容器
+    surfaceVariant: '#F2F3F5', // 用于次级容器
     
     // 文本色体系
     text: '#1E272E', // 深炭灰，比纯黑柔和

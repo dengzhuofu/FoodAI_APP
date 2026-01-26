@@ -1,68 +1,73 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Platform, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { RootStackParamList } from '../../navigation/types';
 import { theme } from '../../styles/theme';
-import { BlurView } from 'expo-blur';
 
 type AIKitchenScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 const { width } = Dimensions.get('window');
-const SPACING = theme.spacing.md;
-const CARD_WIDTH = (width - theme.spacing.lg * 2 - SPACING) / 2;
+const SPACING = 16;
+// 2 columns
+const CARD_WIDTH = (width - SPACING * 3) / 2;
 
-const features = [
+const FEATURES = [
   { 
     name: '拍照识别', 
-    desc: '图 → 菜谱', 
+    desc: '识别食材', 
     route: 'ImageToRecipe', 
     icon: 'camera', 
-    colors: ['#FF9A9E', '#FECFEF'],
-    bgPattern: 'rgba(255, 255, 255, 0.15)' 
+    color: '#1A1A1A',
+    bg: '#FFFFFF',
+    border: '#E0E0E0'
   },
   { 
     name: '热量计算', 
-    desc: '图 → 卡路里', 
+    desc: '卡路里监控', 
     route: 'ImageToCalorie', 
     icon: 'flame', 
-    colors: ['#FFECD2', '#FCB69F'],
-    bgPattern: 'rgba(255, 255, 255, 0.15)'
+    color: '#1A1A1A',
+    bg: '#FFFFFF',
+    border: '#E0E0E0'
   },
   { 
     name: '美食绘图', 
-    desc: '文 → 图', 
+    desc: '生成图片', 
     route: 'TextToImage', 
     icon: 'brush', 
-    colors: ['#A18CD1', '#FBC2EB'],
-    bgPattern: 'rgba(255, 255, 255, 0.15)'
+    color: '#1A1A1A',
+    bg: '#FFFFFF',
+    border: '#E0E0E0'
   },
   { 
     name: '定制菜谱', 
-    desc: '文 → 菜谱', 
+    desc: 'AI 推荐', 
     route: 'TextToRecipe', 
-    icon: 'document-text', 
-    colors: ['#84FAB0', '#8FD3F4'],
-    bgPattern: 'rgba(255, 255, 255, 0.15)'
+    icon: 'restaurant', 
+    color: '#1A1A1A',
+    bg: '#FFFFFF',
+    border: '#E0E0E0'
   },
   { 
     name: '冰箱管家', 
-    desc: '冰箱 → 菜谱', 
+    desc: '清空库存', 
     route: 'FridgeToRecipe', 
     icon: 'ice-cream', 
-    colors: ['#E0C3FC', '#8EC5FC'],
-    bgPattern: 'rgba(255, 255, 255, 0.15)'
+    color: '#1A1A1A',
+    bg: '#FFFFFF',
+    border: '#E0E0E0'
   },
   { 
     name: '语音助手', 
-    desc: '实时指导', 
+    desc: '动口不动手', 
     route: 'VoiceAssistant', 
     icon: 'mic', 
-    colors: ['#43E97B', '#38F9D7'],
-    bgPattern: 'rgba(255, 255, 255, 0.15)'
+    color: '#1A1A1A',
+    bg: '#FFFFFF',
+    border: '#E0E0E0'
   },
 ] as const;
 
@@ -70,84 +75,97 @@ const AIKitchenScreen = () => {
   const navigation = useNavigation<AIKitchenScreenNavigationProp>();
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>AI 厨房</Text>
-          <Text style={styles.headerSubtitle}>智能烹饪助手，让下厨更简单</Text>
-        </View>
-        
-        <TouchableOpacity 
-          style={styles.myKitchenButtonContainer}
-          onPress={() => navigation.navigate('MyKitchen')}
-          activeOpacity={0.9}
-        >
-          <LinearGradient
-            colors={['#30cfd0', '#330867']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.myKitchenButton}
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          
+          {/* Header */}
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.headerSubtitle}>AI KITCHEN</Text>
+              <Text style={styles.headerTitle}>智能厨房实验室</Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity 
+                style={styles.avatar}
+                onPress={() => navigation.navigate('AIGenerationHistory')}
+              >
+                 <Ionicons name="time-outline" size={20} color="#1A1A1A" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.avatar}>
+                 <Ionicons name="person" size={20} color="#1A1A1A" />
+              </TouchableOpacity>
+            </View>
+          </View>
+          
+          {/* Hero Card - My Kitchen (Black Card) */}
+          <TouchableOpacity 
+            style={styles.heroCard}
+            onPress={() => navigation.navigate('MyKitchen')}
+            activeOpacity={0.9}
           >
-            <View style={styles.myKitchenContent}>
-              <View>
-                <View style={styles.badgeContainer}>
-                  <Text style={styles.badgeText}>智能管理</Text>
-                </View>
-                <Text style={styles.myKitchenTitle}>我的冰箱</Text>
-                <Text style={styles.myKitchenSubtitle}>库存管理 · 智能推荐 · 过期提醒</Text>
+            <View style={styles.heroHeader}>
+              <View style={styles.heroIconBox}>
+                <Ionicons name="cube" size={24} color="white" />
               </View>
-              <View style={styles.arrowIconContainer}>
-                <Ionicons name="arrow-forward" size={24} color="white" />
+              <View style={styles.statusBadge}>
+                <View style={styles.statusDot} />
+                <Text style={styles.statusText}>运行中</Text>
               </View>
             </View>
             
-            {/* Decorative background elements */}
-            <View style={styles.decorativeCircle1} />
-            <View style={styles.decorativeCircle2} />
-          </LinearGradient>
-        </TouchableOpacity>
+            <View style={styles.heroContent}>
+              <Text style={styles.heroTitle}>我的智能冰箱</Text>
+              <Text style={styles.heroDesc}>
+                库存监控 · 过期提醒 · 智能补货
+              </Text>
+            </View>
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>AI 功能实验室</Text>
-          <View style={styles.labBadge}>
-            <Text style={styles.labBadgeText}>Beta</Text>
+            <View style={styles.heroFooter}>
+              <Text style={styles.heroLink}>进入管理</Text>
+              <Ionicons name="arrow-forward" size={16} color="white" />
+            </View>
+
+            {/* Geometric Decoration */}
+            <View style={styles.geoCircle} />
+            <View style={styles.geoLine} />
+          </TouchableOpacity>
+
+          {/* Section Divider */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>功能矩阵</Text>
+            <View style={styles.sectionLine} />
           </View>
-        </View>
 
-        <View style={styles.grid}>
-          {features.map((feature, index) => (
-            <TouchableOpacity 
-              key={index} 
-              style={styles.card}
-              onPress={() => navigation.navigate(feature.route as any)}
-              activeOpacity={0.9}
-            >
-              <LinearGradient
-                colors={feature.colors as any}
-                style={styles.cardGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+          {/* Bento Grid */}
+          <View style={styles.grid}>
+            {FEATURES.map((feature, index) => (
+              <TouchableOpacity 
+                key={index} 
+                style={styles.gridCard}
+                onPress={() => navigation.navigate(feature.route as any)}
+                activeOpacity={0.8}
               >
                 <View style={styles.cardHeader}>
-                  <View style={styles.iconContainer}>
-                    <Ionicons name={feature.icon as any} size={24} color="white" />
+                  <View style={styles.cardIconBox}>
+                    <Ionicons name={feature.icon as any} size={24} color="#1A1A1A" />
                   </View>
-                  <Ionicons name="arrow-forward-circle-outline" size={20} color="rgba(255,255,255,0.8)" />
+                  <Ionicons name="arrow-forward-circle-outline" size={24} color="#E0E0E0" />
                 </View>
                 
                 <View style={styles.cardFooter}>
-                  <Text style={styles.cardName}>{feature.name}</Text>
+                  <Text style={styles.cardTitle}>{feature.name}</Text>
                   <Text style={styles.cardDesc}>{feature.desc}</Text>
                 </View>
-
-                {/* Texture overlay */}
-                <View style={[styles.textureOverlay, { backgroundColor: feature.bgPattern }]} />
-              </LinearGradient>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+              </TouchableOpacity>
+            ))}
+          </View>
+          
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 };
 
@@ -156,170 +174,198 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
+  safeArea: {
+    flex: 1,
+  },
   scrollContent: {
-    paddingBottom: 100,
+    padding: 16,
   },
   header: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
-    marginBottom: theme.spacing.lg,
-  },
-  headerTitle: {
-    ...theme.typography.display,
-    fontSize: 32,
-    color: theme.colors.text,
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
-  },
-  myKitchenButtonContainer: {
-    marginHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.xl,
-    ...theme.shadows.md,
-    borderRadius: theme.borderRadius.xl,
-  },
-  myKitchenButton: {
-    borderRadius: theme.borderRadius.xl,
-    padding: theme.spacing.lg,
-    height: 120,
-    justifyContent: 'center',
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  myKitchenContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    zIndex: 1,
+    marginBottom: 20,
+    marginTop: 8,
   },
-  badgeContainer: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-    marginBottom: 8,
-  },
-  badgeText: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  myKitchenTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
+  headerSubtitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#9E9E9E',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
     marginBottom: 4,
   },
-  myKitchenSubtitle: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.9)',
+  headerTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    letterSpacing: -0.5,
   },
-  arrowIconContainer: {
-    width: 48,
-    height: 48,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 24,
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'white',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: '#EEEEEE',
   },
-  decorativeCircle1: {
-    position: 'absolute',
-    top: -20,
-    right: -20,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+  heroCard: {
+    backgroundColor: '#1A1A1A',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 24,
+    minHeight: 160,
+    justifyContent: 'space-between',
+    position: 'relative',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  decorativeCircle2: {
+  heroHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    zIndex: 2,
+  },
+  heroIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(76, 175, 80, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(76, 175, 80, 0.3)',
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#4CAF50',
+    marginRight: 6,
+  },
+  statusText: {
+    color: '#4CAF50',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  heroContent: {
+    zIndex: 2,
+    marginTop: 12,
+  },
+  heroTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: 'white',
+    marginBottom: 6,
+  },
+  heroDesc: {
+    fontSize: 13,
+    color: '#9E9E9E',
+  },
+  heroFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    zIndex: 2,
+  },
+  heroLink: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'white',
+    marginRight: 6,
+  },
+  geoCircle: {
     position: 'absolute',
-    bottom: -30,
+    right: -40,
+    bottom: -40,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    borderWidth: 24,
+    borderColor: 'rgba(255,255,255,0.03)',
+  },
+  geoLine: {
+    position: 'absolute',
     left: 20,
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    bottom: 20,
+    width: 32,
+    height: 3,
+    backgroundColor: '#4CAF50',
+    borderRadius: 1.5,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
+    marginBottom: 16,
   },
   sectionTitle: {
-    ...theme.typography.h2,
-    marginRight: 8,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginRight: 16,
   },
-  labBadge: {
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  labBadgeText: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: 'bold',
+  sectionLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E0E0E0',
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.lg,
   },
-  card: {
+  gridCard: {
     width: CARD_WIDTH,
-    height: CARD_WIDTH * 1.1, // Slightly taller
-    marginBottom: theme.spacing.md,
-    borderRadius: theme.borderRadius.xl,
-    ...theme.shadows.sm,
-    overflow: 'hidden',
-  },
-  cardGradient: {
-    flex: 1,
-    padding: theme.spacing.md,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: SPACING,
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+    minHeight: 130,
     justifyContent: 'space-between',
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    zIndex: 1,
   },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    borderRadius: 20,
+  cardIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
   },
   cardFooter: {
-    zIndex: 1,
+    marginTop: 12,
   },
-  cardName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: 'white',
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1A1A',
     marginBottom: 4,
   },
   cardDesc: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.9)',
-  },
-  textureOverlay: {
-    position: 'absolute',
-    top: -20,
-    right: -20,
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    opacity: 0.2,
+    fontSize: 11,
+    color: '#9E9E9E',
   },
 });
 

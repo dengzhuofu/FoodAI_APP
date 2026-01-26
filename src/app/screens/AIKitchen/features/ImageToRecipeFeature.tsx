@@ -54,105 +54,143 @@ const ImageToRecipeFeature = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-        <Text style={theme.typography.h2}>图 → 菜谱</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.description}>
-          拍摄或上传食物图片，AI将自动识别并为您生成详细的烹饪菜谱。
-        </Text>
-
-        <TouchableOpacity style={styles.uploadArea} onPress={handlePickImage}>
-          {image ? (
-            <Image source={{ uri: image }} style={styles.previewImage} />
-          ) : (
-            <View style={styles.uploadPlaceholder}>
-              <Ionicons name="camera-outline" size={64} color={theme.colors.textSecondary} />
-              <Text style={styles.uploadText}>点击上传/拍摄图片</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        {image && (
-          <TouchableOpacity 
-            style={[styles.generateButton, loading && styles.buttonDisabled]} 
-            onPress={handleGenerate}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <>
-                <Ionicons name="sparkles" size={20} color="white" style={{ marginRight: 8 }} />
-                <Text style={styles.generateButtonText}>生成菜谱</Text>
-              </>
-            )}
+    <View style={styles.container}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
           </TouchableOpacity>
-        )}
-
-        <View style={styles.tipsContainer}>
-          <Text style={styles.tipsTitle}>💡 识别小贴士</Text>
-          <Text style={styles.tipsText}>• 保持光线充足，食物主体清晰</Text>
-          <Text style={styles.tipsText}>• 尽量拍摄完整的食物外观</Text>
-          <Text style={styles.tipsText}>• 支持识别成品菜肴和原材料</Text>
+          <Text style={styles.headerTitle}>拍照识别</Text>
+          <View style={{ width: 40 }} />
         </View>
-      </ScrollView>
-    </SafeAreaView>
+
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.card}>
+            <Text style={styles.description}>
+              上传美食图片，AI 智能分析食材并生成详细烹饪步骤。
+            </Text>
+
+            <TouchableOpacity style={styles.uploadArea} onPress={handlePickImage}>
+              {image ? (
+                <Image source={{ uri: image }} style={styles.previewImage} />
+              ) : (
+                <View style={styles.uploadPlaceholder}>
+                  <View style={styles.iconCircle}>
+                    <Ionicons name="camera" size={32} color="#1A1A1A" />
+                  </View>
+                  <Text style={styles.uploadText}>点击上传图片</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            {image && (
+              <TouchableOpacity 
+                style={[styles.generateButton, loading && styles.buttonDisabled]} 
+                onPress={handleGenerate}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <>
+                    <Text style={styles.generateButtonText}>开始识别</Text>
+                    <Ionicons name="arrow-forward" size={20} color="white" style={{ marginLeft: 8 }} />
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View style={styles.tipsContainer}>
+            <View style={styles.tipsHeader}>
+              <Ionicons name="bulb-outline" size={20} color="#666" />
+              <Text style={styles.tipsTitle}>使用贴士</Text>
+            </View>
+            <Text style={styles.tipsText}>• 保持光线充足，主体清晰</Text>
+            <Text style={styles.tipsText}>• 支持识别成品菜和原材料</Text>
+            <Text style={styles.tipsText}>• 图片大小建议不超过 5MB</Text>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#F5F5F5',
+  },
+  safeArea: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.white,
-    ...theme.shadows.sm,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   backButton: {
-    padding: theme.spacing.sm,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1A1A',
   },
   content: {
-    padding: theme.spacing.lg,
+    padding: 20,
+  },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
   },
   description: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.xl,
-    textAlign: 'center',
+    fontSize: 15,
+    color: '#666',
+    marginBottom: 24,
+    lineHeight: 22,
   },
   uploadArea: {
     width: '100%',
-    aspectRatio: 1,
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.lg,
+    aspectRatio: 4/3,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 16,
     borderWidth: 2,
-    borderColor: theme.colors.border,
+    borderColor: '#EEEEEE',
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: theme.spacing.xl,
+    marginBottom: 24,
     overflow: 'hidden',
   },
   uploadPlaceholder: {
     alignItems: 'center',
   },
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#EEEEEE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   uploadText: {
-    marginTop: theme.spacing.md,
-    color: theme.colors.textSecondary,
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#999',
   },
   previewImage: {
     width: '100%',
@@ -160,37 +198,39 @@ const styles = StyleSheet.create({
   },
   generateButton: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.primary,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.round,
+    backgroundColor: '#1A1A1A',
+    paddingVertical: 16,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: theme.spacing.xl,
-    ...theme.shadows.md,
   },
   generateButtonText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   buttonDisabled: {
     opacity: 0.7,
   },
   tipsContainer: {
-    backgroundColor: '#FFF8E1',
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
+    padding: 16,
+  },
+  tipsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   tipsTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#F57C00',
-    marginBottom: theme.spacing.sm,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#666',
+    marginLeft: 8,
   },
   tipsText: {
-    fontSize: 14,
-    color: '#F57C00',
-    marginBottom: 4,
+    fontSize: 13,
+    color: '#999',
+    marginBottom: 8,
+    paddingLeft: 28,
   },
 });
 

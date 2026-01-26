@@ -22,6 +22,29 @@ export interface CalorieResult {
   carbs: string;
 }
 
+export interface AILog {
+  id: number;
+  feature: string;
+  input_summary: string;
+  output_result: any;
+  created_at: string;
+}
+
+export const getHistory = async (limit: number = 20, offset: number = 0): Promise<AILog[]> => {
+  const response = await client.get('/ai/history', {
+    params: { limit, offset }
+  });
+  return response.data.history;
+};
+
+export const generateRecipeImage = async (recipeData: RecipeResult, imageType: 'final' | 'steps' = 'final'): Promise<any> => {
+  const response = await client.post('/ai/generate-recipe-image', {
+    recipe_data: recipeData,
+    image_type: imageType
+  });
+  return response.data;
+};
+
 // Text to Recipe
 export const textToRecipe = async (description: string, preferences: string = ''): Promise<RecipeResult> => {
   const response = await client.post('/ai/text-to-recipe', {

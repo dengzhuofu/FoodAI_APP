@@ -12,7 +12,6 @@ const FridgeToRecipeFeature = () => {
   const [loading, setLoading] = useState(false);
 
   // Mock fridge inventory
-  // TODO: Fetch from backend API (inventory.ts)
   const inventory = [
     { id: '鸡蛋', name: '鸡蛋', daysLeft: 5, icon: '🥚' },
     { id: '西红柿', name: '西红柿', daysLeft: 3, icon: '🍅' },
@@ -48,116 +47,118 @@ const FridgeToRecipeFeature = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-        <Text style={theme.typography.h2}>冰箱 → 菜谱</Text>
-        <View style={{ width: 40 }} />
-      </View>
+    <View style={styles.container}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>冰箱管家</Text>
+          <View style={{ width: 40 }} />
+        </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.description}>
-          勾选冰箱里现有的食材，AI帮您解决"今晚吃什么"的难题，同时减少浪费。
-        </Text>
-
-        <View style={styles.inventoryContainer}>
+        <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>冰箱库存</Text>
+            <Text style={styles.sectionTitle}>选择库存食材</Text>
             <TouchableOpacity onPress={() => setSelectedItems(inventory.map(i => i.id))}>
-              <Text style={styles.selectAllText}>全选</Text>
+              <Text style={styles.actionText}>全选</Text>
             </TouchableOpacity>
           </View>
           
           <View style={styles.grid}>
             {inventory.map((item) => {
               const isSelected = selectedItems.includes(item.id);
+              const isUrgent = item.daysLeft <= 3;
+              
               return (
                 <TouchableOpacity 
                   key={item.id} 
                   style={[styles.itemCard, isSelected && styles.itemCardSelected]}
                   onPress={() => toggleSelection(item.id)}
+                  activeOpacity={0.8}
                 >
                   <Text style={styles.itemIcon}>{item.icon}</Text>
                   <Text style={[styles.itemName, isSelected && styles.itemNameSelected]}>{item.name}</Text>
-                  <View style={[styles.daysTag, item.daysLeft < 3 && styles.daysTagUrgent]}>
-                    <Text style={[styles.daysText, item.daysLeft < 3 && styles.daysTextUrgent]}>
-                      剩{item.daysLeft}天
-                    </Text>
-                  </View>
+                  
+                  {isUrgent && (
+                    <View style={styles.urgentBadge}>
+                      <Text style={styles.urgentText}>即将过期</Text>
+                    </View>
+                  )}
+                  
                   {isSelected && (
                     <View style={styles.checkIcon}>
-                      <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
+                      <Ionicons name="checkmark-circle" size={20} color="#1A1A1A" />
                     </View>
                   )}
                 </TouchableOpacity>
               );
             })}
           </View>
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <TouchableOpacity 
+            style={[styles.generateButton, loading && styles.buttonDisabled]} 
+            onPress={handleGenerate}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.buttonText}>生成推荐 ({selectedItems.length})</Text>
+            )}
+          </TouchableOpacity>
         </View>
-
-        <TouchableOpacity 
-          style={[styles.generateButton, loading && styles.buttonDisabled]} 
-          onPress={handleGenerate}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <>
-              <Ionicons name="flash" size={20} color="white" style={{ marginRight: 8 }} />
-              <Text style={styles.buttonText}>智能推荐 ({selectedItems.length})</Text>
-            </>
-          )}
-        </TouchableOpacity>
-
-      </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#F5F5F5',
+  },
+  safeArea: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.white,
-    ...theme.shadows.sm,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   backButton: {
-    padding: theme.spacing.sm,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1A1A',
   },
   content: {
-    padding: theme.spacing.lg,
-  },
-  description: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.xl,
-    textAlign: 'center',
-  },
-  inventoryContainer: {
-    marginBottom: theme.spacing.xl,
+    padding: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.md,
+    marginBottom: 16,
   },
   sectionTitle: {
-    ...theme.typography.h3,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A1A1A',
   },
-  selectAllText: {
-    color: theme.colors.primary,
+  actionText: {
+    color: '#666',
     fontSize: 14,
+    fontWeight: '600',
   },
   grid: {
     flexDirection: 'row',
@@ -165,68 +166,71 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   itemCard: {
-    width: '31%',
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
+    width: '48%',
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
     alignItems: 'center',
-    marginBottom: theme.spacing.md,
+    marginBottom: 16,
     borderWidth: 2,
     borderColor: 'transparent',
-    ...theme.shadows.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
   },
   itemCardSelected: {
-    borderColor: theme.colors.primary,
-    backgroundColor: '#FFF0F0',
+    borderColor: '#1A1A1A',
+    backgroundColor: '#FFF',
   },
   itemIcon: {
     fontSize: 32,
-    marginBottom: theme.spacing.xs,
+    marginBottom: 8,
   },
   itemName: {
     fontSize: 14,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.xs,
-    fontWeight: '500',
+    color: '#333',
+    fontWeight: '600',
+    marginBottom: 4,
   },
   itemNameSelected: {
-    color: theme.colors.primary,
+    color: '#1A1A1A',
     fontWeight: 'bold',
   },
-  daysTag: {
-    backgroundColor: '#F0F0F0',
+  urgentBadge: {
+    backgroundColor: '#FFEBEE',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
+    marginTop: 4,
   },
-  daysTagUrgent: {
-    backgroundColor: '#FFEBEE',
-  },
-  daysText: {
+  urgentText: {
+    color: '#FF5252',
     fontSize: 10,
-    color: theme.colors.textSecondary,
-  },
-  daysTextUrgent: {
-    color: theme.colors.error,
+    fontWeight: '700',
   },
   checkIcon: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    top: 8,
+    right: 8,
+  },
+  footer: {
+    padding: 20,
+    backgroundColor: 'white',
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
   },
   generateButton: {
-    flexDirection: 'row',
-    backgroundColor: '#E0C3FC',
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.round,
+    backgroundColor: '#1A1A1A',
+    paddingVertical: 16,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: theme.spacing.md,
-    ...theme.shadows.md,
   },
   buttonText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   buttonDisabled: {

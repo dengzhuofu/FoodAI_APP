@@ -141,12 +141,65 @@ class AIService:
         response = await self._post("/images/generations", payload)
         return response["images"][0]["url"] 
 
-    async def generate_recipe_from_text(self, description: str, preferences: str = "") -> str:
+    def _clean_recipe_response(self, content: str) -> Dict[str, Any]:
+        try:
+            # Clean markdown
+            content = content.strip()
+            if "```json" in content:
+                content = content.split("```json")[1].split("```")[0]
+            elif "```" in content:
+                content = content.replace("```", "")
+            
+            content = content.strip("` \n")
+            
+            data = json.loads(content)
+            
+            # Fix steps
+            if "steps" in data:
+                steps = data["steps"]
+                import re
+                
+                # Case 1: String "1. xxx 2. xxx"
+                if isinstance(steps, str):
+                    # Split by "1. ", "2. " etc.
+                    parts = re.split(r'\d+\.\s*', steps)
+                    data["steps"] = [p.strip() for p in parts if p.strip()]
+                    
+                # Case 2: List ["1. xxx 2. xxx"]
+                elif isinstance(steps, list) and len(steps) == 1:
+                    s = steps[0]
+                    # Check if it actually has multiple steps
+                    if "2." in s:
+                        parts = re.split(r'\d+\.\s*', s)
+                        data["steps"] = [p.strip() for p in parts if p.strip()]
+            
+            return data
+        except json.JSONDecodeError:
+            print(f"JSON Decode Error for content: {content}")
+            return {
+                "title": "Generated Recipe",
+                "description": content[:100] + "...",
+                "ingredients": [],
+                "steps": [content],
+                "nutrition": {},
+                "cooking_time": "N/A",
+                "difficulty": "Unknown"
+            }
+        except Exception as e:
+            print(f"Error processing recipe: {e}")
+            return {}
+
+    async def generate_recipe_from_text(self, description: str, preferences: str = "") -> Dict[str, Any]:
         """Use LangChain to generate recipe from text"""
         template = """你是一个专业的厨师。请根据用户的描述生成一个JSON格式的菜谱，包含title, description, ingredients(list), steps(list), nutrition(dict with calories, protein, fat, carbs), cooking_time, difficulty。
         
         描述: {description}
         偏好: {preferences}
+        
+        注意：
+        1. steps 必须是一个字符串列表，每个字符串代表一个独立的步骤。
+        2. 步骤描述要清晰具体，不要把所有步骤合并成一段话。
+        3. 示例格式: ["洗净切块", "大火爆炒", "加水炖煮"]
         
         只返回JSON，不要其他文字。"""
         
@@ -154,9 +207,9 @@ class AIService:
         chain = prompt | self.llm_text
         
         response = await chain.ainvoke({"description": description, "preferences": preferences})
-        return response.content
+        return self._clean_recipe_response(response.content)
 
-    async def generate_recipe_from_image(self, image_url: str) -> str:
+    async def generate_recipe_from_image(self, image_url: str) -> Dict[str, Any]:
         """Use LangChain (Vision) to generate recipe from image"""
         processed_url = self._process_image_url(image_url)
         
@@ -169,17 +222,16 @@ class AIService:
 
         message = HumanMessage(
             content=[
-                {"type": "text", "text": "请识别图中的菜品，并生成一个JSON格式的菜谱，包含title, description, ingredients(list), steps(list), nutrition(dict with calories, protein, fat, carbs), cooking_time, difficulty。只返回JSON。"},
+                {"type": "text", "text": "请识别图中的菜品，并生成一个JSON格式的菜谱，包含title, description, ingredients(list), steps(list), nutrition(dict with calories, protein, fat, carbs), cooking_time, difficulty。\n\n注意：\n1. steps 必须是一个字符串列表，每个字符串代表一个独立的步骤。\n2. 步骤描述要清晰具体，不要把所有步骤合并成一段话。\n3. 示例格式: [\"洗净切块\", \"大火爆炒\", \"加水炖煮\"]\n\n只返回JSON。"},
                 {"type": "image_url", "image_url": {"url": processed_url}},
             ]
         )
         
         try:
             response = await self.llm_vision.ainvoke([message])
-            return response.content
+            return self._clean_recipe_response(response.content)
         except Exception as e:
             print(f"AI Service Error (Vision): {e}")
-            # 如果是 400 错误，可能是 base64 太长或者格式问题，尝试打印更多信息
             raise e
         
     async def estimate_calories(self, image_url: str) -> str:
@@ -203,15 +255,22 @@ class AIService:
             print(f"AI Service Error (Calories): {e}")
             raise e
 
-    async def fridge_to_recipe(self, items: List[str]) -> str:
+    async def fridge_to_recipe(self, items: List[str]) -> Dict[str, Any]:
         """Use LangChain to recommend recipe from fridge items"""
-        template = """我有以下食材: {items_str}。请推荐一道可以用这些食材制作的菜谱。请返回JSON格式，包含title, description, ingredients(list), steps(list), nutrition(dict), cooking_time, difficulty。只返回JSON。"""
+        template = """我有以下食材: {items_str}。请推荐一道可以用这些食材制作的菜谱。请返回JSON格式，包含title, description, ingredients(list), steps(list), nutrition(dict), cooking_time, difficulty。
+        
+        注意：
+        1. steps 必须是一个字符串列表，每个字符串代表一个独立的步骤。
+        2. 步骤描述要清晰具体，不要把所有步骤合并成一段话。
+        3. 示例格式: ["洗净切块", "大火爆炒", "加水炖煮"]
+        
+        只返回JSON。"""
         
         prompt = PromptTemplate.from_template(template)
         chain = prompt | self.llm_text
         
         response = await chain.ainvoke({"items_str": ", ".join(items)})
-        return response.content
+        return self._clean_recipe_response(response.content)
 
     async def chat_completion(self, messages: List[Dict[str, Any]], model: str = "Qwen/Qwen3-8B") -> str:
         """General chat using LangChain"""

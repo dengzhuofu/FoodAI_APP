@@ -94,21 +94,23 @@ const PublishRecipeScreen = () => {
         {ingredients.map((item, index) => (
           <View key={index} style={styles.ingredientRow}>
             <TextInput 
-              style={[styles.input, { flex: 1, marginRight: 8 }]} 
-              placeholder="食材名称" 
+              style={[styles.input, styles.ingredientInput, { marginBottom: 0 }]} 
+              placeholder="食材名称 (如: 鸡蛋)" 
+              placeholderTextColor="#999"
               value={item.name}
               onChangeText={(text) => handleIngredientChange(index, 'name', text)}
             />
             <TextInput 
-              style={[styles.input, { flex: 1 }]} 
-              placeholder="用量" 
+              style={[styles.input, styles.ingredientInput, { marginBottom: 0 }]} 
+              placeholder="用量 (如: 2个)" 
+              placeholderTextColor="#999"
               value={item.amount}
               onChangeText={(text) => handleIngredientChange(index, 'amount', text)}
             />
           </View>
         ))}
         <TouchableOpacity style={styles.addMore} onPress={handleAddIngredient}>
-          <Ionicons name="add-circle-outline" size={20} color={theme.colors.primary} />
+          <Ionicons name="add" size={20} color="#1A1A1A" />
           <Text style={styles.addMoreText}>添加食材</Text>
         </TouchableOpacity>
 
@@ -120,78 +122,103 @@ const PublishRecipeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#FFF',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.white,
-    ...theme.shadows.sm,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
   },
   backButton: {
-    padding: theme.spacing.sm,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
   },
   publishButton: {
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: 6,
-    borderRadius: 16,
+    backgroundColor: '#1A1A1A',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
   },
   publishButtonText: {
     color: 'white',
-    fontWeight: 'bold',
+    fontWeight: '700',
+    fontSize: 14,
   },
   content: {
-    padding: theme.spacing.lg,
+    padding: 20,
+    paddingBottom: 40,
   },
   imageUpload: {
-    height: 200,
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.md,
+    height: 240,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: theme.spacing.lg,
+    marginBottom: 24,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: '#EAEAEA',
     borderStyle: 'dashed',
   },
   uploadText: {
-    marginTop: 8,
-    color: theme.colors.textSecondary,
+    marginTop: 12,
+    color: '#999',
+    fontSize: 14,
+    fontWeight: '500',
   },
   label: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-    marginBottom: 8,
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    marginBottom: 12,
     marginTop: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.md,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
     fontSize: 16,
+    color: '#1A1A1A',
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   textArea: {
-    height: 120,
+    height: 140,
+    paddingTop: 16,
   },
   ingredientRow: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: 12,
+    gap: 12,
+  },
+  ingredientInput: {
+    flex: 1,
   },
   addMore: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 12,
+    padding: 16,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 16,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+    borderStyle: 'dashed',
   },
   addMoreText: {
-    color: theme.colors.primary,
-    marginLeft: 4,
+    color: '#1A1A1A',
+    marginLeft: 8,
+    fontWeight: '600',
+    fontSize: 14,
   },
 });
 

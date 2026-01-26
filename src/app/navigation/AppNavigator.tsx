@@ -33,6 +33,7 @@ import TextToRecipeFeature from '../screens/AIKitchen/features/TextToRecipeFeatu
 import FridgeToRecipeFeature from '../screens/AIKitchen/features/FridgeToRecipeFeature';
 import VoiceAssistantFeature from '../screens/AIKitchen/features/VoiceAssistantFeature';
 import GeneratedRecipeResult from '../screens/AIKitchen/GeneratedRecipeResult';
+import AIGenerationHistoryScreen from '../screens/AIKitchen/AIGenerationHistoryScreen';
 
 // Profile Sub-pages
 import CollectionsPage from '../screens/Profile/CollectionsPage';
@@ -81,28 +82,58 @@ const MainTabs = () => {
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarStyle: {
-          borderTopColor: theme.colors.border,
-          height: 60,
-          paddingBottom: 5,
+          borderTopWidth: 0,
+          height: Platform.OS === 'ios' ? 108 : 78,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+          paddingTop: 8,
+          backgroundColor: '#FFFFFF',
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '600',
+          marginTop: 4,
         },
       })}
     >
       <Tab.Screen 
         name="Recommend" 
         component={RecommendScreen} 
-        options={{ title: '推荐' }}
+        options={{ title: 'Home' }}
       />
       <Tab.Screen 
         name="Explore" 
         component={ExploreScreen} 
-        options={{ title: '探索' }}
+        options={{ title: 'Explore' }}
       />
       <Tab.Screen 
         name="PublishTab" 
         component={PublishPlaceholder} 
         options={{ 
-          title: '发布',
-          tabBarLabel: () => null, // Hide label for center button
+          title: 'Publish',
+          tabBarLabel: () => null,
+          tabBarIcon: ({ focused }) => (
+            <View style={{
+              width: 56,
+              height: 56,
+              borderRadius: 28,
+              backgroundColor: '#1A1A1A',
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: 24,
+              shadowColor: '#1A1A1A',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+              elevation: 4,
+            }}>
+              <Ionicons name="add" size={32} color="#FFF" />
+            </View>
+          ),
         }}
         listeners={({ navigation }) => ({
           tabPress: (e) => {
@@ -114,12 +145,12 @@ const MainTabs = () => {
       <Tab.Screen 
         name="AIKitchen" 
         component={AIKitchenScreen} 
-        options={{ title: 'AI厨房' }}
+        options={{ title: 'AI Kitchen' }}
       />
       <Tab.Screen 
         name="Profile" 
         component={ProfilePage} 
-        options={{ title: '我的' }}
+        options={{ title: 'Me' }}
       />
     </Tab.Navigator>
   );
@@ -189,6 +220,7 @@ const AppNavigator = () => {
             <Stack.Screen name="FridgeToRecipe" component={FridgeToRecipeFeature} options={{ title: '冰箱 → 菜谱' }} />
             <Stack.Screen name="VoiceAssistant" component={VoiceAssistantFeature} options={{ title: '语音助手' }} />
             <Stack.Screen name="GeneratedRecipeResult" component={GeneratedRecipeResult} options={{ title: 'AI 生成结果', headerShown: false }} />
+            <Stack.Screen name="AIGenerationHistory" component={AIGenerationHistoryScreen} options={{ title: '生成记录', headerShown: false }} />
             
             {/* Profile Sub-pages */}
             <Stack.Screen name="Collections" component={CollectionsPage} options={{ title: '我的收藏' }} />

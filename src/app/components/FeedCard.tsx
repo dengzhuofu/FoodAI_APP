@@ -27,21 +27,38 @@ const FeedCard: React.FC<FeedCardProps> = ({ item, onPress, height = 200, style 
           style={[styles.image, { height }]} 
           resizeMode="cover"
         />
-        {isRestaurant && (
-          <View style={styles.typeTag}>
-            <Ionicons name="restaurant" size={10} color="#FFF" />
-            <Text style={styles.typeTagText}>餐厅</Text>
-          </View>
-        )}
+        
+        {/* Floating Badges */}
+        <View style={styles.badgesContainer}>
+           {isRestaurant ? (
+              <View style={[styles.badge, styles.restaurantBadge]}>
+                 <Text style={styles.badgeText}>STORE</Text>
+              </View>
+           ) : (
+             <View style={[styles.badge, styles.recipeBadge]}>
+                <Ionicons name="flame" size={10} color="#1A1A1A" />
+                <Text style={styles.badgeText}>RECIPE</Text>
+             </View>
+           )}
+           
+           <View style={styles.ratingBadge}>
+              <Ionicons name="star" size={8} color="#FFD700" />
+              <Text style={styles.ratingText}>4.8</Text>
+           </View>
+        </View>
+
         <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.3)']}
+          colors={['transparent', 'rgba(0,0,0,0.6)']}
           style={styles.imageGradient}
         />
+        
+        {/* Title Overlay on Image for Magazine Feel */}
+        <View style={styles.overlayContent}>
+           <Text style={styles.overlayTitle} numberOfLines={2}>{item.title}</Text>
+        </View>
       </View>
       
       <View style={styles.content}>
-        <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
-        
         <View style={styles.footer}>
           <View style={styles.authorInfo}>
             <Image 
@@ -50,10 +67,10 @@ const FeedCard: React.FC<FeedCardProps> = ({ item, onPress, height = 200, style 
             />
             <Text style={styles.authorName} numberOfLines={1}>{item.author}</Text>
           </View>
-          <View style={styles.likeInfo}>
-            <Ionicons name="heart" size={12} color={theme.colors.primary} />
+          <TouchableOpacity style={styles.likeBtn}>
+            <Ionicons name="heart-outline" size={16} color="#1A1A1A" />
             <Text style={styles.likeCount}>{item.likes}</Text>
-          </View>
+          </TouchableOpacity>
         </View>
       </View>
     </TouchableOpacity>
@@ -63,10 +80,16 @@ const FeedCard: React.FC<FeedCardProps> = ({ item, onPress, height = 200, style 
 const styles = StyleSheet.create({
   container: {
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.md,
-    marginBottom: theme.spacing.md,
+    borderRadius: 16,
+    marginBottom: 16,
     overflow: 'hidden',
-    ...theme.shadows.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   imageContainer: {
     position: 'relative',
@@ -75,40 +98,73 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
   },
-  typeTag: {
+  badgesContainer: {
     position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 4,
+    top: 10,
+    left: 10,
+    flexDirection: 'row',
+    gap: 6,
+    zIndex: 10,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  typeTagText: {
+  restaurantBadge: {
+    backgroundColor: '#FFF',
+  },
+  recipeBadge: {
+    backgroundColor: '#FFF',
+  },
+  badgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    letterSpacing: 0.5,
+  },
+  ratingBadge: {
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  ratingText: {
     color: '#FFF',
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
   imageGradient: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: 40,
+    height: 80,
+  },
+  overlayContent: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    right: 12,
+  },
+  overlayTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FFF',
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+    lineHeight: 20,
   },
   content: {
-    padding: 10,
-  },
-  title: {
-    ...theme.typography.body,
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginBottom: 8,
-    lineHeight: 20,
+    padding: 12,
+    backgroundColor: '#FFF',
   },
   footer: {
     flexDirection: 'row',
@@ -122,32 +178,32 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   avatar: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    marginRight: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    marginRight: 8,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surfaceVariant,
+    borderColor: '#E0E0E0',
   },
   authorName: {
     fontSize: 11,
-    color: theme.colors.textSecondary,
+    color: '#666',
+    fontWeight: '600',
     flex: 1,
   },
-  likeInfo: {
+  likeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surfaceVariant,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 8,
+    backgroundColor: '#F9F9F9',
   },
   likeCount: {
-    fontSize: 10,
-    color: theme.colors.textSecondary,
-    marginLeft: 4,
-    fontWeight: '500',
+    fontSize: 11,
+    color: '#1A1A1A',
+    fontWeight: '700',
   },
 });
 

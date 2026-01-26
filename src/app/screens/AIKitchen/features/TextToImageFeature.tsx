@@ -26,187 +26,199 @@ const TextToImageFeature = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-        <Text style={theme.typography.h2}>文 → 图</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.description}>
-          输入一段文字描述，AI将为您绘制出令人垂涎欲滴的美食图片。
-        </Text>
-
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="例如：一份淋着蜂蜜的松软舒芙蕾，配上新鲜草莓，阳光明媚的早晨..."
-            placeholderTextColor={theme.colors.textSecondary}
-            multiline
-            value={prompt}
-            onChangeText={setPrompt}
-            textAlignVertical="top"
-          />
-          <TouchableOpacity style={styles.clearButton} onPress={() => setPrompt('')}>
-            <Ionicons name="close-circle" size={20} color={theme.colors.textSecondary} />
+    <View style={styles.container}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>美食绘图</Text>
+          <View style={{ width: 40 }} />
         </View>
 
-        <TouchableOpacity style={styles.generateButton} onPress={handleGenerate}>
-          <Ionicons name="brush" size={20} color="white" style={{ marginRight: 8 }} />
-          <Text style={styles.buttonText}>开始绘制</Text>
-        </TouchableOpacity>
-
-        {generatedImage && (
-          <View style={styles.resultContainer}>
-            <Text style={styles.resultTitle}>生成结果</Text>
-            <Image source={{ uri: generatedImage }} style={styles.resultImage} />
-            <View style={styles.actionRow}>
-              <TouchableOpacity style={styles.actionButton}>
-                <Ionicons name="download-outline" size={20} color={theme.colors.text} />
-                <Text style={styles.actionText}>保存</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
-                <Ionicons name="share-social-outline" size={20} color={theme.colors.text} />
-                <Text style={styles.actionText}>分享</Text>
-              </TouchableOpacity>
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.card}>
+            <Text style={styles.label}>创意描述</Text>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="例如：一份淋着蜂蜜的松软舒芙蕾，配上新鲜草莓..."
+                placeholderTextColor="#999"
+                multiline
+                value={prompt}
+                onChangeText={setPrompt}
+                textAlignVertical="top"
+              />
+              {prompt.length > 0 && (
+                <TouchableOpacity style={styles.clearButton} onPress={() => setPrompt('')}>
+                  <Ionicons name="close-circle" size={20} color="#CCC" />
+                </TouchableOpacity>
+              )}
             </View>
-          </View>
-        )}
 
-        <View style={styles.examplesContainer}>
-          <Text style={styles.sectionTitle}>灵感示例</Text>
-          <View style={styles.tagsContainer}>
-            {['日式拉面', '法式甜点', '麻辣火锅', '海鲜大餐', '精致下午茶'].map((tag, index) => (
-              <TouchableOpacity key={index} style={styles.tag} onPress={() => setPrompt(tag)}>
-                <Text style={styles.tagText}>{tag}</Text>
-              </TouchableOpacity>
-            ))}
+            <View style={styles.tagsRow}>
+              {['日式拉面', '法式甜点', '麻辣火锅'].map((tag, index) => (
+                <TouchableOpacity key={index} style={styles.tag} onPress={() => setPrompt(tag)}>
+                  <Text style={styles.tagText}>{tag}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity style={styles.generateButton} onPress={handleGenerate}>
+              <Text style={styles.buttonText}>开始绘制</Text>
+              <Ionicons name="brush" size={18} color="white" style={{ marginLeft: 8 }} />
+            </TouchableOpacity>
           </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+
+          {generatedImage && (
+            <View style={styles.resultCard}>
+              <Image source={{ uri: generatedImage }} style={styles.resultImage} />
+              <View style={styles.actionRow}>
+                <TouchableOpacity style={styles.actionButton}>
+                  <Ionicons name="download-outline" size={20} color="#1A1A1A" />
+                  <Text style={styles.actionText}>保存</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionButton}>
+                  <Ionicons name="share-social-outline" size={20} color="#1A1A1A" />
+                  <Text style={styles.actionText}>分享</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#F5F5F5',
+  },
+  safeArea: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.white,
-    ...theme.shadows.sm,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   backButton: {
-    padding: theme.spacing.sm,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1A1A',
   },
   content: {
-    padding: theme.spacing.lg,
+    padding: 20,
   },
-  description: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.xl,
-    textAlign: 'center',
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 12,
   },
   inputContainer: {
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.lg,
-    ...theme.shadows.sm,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
     minHeight: 120,
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
   },
   input: {
     flex: 1,
     fontSize: 16,
-    color: theme.colors.text,
+    color: '#1A1A1A',
     lineHeight: 24,
   },
   clearButton: {
     position: 'absolute',
-    bottom: theme.spacing.sm,
-    right: theme.spacing.sm,
-    padding: 4,
+    bottom: 12,
+    right: 12,
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 20,
+  },
+  tag: {
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  tagText: {
+    fontSize: 12,
+    color: '#666',
   },
   generateButton: {
     flexDirection: 'row',
-    backgroundColor: '#A18CD1',
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.round,
+    backgroundColor: '#1A1A1A',
+    paddingVertical: 16,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: theme.spacing.xl,
-    ...theme.shadows.md,
   },
   buttonText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
-  resultContainer: {
-    marginBottom: theme.spacing.xl,
-  },
-  resultTitle: {
-    ...theme.typography.h3,
-    marginBottom: theme.spacing.md,
+  resultCard: {
+    backgroundColor: 'white',
+    borderRadius: 24,
+    padding: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
   },
   resultImage: {
     width: '100%',
     aspectRatio: 1,
-    borderRadius: theme.borderRadius.lg,
-    marginBottom: theme.spacing.md,
+    borderRadius: 16,
+    marginBottom: 16,
   },
   actionRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    paddingVertical: 8,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: theme.spacing.sm,
+    padding: 8,
   },
   actionText: {
-    marginLeft: 4,
+    marginLeft: 6,
     fontSize: 14,
-    color: theme.colors.text,
-  },
-  examplesContainer: {
-    marginBottom: theme.spacing.xl,
-  },
-  sectionTitle: {
-    ...theme.typography.h3,
-    marginBottom: theme.spacing.md,
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  tag: {
-    backgroundColor: theme.colors.white,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borderRadius.round,
-    marginRight: theme.spacing.sm,
-    marginBottom: theme.spacing.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  tagText: {
-    color: theme.colors.text,
-    fontSize: 14,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
+    fontWeight: '600',
+    color: '#1A1A1A',
   },
 });
 

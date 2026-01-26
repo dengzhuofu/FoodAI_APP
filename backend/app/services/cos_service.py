@@ -55,30 +55,35 @@ class COSService:
         
         try:
             # Read file content
-            # Note: This reads entire file into memory. 
-            # For very large files, consider using chunked upload or temporary file.
             content = await file.read()
+            return await self.upload_bytes(content, key)
             
+        except Exception as e:
+            print(f"COS Upload Error: {e}")
+            await file.seek(0)
+            raise e
+
+    async def upload_bytes(self, content: bytes, key: str) -> str:
+        """
+        Upload bytes to COS and return the public URL.
+        """
+        if not self.client:
+            raise Exception("COS client not configured")
+            
+        try:
             # Upload
-            response = self.client.put_object(
+            self.client.put_object(
                 Bucket=self.bucket,
                 Body=content,
                 Key=key,
                 EnableMD5=False
             )
             
-            # Reset file pointer for subsequent reads if any
-            await file.seek(0)
-            
             # Generate URL
-            # Standard COS URL format: https://<bucket>.cos.<region>.myqcloud.com/<key>
             url = f"https://{self.bucket}.cos.{self.region}.myqcloud.com/{key}"
             return url
-            
         except Exception as e:
-            print(f"COS Upload Error: {e}")
-            # Reset file pointer in case of error too, so fallback can use it
-            await file.seek(0)
+            print(f"COS Bytes Upload Error: {e}")
             raise e
 
 cos_service = COSService()

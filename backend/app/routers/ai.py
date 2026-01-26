@@ -2,23 +2,123 @@ from fastapi import APIRouter, UploadFile, File, Form, Depends, Body
 from app.services.ai_service import ai_service
 from app.models.users import User
 from app.core.deps import get_current_user
+from app.models.ai_logs import AILog
 from app.schemas.ai import (
     TextToRecipeRequest, 
     TextToImageRequest, 
     ImageToRecipeRequest, 
     ImageToCalorieRequest,
-    FridgeToRecipeRequest
+    FridgeToRecipeRequest,
+    GenerateRecipeImageRequest
 )
 
 router = APIRouter()
 
+@router.get("/history")
+async def get_history(
+    current_user: User = Depends(get_current_user),
+    limit: int = 20,
+    offset: int = 0
+):
+    logs = await AILog.filter(user=current_user).order_by("-created_at").offset(offset).limit(limit)
+    return {"history": logs}
+
+@router.post("/generate-recipe-image")
+async def generate_recipe_image(
+    request: GenerateRecipeImageRequest,
+    current_user: User = Depends(get_current_user)
+):
+    import httpx
+    import uuid
+    from app.services.cos_service import cos_service
+    
+    # Define a helper to download and upload
+    async def process_and_upload(image_url: str, prefix: str = "ai_gen") -> str:
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.get(image_url)
+                resp.raise_for_status()
+                image_bytes = resp.content
+                
+            filename = f"{prefix}_{uuid.uuid4().hex}.jpg"
+            # If COS is configured, upload to COS
+            if cos_service.is_configured():
+                return await cos_service.upload_bytes(image_bytes, filename)
+            else:
+                # Fallback to just returning the original URL if COS not ready (or handle local save)
+                # For now, just return original to ensure it works
+                return image_url
+        except Exception as e:
+            print(f"Error processing image upload: {e}")
+            return image_url
+
+    recipe = request.recipe_data
+    
+    if request.image_type == 'final':
+        # Generate Final Dish Image
+        prompt = f"Professional food photography of {recipe.title}. {recipe.description}. High resolution, 4k, delicious, restaurant quality."
+        original_url = await ai_service.generate_image(prompt)
+        final_url = await process_and_upload(original_url, "final")
+        
+        result_data = {"image_url": final_url}
+        
+        # Log to DB
+        await AILog.create(
+            user=current_user,
+            feature="generate-recipe-image-final",
+            input_summary=f"Final Image for {recipe.title}",
+            output_result=result_data
+        )
+        return result_data
+        
+    elif request.image_type == 'steps':
+        # Generate Step Images
+        steps_images = []
+        for index, step_text in enumerate(recipe.steps):
+            # To save time/cost, maybe limit to first 5 steps or similar? 
+            # For now, generate all.
+            step_prompt = f"Cooking step {index+1} for {recipe.title}: {step_text}. Close up shot, professional food photography, bright lighting."
+            try:
+                original_url = await ai_service.generate_image(step_prompt)
+                step_url = await process_and_upload(original_url, f"step_{index+1}")
+                steps_images.append({
+                    "step_index": index,
+                    "image_url": step_url,
+                    "text": step_text
+                })
+            except Exception as e:
+                print(f"Failed to generate image for step {index}: {e}")
+                # Continue even if one fails
+                continue
+                
+        result_data = {"images": steps_images}
+        
+        # Log to DB
+        await AILog.create(
+            user=current_user,
+            feature="generate-recipe-image-steps",
+            input_summary=f"Step Images for {recipe.title}",
+            output_result=result_data
+        )
+        return result_data
+    
+    return {"error": "Invalid image type"}
+
 @router.post("/text-to-recipe")
 async def text_to_recipe(
     request: TextToRecipeRequest,
-    # current_user: User = Depends(get_current_user)
     current_user: User = Depends(get_current_user)
 ):
     result = await ai_service.generate_recipe_from_text(request.description, request.preferences)
+    
+    # Log to DB
+    await AILog.create(
+        user=current_user,
+        feature="text-to-recipe",
+        input_summary=request.description[:100],
+        output_result=result
+    )
+    
     return {"result": result}
 
 @router.post("/text-to-image")

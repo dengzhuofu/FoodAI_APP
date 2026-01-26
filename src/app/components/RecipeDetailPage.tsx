@@ -132,35 +132,43 @@ const RecipeDetailPage = () => {
     <View style={styles.imageContainer}>
       <Image source={{ uri: recipe.image }} style={styles.heroImage} resizeMode="cover" />
       <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.7)']}
+        colors={['transparent', 'rgba(0,0,0,0.8)']}
         style={styles.gradient}
       />
-      <TouchableOpacity 
-        style={[styles.backButtonAbsolute, { top: insets.top + 10 }]} 
-        onPress={() => navigation.goBack()}
-      >
-        <View style={styles.blurButton}>
-          <Ionicons name="arrow-back" size={24} color="#FFF" />
-        </View>
-      </TouchableOpacity>
+      
+      {/* Top Bar */}
+      <View style={[styles.topBar, { top: insets.top }]}>
+        <TouchableOpacity 
+          style={styles.iconButton} 
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={20} color="#FFF" />
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.iconButton} 
+          onPress={handleCollection}
+        >
+          <Ionicons name={isCollected ? "heart" : "heart-outline"} size={20} color={isCollected ? "#FF6B6B" : "#FFF"} />
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.headerContent}>
-        <View style={styles.tagContainer}>
-          <View style={styles.tag}>
+        <View style={styles.tagRow}>
+          <View style={styles.difficultyTag}>
             <Text style={styles.tagText}>{recipe.difficulty}</Text>
           </View>
-          <View style={[styles.tag, styles.timeTag]}>
-            <Ionicons name="time-outline" size={12} color="#FFF" />
+          <View style={styles.timeTag}>
+            <Ionicons name="time" size={12} color="#FFF" />
             <Text style={styles.tagText}>{recipe.time}</Text>
           </View>
         </View>
+        
         <Text style={styles.title}>{recipe.title}</Text>
+        
         <View style={styles.authorRow}>
           <Image source={{ uri: recipe.author.avatar || 'https://via.placeholder.com/150' }} style={styles.avatar} />
           <Text style={styles.authorName}>{recipe.author.username}</Text>
-          <View style={styles.likesContainer}>
-            <Ionicons name="heart" size={16} color="#FF6B6B" />
-            <Text style={styles.likesText}>{recipe.likes_count}</Text>
-          </View>
         </View>
       </View>
     </View>
@@ -173,23 +181,26 @@ const RecipeDetailPage = () => {
     
     return (
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>营养成分</Text>
+        <Text style={styles.sectionTitle}>NUTRITION</Text>
         <View style={styles.nutritionGrid}>
-          <View style={[styles.nutritionItem, { backgroundColor: '#FFF5E6' }]}>
-            <Text style={[styles.nutritionValue, { color: '#FF9F43' }]}>{recipe.nutrition.calories || '-'}</Text>
-            <Text style={styles.nutritionLabel}>热量(卡)</Text>
+          <View style={styles.nutritionItem}>
+            <Text style={styles.nutritionValue}>{recipe.nutrition.calories || '-'}</Text>
+            <Text style={styles.nutritionLabel}>CALORIES</Text>
           </View>
-          <View style={[styles.nutritionItem, { backgroundColor: '#E8F5E9' }]}>
-            <Text style={[styles.nutritionValue, { color: '#2ECC71' }]}>{recipe.nutrition.protein || '-'}</Text>
-            <Text style={styles.nutritionLabel}>蛋白质</Text>
+          <View style={styles.verticalDivider} />
+          <View style={styles.nutritionItem}>
+            <Text style={styles.nutritionValue}>{recipe.nutrition.protein || '-'}</Text>
+            <Text style={styles.nutritionLabel}>PROTEIN</Text>
           </View>
-          <View style={[styles.nutritionItem, { backgroundColor: '#E3F2FD' }]}>
-            <Text style={[styles.nutritionValue, { color: '#3498DB' }]}>{recipe.nutrition.fat || '-'}</Text>
-            <Text style={styles.nutritionLabel}>脂肪</Text>
+          <View style={styles.verticalDivider} />
+          <View style={styles.nutritionItem}>
+            <Text style={styles.nutritionValue}>{recipe.nutrition.fat || '-'}</Text>
+            <Text style={styles.nutritionLabel}>FAT</Text>
           </View>
-          <View style={[styles.nutritionItem, { backgroundColor: '#F3E5F5' }]}>
-            <Text style={[styles.nutritionValue, { color: '#9B59B6' }]}>{recipe.nutrition.carbs || '-'}</Text>
-            <Text style={styles.nutritionLabel}>碳水</Text>
+          <View style={styles.verticalDivider} />
+          <View style={styles.nutritionItem}>
+            <Text style={styles.nutritionValue}>{recipe.nutrition.carbs || '-'}</Text>
+            <Text style={styles.nutritionLabel}>CARBS</Text>
           </View>
         </View>
       </View>
@@ -201,14 +212,16 @@ const RecipeDetailPage = () => {
       <TouchableOpacity 
         style={[styles.tab, activeTab === 'ingredients' && styles.activeTab]}
         onPress={() => setActiveTab('ingredients')}
+        activeOpacity={0.8}
       >
-        <Text style={[styles.tabText, activeTab === 'ingredients' && styles.activeTabText]}>所需食材</Text>
+        <Text style={[styles.tabText, activeTab === 'ingredients' && styles.activeTabText]}>Ingredients</Text>
       </TouchableOpacity>
       <TouchableOpacity 
         style={[styles.tab, activeTab === 'steps' && styles.activeTab]}
         onPress={() => setActiveTab('steps')}
+        activeOpacity={0.8}
       >
-        <Text style={[styles.tabText, activeTab === 'steps' && styles.activeTabText]}>制作步骤</Text>
+        <Text style={[styles.tabText, activeTab === 'steps' && styles.activeTabText]}>Instructions</Text>
       </TouchableOpacity>
     </View>
   );
@@ -229,7 +242,7 @@ const RecipeDetailPage = () => {
             styles.checkbox,
             checkedIngredients.has(index) && styles.checkboxChecked
           ]}>
-            {checkedIngredients.has(index) && <Ionicons name="checkmark" size={14} color="#FFF" />}
+            {checkedIngredients.has(index) && <Ionicons name="checkmark" size={12} color="#FFF" />}
           </View>
           <Text style={[
             styles.ingredientText,
@@ -238,8 +251,8 @@ const RecipeDetailPage = () => {
         </TouchableOpacity>
       ))}
       <TouchableOpacity style={styles.addButton} onPress={addToShoppingList}>
-        <Ionicons name="cart-outline" size={20} color="#FFF" />
-        <Text style={styles.addButtonText}>加入购物清单</Text>
+        <Ionicons name="cart-outline" size={18} color="#FFF" />
+        <Text style={styles.addButtonText}>Add to Shopping List</Text>
       </TouchableOpacity>
     </View>
   );
@@ -310,26 +323,18 @@ const RecipeDetailPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#F9F9F9',
   },
   scrollContent: {
-    paddingBottom: 120,
+    paddingBottom: 100,
   },
   centerContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    height: 50,
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.lg,
-  },
-  backButton: {
-    padding: 4,
-  },
   imageContainer: {
-    height: 300,
+    height: 400, // Taller hero image
     width: '100%',
     position: 'relative',
   },
@@ -342,293 +347,296 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: 150,
+    height: 240, // Taller gradient for better text readability
   },
-  backButtonAbsolute: {
+  topBar: {
     position: 'absolute',
-    top: 50,
-    left: 20,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
     zIndex: 10,
+    marginTop: 10,
   },
-  collectButtonAbsolute: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    zIndex: 10,
-  },
-  blurButton: {
+  iconButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(255,255,255,0.2)', // Lighter, glassy background
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: 'rgba(255,255,255,0.3)',
+    backdropFilter: 'blur(10px)', // Note: This prop is for web, on native it might need expo-blur
   },
   headerContent: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: theme.spacing.lg,
+    padding: 24,
+    paddingBottom: 40,
   },
-  tagContainer: {
+  tagRow: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: 16,
+    gap: 8,
   },
-  tag: {
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginRight: 8,
+  difficultyTag: {
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 100, // Fully rounded
   },
   timeTag: {
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 100,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   tagText: {
-    color: '#FFF',
+    color: '#1A1A1A',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 36, // Larger title
+    fontWeight: '900', // Black weight
     color: '#FFF',
-    marginBottom: 12,
+    marginBottom: 20,
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    textShadowOffset: { width: 0, height: 4 },
+    textShadowRadius: 12,
+    lineHeight: 42,
+    letterSpacing: -1,
   },
   authorRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   avatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
     borderColor: '#FFF',
-    marginRight: 8,
+    marginRight: 12,
   },
   authorName: {
     color: '#FFF',
-    fontSize: 14,
-    fontWeight: '500',
-    flex: 1,
-  },
-  likesContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  likesText: {
-    color: '#FFF',
-    fontSize: 12,
-    marginLeft: 4,
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   content: {
-    padding: theme.spacing.lg,
-    marginTop: -20,
-    backgroundColor: theme.colors.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    padding: 24,
+    marginTop: -32, // More overlap
+    backgroundColor: '#F9F9F9',
+    borderTopLeftRadius: 32, // Larger radius
+    borderTopRightRadius: 32,
   },
   description: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
-    marginBottom: 24,
-    lineHeight: 22,
+    fontSize: 16,
+    color: '#555',
+    marginBottom: 36,
+    lineHeight: 26,
+    fontWeight: '400',
+    letterSpacing: 0.2,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 40,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-    marginBottom: 16,
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#1A1A1A',
+    marginBottom: 20,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
   },
   nutritionGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 8,
+    backgroundColor: '#FFF',
+    padding: 24,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.03,
+    shadowRadius: 16,
+    elevation: 2,
   },
   nutritionItem: {
     flex: 1,
-    padding: 12,
-    borderRadius: 12,
     alignItems: 'center',
   },
+  verticalDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: '#F0F0F0',
+  },
   nutritionValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
+    fontSize: 18,
+    fontWeight: '900',
+    marginBottom: 6,
+    color: '#1A1A1A',
   },
   nutritionLabel: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
+    fontSize: 11,
+    color: '#999',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#F5F5F5',
-    padding: 4,
-    borderRadius: 12,
-    marginBottom: 20,
+    backgroundColor: '#F0F0F0', // Lighter background
+    padding: 6,
+    borderRadius: 100, // Pill shape
+    marginBottom: 32,
   },
   tab: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: 100,
   },
   activeTab: {
-    backgroundColor: '#FFF',
-    ...theme.shadows.sm,
+    backgroundColor: '#1A1A1A', // Black active tab
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   tabText: {
     fontSize: 14,
-    color: theme.colors.textSecondary,
-    fontWeight: '500',
+    color: '#888',
+    fontWeight: '600',
   },
   activeTabText: {
-    color: theme.colors.primary,
-    fontWeight: 'bold',
+    color: '#FFF', // White text on black
+    fontWeight: '700',
   },
   listContainer: {
-    gap: 12,
+    gap: 16,
   },
   ingredientItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 18,
     backgroundColor: '#FFF',
-    borderRadius: 12,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 8,
+    elevation: 1,
   },
   ingredientItemChecked: {
-    backgroundColor: '#F9F9F9',
+    backgroundColor: '#FAFAFA',
     borderColor: 'transparent',
+    opacity: 0.5,
+    shadowOpacity: 0,
   },
   checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 12, // Circle checkbox
     borderWidth: 2,
-    borderColor: '#DDD',
-    marginRight: 12,
+    borderColor: '#E0E0E0',
+    marginRight: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkboxChecked: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
+    backgroundColor: '#1A1A1A',
+    borderColor: '#1A1A1A',
   },
   ingredientText: {
-    fontSize: 15,
-    color: theme.colors.text,
+    fontSize: 16,
+    color: '#1A1A1A',
     flex: 1,
+    fontWeight: '600',
   },
   ingredientTextChecked: {
-    color: '#AAA',
+    color: '#999',
     textDecorationLine: 'line-through',
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.primary,
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 12,
-    gap: 8,
-    ...theme.shadows.sm,
+    backgroundColor: '#1A1A1A',
+    padding: 20,
+    borderRadius: 24,
+    marginTop: 24,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 6,
   },
   addButtonText: {
     color: '#FFF',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   stepItem: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: 32,
   },
   stepNumberContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: theme.colors.primary,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#1A1A1A',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
-    marginTop: 2,
+    marginRight: 20,
+    marginTop: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   stepNumber: {
     color: '#FFF',
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '800',
   },
   stepContent: {
     flex: 1,
     backgroundColor: '#FFF',
-    padding: 16,
-    borderRadius: 12,
-    borderTopLeftRadius: 4,
-    ...theme.shadows.sm,
+    padding: 24,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
   },
   stepText: {
-    fontSize: 15,
-    color: theme.colors.text,
-    lineHeight: 24,
-  },
-  commentItem: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    paddingBottom: 16,
-  },
-  commentAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
-  },
-  commentContent: {
-    flex: 1,
-  },
-  commentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  commentUser: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-  },
-  commentDate: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    marginBottom: 6,
-  },
-  commentText: {
-    fontSize: 14,
-    color: '#444',
-    lineHeight: 20,
+    fontSize: 16,
+    color: '#333',
+    lineHeight: 26,
+    fontWeight: '500',
   },
 });
 

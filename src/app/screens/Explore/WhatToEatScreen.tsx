@@ -1,17 +1,40 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Animated, Easing, Alert, Dimensions, ScrollView } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Animated, Easing, Alert, Dimensions, ScrollView, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import Svg, { Path, G, Text as SvgText } from 'react-native-svg';
+import Svg, { Path, G, Text as SvgText, Circle, Defs, Pattern, Rect } from 'react-native-svg';
 import { theme } from '../../styles/theme';
 
 const { width } = Dimensions.get('window');
-const WHEEL_SIZE = 300;
+const WHEEL_SIZE = width * 0.85;
 const RADIUS = WHEEL_SIZE / 2;
+const BORDER_WIDTH = 20;
 
-const DEFAULT_OPTIONS = ['火锅', '烧烤', '日料', '西餐', '川菜', '奶茶', '汉堡', '披萨'];
-const COLORS = ['#FF6B6B', '#FFA502', '#FFD700', '#2ECC71', '#3498DB', '#9B59B6', '#E0C3FC', '#FF9A9E'];
+const DEFAULT_OPTIONS = ['火锅 🍲', '烧烤 🍢', '日料 🍣', '西餐 🍝', '川菜 🌶️', '奶茶 🧋', '汉堡 🍔', '披萨 🍕'];
+
+// Pop / Carnival Palette
+const PALETTE = [
+  '#FF6B6B', // Red
+  '#4ECDC4', // Teal
+  '#FFE66D', // Yellow
+  '#FF9F1C', // Orange
+  '#9B5DE5', // Purple
+  '#F15BB5', // Pink
+];
+
+const BackgroundPattern = () => (
+  <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
+    <Defs>
+      <Pattern id="dots" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+        <Circle cx="2" cy="2" r="2" fill="rgba(0,0,0,0.05)" />
+        <Circle cx="22" cy="22" r="2" fill="rgba(0,0,0,0.05)" />
+      </Pattern>
+    </Defs>
+    <Rect x="0" y="0" width="100%" height="100%" fill="#F7F9FC" />
+    <Rect x="0" y="0" width="100%" height="100%" fill="url(#dots)" />
+  </Svg>
+);
 
 const WhatToEatScreen = () => {
   const navigation = useNavigation();
@@ -20,6 +43,17 @@ const WhatToEatScreen = () => {
   const [result, setResult] = useState<string | null>(null);
   const [isSpinning, setIsSpinning] = useState(false);
   const spinValue = useRef(new Animated.Value(0)).current;
+  const scaleValue = useRef(new Animated.Value(1)).current;
+  const lightsAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(lightsAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+        Animated.timing(lightsAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
 
   const handleAddOption = () => {
     if (newOption.trim()) {
@@ -48,24 +82,23 @@ const WhatToEatScreen = () => {
     setResult(null);
     spinValue.setValue(0);
 
+    // Button press animation
+    Animated.sequence([
+      Animated.timing(scaleValue, { toValue: 0.9, duration: 100, useNativeDriver: true }),
+      Animated.spring(scaleValue, { toValue: 1, friction: 3, useNativeDriver: true }),
+    ]).start();
+
     const randomIndex = Math.floor(Math.random() * options.length);
     const sectorAngle = 360 / options.length;
     
-    // We want the selected index to be at the TOP (270 degrees in SVG coordinates, or -90)
-    // Our pointer is at the TOP center.
-    // SVG starts drawing at 0 degrees (3 o'clock).
-    // Sector i starts at `i * sectorAngle`.
-    // We want the CENTER of sector i to align with 270 degrees (Top).
-    // Center of sector i is `i * sectorAngle + sectorAngle / 2`.
-    // Rotation needed: `270 - (i * sectorAngle + sectorAngle / 2)`.
-    
+    // Target calculation: Top is 270 degrees
     const targetAngle = 270 - (randomIndex * sectorAngle + sectorAngle / 2);
-    const finalRotation = 360 * 5 + targetAngle; // 5 full spins + target
+    const finalRotation = 360 * 10 + targetAngle; // More spins for excitement
 
     Animated.timing(spinValue, {
       toValue: finalRotation,
-      duration: 3000,
-      easing: Easing.out(Easing.cubic),
+      duration: 5000,
+      easing: Easing.bezier(0.2, 0, 0.1, 1), // "Spin up and slow down" curve
       useNativeDriver: true,
     }).start(({ finished }) => {
       if (finished) {
@@ -91,7 +124,7 @@ const WhatToEatScreen = () => {
     let cumulativePercent = 0;
 
     return (
-      <Svg height={WHEEL_SIZE} width={WHEEL_SIZE} viewBox={`-150 -150 300 300`}>
+      <Svg height={WHEEL_SIZE} width={WHEEL_SIZE} viewBox={`-${RADIUS} -${RADIUS} ${WHEEL_SIZE} ${WHEEL_SIZE}`}>
         <G>
           {options.map((option, index) => {
             const percent = 1 / total;
@@ -105,15 +138,22 @@ const WhatToEatScreen = () => {
               `L 0 0`,
             ].join(' ');
 
-            // Calculate text position
+            // Text calculations
             const angle = (index * (360 / total) + (360 / total) / 2) * (Math.PI / 180);
             const textRadius = RADIUS * 0.65;
             const textX = Math.cos(angle) * textRadius;
             const textY = Math.sin(angle) * textRadius;
             
+            const displayText = option.length > 6 ? option.substring(0, 5) + '...' : option;
+
             return (
               <G key={index}>
-                <Path d={pathData} fill={COLORS[index % COLORS.length]} stroke="white" strokeWidth="2" />
+                <Path 
+                  d={pathData} 
+                  fill={PALETTE[index % PALETTE.length]} 
+                  stroke="#FFF" 
+                  strokeWidth="2" 
+                />
                 <SvgText
                   x={textX}
                   y={textY}
@@ -122,9 +162,9 @@ const WhatToEatScreen = () => {
                   fontWeight="bold"
                   textAnchor="middle"
                   alignmentBaseline="middle"
-                  transform={`rotate(${index * (360 / total) + (360 / total) / 2}, ${textX}, ${textY})`}
+                  transform={`rotate(${index * (360 / total) + (360 / total) / 2 + 90}, ${textX}, ${textY})`}
                 >
-                  {option}
+                  {displayText}
                 </SvgText>
               </G>
             );
@@ -134,202 +174,373 @@ const WhatToEatScreen = () => {
     );
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-        <Text style={theme.typography.h2}>今天吃什么</Text>
-        <View style={{ width: 40 }} />
-      </View>
+  const renderLights = () => {
+    const lights = [];
+    const count = 24;
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * 2 * Math.PI;
+      const r = RADIUS + BORDER_WIDTH / 2;
+      const x = Math.cos(angle) * r;
+      const y = Math.sin(angle) * r;
+      
+      lights.push(
+        <View 
+          key={i} 
+          style={[
+            styles.lightBulb, 
+            { 
+              left: x + (WHEEL_SIZE + BORDER_WIDTH * 2) / 2 - 6, 
+              top: y + (WHEEL_SIZE + BORDER_WIDTH * 2) / 2 - 6,
+              backgroundColor: i % 2 === 0 ? '#FFE66D' : 'white' 
+            }
+          ]} 
+        />
+      );
+    }
+    return lights;
+  };
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.wheelWrapper}>
-          <View style={styles.pointerContainer}>
-            <Ionicons name="caret-down" size={40} color={theme.colors.text} />
-          </View>
-          <Animated.View style={{ transform: [{ rotate }] }}>
-            {renderWheel()}
-          </Animated.View>
-          <View style={styles.centerDot} />
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      <BackgroundPattern />
+      
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+             <Ionicons name="close" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>今天吃什么？</Text>
+          <View style={{ width: 40 }} />
         </View>
 
-        {result && (
-          <View style={styles.resultContainer}>
-            <Text style={styles.resultLabel}>决定就是：</Text>
-            <Text style={styles.resultText}>{result}</Text>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          
+          {/* Wheel Section */}
+          <View style={styles.wheelSection}>
+            <View style={styles.wheelBorder}>
+              {renderLights()}
+              <Animated.View 
+                style={[
+                  styles.wheelContainer, 
+                  { transform: [{ rotate }] }
+                ]}
+              >
+                {renderWheel()}
+              </Animated.View>
+            </View>
+
+            {/* Pointer - Solid and Simple */}
+            <View style={styles.pointerWrapper}>
+              <View style={styles.pointerTriangle} />
+            </View>
+
+            {/* Center Hub */}
+            <View style={styles.centerHub}>
+              <View style={styles.centerHubInner}>
+                <Ionicons name="fast-food" size={24} color="#FFF" />
+              </View>
+            </View>
           </View>
-        )}
 
-        <TouchableOpacity 
-          style={[styles.spinButton, isSpinning && styles.spinButtonDisabled]} 
-          onPress={spin}
-          disabled={isSpinning}
-        >
-          <Text style={styles.spinButtonText}>{isSpinning ? '转动中...' : '开始转动'}</Text>
-        </TouchableOpacity>
+          {/* Result Display */}
+          {result && (
+            <View style={styles.resultCard}>
+              <Text style={styles.resultPreTitle}>命运的安排是</Text>
+              <Text style={styles.resultTitle}>{result}</Text>
+              <View style={styles.confettiRow}>
+                 <Text style={{fontSize: 20}}>🎉</Text>
+                 <Text style={{fontSize: 20}}>✨</Text>
+                 <Text style={{fontSize: 20}}>🍽️</Text>
+              </View>
+            </View>
+          )}
 
-        <View style={styles.optionsSection}>
-          <Text style={styles.sectionTitle}>选项列表 ({options.length})</Text>
-          <View style={styles.inputRow}>
-            <TextInput
-              style={styles.input}
-              placeholder="添加新选项..."
-              value={newOption}
-              onChangeText={setNewItem}
-              onSubmitEditing={handleAddOption}
-            />
-            <TouchableOpacity style={styles.addButton} onPress={handleAddOption}>
-              <Ionicons name="add" size={24} color="white" />
+          {/* Spin Button */}
+          <Animated.View style={{ transform: [{ scale: scaleValue }], width: '100%', alignItems: 'center' }}>
+            <TouchableOpacity 
+              style={[styles.spinButton, isSpinning && styles.spinButtonDisabled]}
+              onPress={spin}
+              disabled={isSpinning}
+              activeOpacity={1}
+            >
+              <View style={styles.spinButtonInner}>
+                <Text style={styles.spinButtonText}>{isSpinning ? 'SPINNING...' : 'GO!'}</Text>
+              </View>
             </TouchableOpacity>
+          </Animated.View>
+
+          {/* Options Management */}
+          <View style={styles.optionsContainer}>
+            <View style={styles.optionInputRow}>
+              <TextInput
+                style={styles.optionInput}
+                placeholder="添加新选项..."
+                value={newOption}
+                onChangeText={setNewItem}
+                onSubmitEditing={handleAddOption}
+                placeholderTextColor="#999"
+              />
+              <TouchableOpacity style={styles.addOptionBtn} onPress={handleAddOption}>
+                <Ionicons name="add" size={24} color="white" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.tagsWrapper}>
+              {options.map((item, index) => (
+                <TouchableOpacity 
+                  key={index} 
+                  style={[styles.tag, { borderColor: PALETTE[index % PALETTE.length] }]}
+                  onPress={() => handleRemoveOption(index)}
+                >
+                  <Text style={[styles.tagText, { color: theme.colors.text }]}>{item}</Text>
+                  <Ionicons name="close-circle" size={16} color={PALETTE[index % PALETTE.length]} style={{marginLeft: 4}} />
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
           
-          <View style={styles.tagsContainer}>
-            {options.map((item, index) => (
-              <View key={index} style={[styles.tag, { borderColor: COLORS[index % COLORS.length] }]}>
-                <Text style={styles.tagText}>{item}</Text>
-                <TouchableOpacity onPress={() => handleRemoveOption(index)}>
-                  <Ionicons name="close-circle" size={16} color={theme.colors.textSecondary} />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          <View style={{height: 40}} />
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#F7F9FC',
+  },
+  safeArea: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.white,
-    ...theme.shadows.sm,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    zIndex: 10,
   },
   backButton: {
-    padding: theme.spacing.sm,
-  },
-  content: {
-    padding: theme.spacing.lg,
-    alignItems: 'center',
-  },
-  wheelWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: theme.spacing.xl,
-    marginTop: theme.spacing.lg,
-    position: 'relative',
-  },
-  pointerContainer: {
-    position: 'absolute',
-    top: -25,
-    zIndex: 10,
-    // Shadow for visibility
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  centerDot: {
-    position: 'absolute',
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: 'white',
-    zIndex: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 2,
   },
-  resultContainer: {
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#333',
+  },
+  scrollContent: {
     alignItems: 'center',
-    marginBottom: theme.spacing.lg,
+    paddingBottom: 40,
   },
-  resultLabel: {
-    fontSize: 16,
-    color: theme.colors.textSecondary,
+  wheelSection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 30,
+    width: WHEEL_SIZE + BORDER_WIDTH * 2,
+    height: WHEEL_SIZE + BORDER_WIDTH * 2,
   },
-  resultText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: theme.colors.primary,
-    marginTop: 4,
+  wheelBorder: {
+    width: WHEEL_SIZE + BORDER_WIDTH * 2,
+    height: WHEEL_SIZE + BORDER_WIDTH * 2,
+    borderRadius: (WHEEL_SIZE + BORDER_WIDTH * 2) / 2,
+    backgroundColor: '#333',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+    position: 'relative',
+  },
+  lightBulb: {
+    position: 'absolute',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+  },
+  wheelContainer: {
+    width: WHEEL_SIZE,
+    height: WHEEL_SIZE,
+    borderRadius: WHEEL_SIZE / 2,
+    overflow: 'hidden',
+    backgroundColor: 'white',
+  },
+  pointerWrapper: {
+    position: 'absolute',
+    top: -20, // Adjusted position
+    alignItems: 'center',
+    zIndex: 20,
+    // Removed shadows to make it flat and solid
+  },
+  pointerTriangle: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 20,
+    borderRightWidth: 20,
+    borderTopWidth: 50,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: '#FF4757', // Solid Red, no transparency
+  },
+  centerHub: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  centerHubInner: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#333',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  resultCard: {
+    backgroundColor: 'white',
+    paddingHorizontal: 40,
+    paddingVertical: 20,
+    borderRadius: 20,
+    alignItems: 'center',
+    marginBottom: 30,
+    shadowColor: '#FF9F1C',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 6,
+    borderWidth: 2,
+    borderColor: '#FF9F1C',
+    transform: [{ rotate: '-2deg' }],
+  },
+  resultPreTitle: {
+    fontSize: 14,
+    color: '#999',
+    fontWeight: '600',
+    marginBottom: 5,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  resultTitle: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#333',
+  },
+  confettiRow: {
+    flexDirection: 'row',
+    marginTop: 10,
+    gap: 10,
   },
   spinButton: {
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: 40,
-    paddingVertical: 12,
-    borderRadius: 25,
-    marginBottom: theme.spacing.xl,
-    ...theme.shadows.md,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#FF6B6B',
+    padding: 6,
+    marginBottom: 30,
+    shadowColor: '#FF6B6B',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
   spinButtonDisabled: {
-    backgroundColor: theme.colors.textSecondary,
+    backgroundColor: '#ccc',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  spinButtonInner: {
+    flex: 1,
+    borderRadius: 60,
+    borderWidth: 4,
+    borderColor: 'white',
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
   },
   spinButtonText: {
     color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '900',
+    fontStyle: 'italic',
   },
-  optionsSection: {
-    width: '100%',
+  optionsContainer: {
+    width: '90%',
+    backgroundColor: 'white',
+    borderRadius: 24,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
   },
-  sectionTitle: {
-    ...theme.typography.h3,
-    marginBottom: theme.spacing.md,
-  },
-  inputRow: {
+  optionInputRow: {
     flexDirection: 'row',
-    marginBottom: theme.spacing.md,
+    marginBottom: 15,
   },
-  input: {
+  optionInput: {
     flex: 1,
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.md,
-    paddingHorizontal: theme.spacing.md,
-    height: 44,
-    marginRight: theme.spacing.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    height: 50,
+    backgroundColor: '#F7F9FC',
+    borderRadius: 15,
+    paddingHorizontal: 15,
+    fontSize: 16,
+    marginRight: 10,
+    color: '#333',
   },
-  addButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: theme.colors.success,
+  addOptionBtn: {
+    width: 50,
+    height: 50,
+    borderRadius: 15,
+    backgroundColor: '#333',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  tagsContainer: {
+  tagsWrapper: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    gap: 8,
   },
   tag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.white,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: theme.spacing.sm,
-    marginBottom: theme.spacing.sm,
-    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 2,
+    backgroundColor: 'white',
   },
   tagText: {
-    marginRight: 6,
-    color: theme.colors.text,
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
 
