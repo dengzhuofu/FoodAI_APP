@@ -1,16 +1,18 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as ImagePicker from 'expo-image-picker';
 import { RootStackParamList } from '../navigation/types';
 import { theme } from '../styles/theme';
 import { getMe } from '../../api/auth';
 import { useAuth } from '../../context/AuthContext';
 import { getProfile } from '../../api/profile';
-import { getUserStats, UserStats } from '../../api/users';
+import { getUserStats, UserStats, updateProfile } from '../../api/users';
+import { uploadFile } from '../../api/upload';
 
 type ProfilePageNavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -20,6 +22,8 @@ const ProfilePage = () => {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [stats, setStats] = useState<UserStats>({ recipes_count: 0, followers_count: 0, following_count: 0 });
+  const [refreshing, setRefreshing] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const fetchUserData = async () => {
     try {
@@ -34,11 +38,58 @@ const ProfilePage = () => {
     }
   };
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchUserData();
+    setRefreshing(false);
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       fetchUserData();
     }, [])
   );
+
+  const handleEditAvatar = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        Alert.alert("需要权限", "需要访问相册权限来更换头像");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        setUploading(true);
+        try {
+          // 1. Upload image
+          const imageUrl = await uploadFile(result.assets[0].uri);
+          
+          // 2. Update user profile
+          const updatedUser = await updateProfile({ avatar: imageUrl });
+          
+          // 3. Update local state
+          setUser(updatedUser);
+          Alert.alert("成功", "头像更新成功");
+        } catch (error) {
+          console.error("Failed to update avatar", error);
+          Alert.alert("错误", "头像上传失败，请稍后重试");
+        } finally {
+          setUploading(false);
+        }
+      }
+    } catch (error) {
+      console.error("Image picker error", error);
+      setUploading(false);
+    }
+  };
 
   const handleLogout = async () => {
     Alert.alert('退出登录', '确定要退出登录吗？', [
@@ -77,181 +128,260 @@ const ProfilePage = () => {
         { name: '帮助中心', route: 'Settings', icon: 'help-circle', color: '#2ECC71' },
         { name: '设置', route: 'Settings', icon: 'settings', color: '#95A5A6' },
       ]
-    }
+    },
   ];
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
+    <View style={styles.container}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Messages')}>
+            <Ionicons name="notifications-outline" size={24} color={theme.colors.text} />
+            <View style={styles.notificationBadge} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Settings')}>
+            <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent} 
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
           <View style={styles.profileHeader}>
-            <Image 
-              source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&auto=format&fit=crop&q=60' }} 
-              style={styles.avatar} 
-            />
-            <View style={styles.profileInfo}>
-              <Text style={styles.userName}>{user?.nickname || '未登录'}</Text>
-              <Text style={styles.userBio}>{user?.bio || '热爱美食，热爱生活 🥑'}</Text>
-              <View style={styles.tagsRow}>
-                 {profile?.preferences?.slice(0, 2).map((pref: string, index: number) => (
-                    <View key={index} style={styles.tag}><Text style={styles.tagText}>{pref}</Text></View>
-                 ))}
-              </View>
-            </View>
-            <View style={styles.headerActions}>
-              <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Messages')}>
-                <Ionicons name="notifications-outline" size={20} color={theme.colors.textSecondary} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Settings')}>
-                <Ionicons name="settings-outline" size={20} color={theme.colors.textSecondary} />
+            <View style={styles.avatarContainer}>
+              <Image 
+                source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&auto=format&fit=crop&q=60' }} 
+                style={styles.avatar as any} 
+              />
+              <TouchableOpacity style={styles.editAvatarButton} onPress={handleEditAvatar} disabled={uploading}>
+                {uploading ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Ionicons name="camera" size={14} color="white" />
+                )}
               </TouchableOpacity>
             </View>
-          </View>
-
-          <View style={styles.statsContainer}>
-            {statsList.map((stat, index) => (
-              <View key={index} style={styles.statItem}>
-                <Text style={styles.statValue}>{stat.value}</Text>
-                <Text style={styles.statLabel}>{stat.label}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.proCard}>
-          <LinearGradient
-            colors={['#333', '#000']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.proGradient}
-          >
-            <View>
-              <Text style={styles.proTitle}>解锁 PRO 会员</Text>
-              <Text style={styles.proSubtitle}>无限次 AI 生成，专属营养分析</Text>
+            
+            <Text style={styles.userName}>{user?.nickname || '未登录'}</Text>
+            <Text style={styles.userBio}>{user?.bio || '热爱美食，热爱生活 🥑'}</Text>
+            
+            <View style={styles.tagsRow}>
+               {profile?.preferences?.slice(0, 3).map((pref: string, index: number) => (
+                  <View key={index} style={styles.tag}>
+                    <Text style={styles.tagText}>{pref}</Text>
+                  </View>
+               ))}
+               <TouchableOpacity style={[styles.tag, styles.addTag]}>
+                 <Ionicons name="add" size={12} color={theme.colors.textSecondary} />
+               </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.proButton}>
-              <Text style={styles.proButtonText}>立即升级</Text>
-            </TouchableOpacity>
-          </LinearGradient>
-        </View>
 
-        {menuGroups.map((group, groupIndex) => (
-          <View key={groupIndex} style={styles.menuGroup}>
-            <Text style={styles.groupTitle}>{group.title}</Text>
-            <View style={styles.menuList}>
-              {group.items.map((item, index) => (
-                <TouchableOpacity 
-                  key={index} 
-                  style={[
-                    styles.menuItem,
-                    index === group.items.length - 1 && styles.menuItemLast
-                  ]}
-                  onPress={() => navigation.navigate(item.route as any)}
-                >
-                  <View style={[styles.iconBox, { backgroundColor: item.color + '15' }]}>
-                    <Ionicons name={item.icon as any} size={20} color={item.color} />
-                  </View>
-                  <Text style={styles.menuName}>{item.name}</Text>
-                  <View style={styles.menuRight}>
-                    {item.badge && (
-                      <View style={styles.badge}>
-                        <Text style={styles.badgeText}>{item.badge}</Text>
-                      </View>
-                    )}
-                    <Ionicons name="chevron-forward" size={20} color={theme.colors.border} />
-                  </View>
-                </TouchableOpacity>
+            <View style={styles.statsContainer}>
+              {statsList.map((stat, index) => (
+                <View key={index} style={styles.statItem}>
+                  <Text style={styles.statValue}>{stat.value}</Text>
+                  <Text style={styles.statLabel}>{stat.label}</Text>
+                </View>
               ))}
             </View>
           </View>
-        ))}
-        
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>退出登录</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+
+          <View style={styles.proCardContainer}>
+            <LinearGradient
+              colors={['#2c3e50', '#000000']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.proGradient}
+            >
+              <View style={styles.proContent}>
+                <View style={styles.proIconContainer}>
+                  <Ionicons name="sparkles" size={24} color="#FFD700" />
+                </View>
+                <View style={styles.proTexts}>
+                  <Text style={styles.proTitle}>解锁 PRO 会员</Text>
+                  <Text style={styles.proSubtitle}>无限次 AI 生成，专属营养分析</Text>
+                </View>
+              </View>
+              <TouchableOpacity style={styles.proButton}>
+                <Text style={styles.proButtonText}>立即升级</Text>
+                <Ionicons name="chevron-forward" size={12} color="#333" />
+              </TouchableOpacity>
+            </LinearGradient>
+          </View>
+
+          {menuGroups.map((group, groupIndex) => (
+            <View key={groupIndex} style={styles.menuGroup}>
+              <Text style={styles.groupTitle}>{group.title}</Text>
+              <View style={styles.menuCard}>
+                {group.items.map((item, index) => (
+                  <TouchableOpacity 
+                    key={index} 
+                    style={[
+                      styles.menuItem,
+                      index === group.items.length - 1 && styles.menuItemLast
+                    ]}
+                    onPress={() => navigation.navigate(item.route as any)}
+                  >
+                    <View style={[styles.iconBox, { backgroundColor: item.color + '15' }]}>
+                      <Ionicons name={item.icon as any} size={22} color={item.color} />
+                    </View>
+                    <Text style={styles.menuName}>{item.name}</Text>
+                    <View style={styles.menuRight}>
+                      {item.badge && (
+                        <LinearGradient
+                          colors={[theme.colors.primary, theme.colors.primaryDark]}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          style={styles.badge}
+                        >
+                          <Text style={styles.badgeText}>{item.badge}</Text>
+                        </LinearGradient>
+                      )}
+                      <Ionicons name="chevron-forward" size={18} color={theme.colors.border} />
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          ))}
+          
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutText}>退出登录</Text>
+          </TouchableOpacity>
+          
+          <View style={styles.versionInfo}>
+            <Text style={styles.versionText}>FoodAI v1.0.0</Text>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#F7F8FA',
   },
-  scrollContent: {
-    paddingBottom: 100,
-  },
-  header: {
-    backgroundColor: theme.colors.white,
-    padding: theme.spacing.lg,
-    paddingTop: theme.spacing.xl,
-    borderBottomLeftRadius: theme.borderRadius.xl,
-    borderBottomRightRadius: theme.borderRadius.xl,
-    ...theme.shadows.sm,
-    marginBottom: theme.spacing.lg,
-  },
-  profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: theme.spacing.lg,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginRight: theme.spacing.md,
-    borderWidth: 3,
-    borderColor: theme.colors.background,
-  },
-  profileInfo: {
+  safeArea: {
     flex: 1,
-  },
-  userName: {
-    ...theme.typography.h2,
-    marginBottom: 4,
-  },
-  userBio: {
-    ...theme.typography.caption,
-    marginBottom: 8,
-  },
-  tagsRow: {
-    flexDirection: 'row',
-  },
-  tag: {
-    backgroundColor: '#FFF0F0',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  tagText: {
-    fontSize: 10,
-    color: theme.colors.primary,
-    fontWeight: 'bold',
-  },
-  editButton: {
-    padding: theme.spacing.sm,
+    backgroundColor: theme.colors.white,
   },
   headerActions: {
     flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    backgroundColor: theme.colors.white,
   },
   iconButton: {
-    padding: theme.spacing.sm,
-    marginLeft: 4,
+    padding: 8,
+    marginLeft: 8,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.colors.error,
+    borderWidth: 1,
+    borderColor: theme.colors.white,
+  },
+  scrollContent: {
+    paddingBottom: 100,
+    backgroundColor: '#F7F8FA',
+  },
+  profileHeader: {
+    backgroundColor: theme.colors.white,
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    alignItems: 'center',
+    ...theme.shadows.sm,
+    marginBottom: theme.spacing.lg,
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: theme.spacing.md,
+  },
+  avatar: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 4,
+    borderColor: '#FFF',
+    ...theme.shadows.md,
+  },
+  editAvatarButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: theme.colors.primary,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFF',
+  },
+  userName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+    marginBottom: 4,
+  },
+  userBio: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginBottom: 16,
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    marginBottom: 24,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  tag: {
+    backgroundColor: '#F0F2F5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginHorizontal: 4,
+    marginBottom: 4,
+  },
+  addTag: {
+    backgroundColor: '#F0F2F5',
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  tagText: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    fontWeight: '600',
   },
   statsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingTop: theme.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.background,
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 20,
   },
   statItem: {
     alignItems: 'center',
+    flex: 1,
   },
   statValue: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: theme.colors.text,
     marginBottom: 2,
@@ -260,39 +390,60 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: theme.colors.textSecondary,
   },
-  proCard: {
+  proCardContainer: {
     marginHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.lg,
-    borderRadius: theme.borderRadius.lg,
+    borderRadius: 20,
     ...theme.shadows.md,
+    marginTop: -20, // Overlap slightly with header if desired, but sticking to flow for now
   },
   proGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.lg,
+    padding: 20,
+    borderRadius: 20,
+  },
+  proContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  proIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  proTexts: {
+    flex: 1,
   },
   proTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#FFD700',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   proSubtitle: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
+    color: 'rgba(255,255,255,0.7)',
   },
   proButton: {
     backgroundColor: '#FFD700',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   proButtonText: {
     fontSize: 12,
     fontWeight: 'bold',
     color: '#333',
+    marginRight: 2,
   },
   menuGroup: {
     marginBottom: theme.spacing.lg,
@@ -302,46 +453,46 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.sm,
-    marginLeft: theme.spacing.xs,
+    marginBottom: 10,
+    marginLeft: 4,
   },
-  menuList: {
+  menuCard: {
     backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.md,
+    borderRadius: 20,
+    padding: 8,
     ...theme.shadows.sm,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: theme.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.background,
+    padding: 12,
+    borderRadius: 12,
   },
   menuItemLast: {
-    borderBottomWidth: 0,
+    marginBottom: 0,
   },
   iconBox: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: theme.spacing.md,
+    marginRight: 12,
   },
   menuName: {
     flex: 1,
     fontSize: 16,
     color: theme.colors.text,
+    fontWeight: '500',
   },
   menuRight: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   badge: {
-    backgroundColor: theme.colors.error,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
     marginRight: 8,
   },
   badgeText: {
@@ -353,11 +504,24 @@ const styles = StyleSheet.create({
     marginHorizontal: theme.spacing.lg,
     padding: theme.spacing.md,
     alignItems: 'center',
-    marginBottom: theme.spacing.xl,
+    backgroundColor: theme.colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    marginBottom: theme.spacing.lg,
   },
   logoutText: {
-    color: theme.colors.textSecondary,
-    fontSize: 14,
+    color: theme.colors.error,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  versionInfo: {
+    alignItems: 'center',
+    marginBottom: theme.spacing.xl,
+  },
+  versionText: {
+    fontSize: 12,
+    color: theme.colors.textTertiary,
   },
 });
 

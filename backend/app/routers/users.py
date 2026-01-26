@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from app.schemas.users import UserOut
+from app.schemas.users import UserOut, UserUpdate
 from app.schemas.content import CommentOut
 from app.models.users import User, Follow
 from app.models.recipes import Comment
@@ -10,6 +10,21 @@ router = APIRouter()
 
 @router.get("/me", response_model=UserOut)
 async def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+@router.patch("/me", response_model=UserOut)
+async def update_user_me(
+    user_update: UserUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    if user_update.nickname is not None:
+        current_user.nickname = user_update.nickname
+    if user_update.bio is not None:
+        current_user.bio = user_update.bio
+    if user_update.avatar is not None:
+        current_user.avatar = user_update.avatar
+        
+    await current_user.save()
     return current_user
 
 @router.get("/me/stats")

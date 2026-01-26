@@ -10,6 +10,11 @@ export interface UserStats {
   following_count: number;
 }
 
+export const updateProfile = async (data: { nickname?: string; bio?: string; avatar?: string }): Promise<User> => {
+  const response = await client.patch('/users/me', data);
+  return response.data;
+};
+
 export const followUser = async (userId: number): Promise<{ message: string }> => {
   const response = await client.post(`/users/${userId}/follow`);
   return response.data;

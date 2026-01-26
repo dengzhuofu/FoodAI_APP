@@ -22,6 +22,11 @@ class UserOut(BaseModel):
     class Config:
         from_attributes = True
 
+class UserUpdate(BaseModel):
+    nickname: Optional[str] = None
+    bio: Optional[str] = None
+    avatar: Optional[str] = None
+
 class Token(BaseModel):
     access_token: str
     token_type: str
