@@ -123,3 +123,18 @@ export const fridgeToRecipe = async (items: string[]): Promise<{result: RecipeRe
     throw e;
   }
 };
+
+// Recognize Fridge
+export interface RecognizedItem {
+  name: string;
+  quantity: string;
+  expiry_days: number;
+  icon: string;
+}
+
+export const recognizeFridge = async (imageUrl: string): Promise<RecognizedItem[]> => {
+  const response = await client.post('/ai/recognize-fridge', {
+    image_url: imageUrl
+  });
+  return response.data.items;
+};

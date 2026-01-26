@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -130,7 +130,11 @@ const TextToRecipeFeature = () => {
                     onPress={() => handleHistoryPress(item)}
                   >
                     <View style={styles.historyIcon}>
-                      <Ionicons name="restaurant-outline" size={20} color="#666" />
+                      {item.output_result?.image_url ? (
+                        <Image source={{ uri: item.output_result.image_url }} style={styles.historyImage} />
+                      ) : (
+                        <Ionicons name="restaurant-outline" size={20} color="#666" />
+                      )}
                     </View>
                     <View style={styles.historyContent}>
                       <Text style={styles.historyTitle} numberOfLines={1}>
@@ -289,6 +293,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  historyImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   historyContent: {
     flex: 1,

@@ -150,7 +150,11 @@ const ImageToRecipeFeature = () => {
                     onPress={() => handleHistoryPress(item)}
                   >
                     <View style={styles.historyIcon}>
-                      <Ionicons name="image-outline" size={20} color="#666" />
+                      {item.output_result?.image_url ? (
+                        <Image source={{ uri: item.output_result.image_url }} style={styles.historyImage} />
+                      ) : (
+                        <Ionicons name="image-outline" size={20} color="#666" />
+                      )}
                     </View>
                     <View style={styles.historyContent}>
                       <Text style={styles.historyTitle} numberOfLines={1}>
@@ -323,6 +327,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  historyImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   historyContent: {
     flex: 1,

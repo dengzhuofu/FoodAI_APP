@@ -272,6 +272,35 @@ class AIService:
         response = await chain.ainvoke({"items_str": ", ".join(items)})
         return self._clean_recipe_response(response.content)
 
+    async def recognize_fridge_items(self, image_url: str) -> List[Dict[str, Any]]:
+        """Use LangChain (Vision) to recognize fridge items"""
+        processed_url = self._process_image_url(image_url)
+        
+        message = HumanMessage(
+            content=[
+                {"type": "text", "text": "请识别图中的所有食材。请返回JSON格式的列表，每个列表项包含：name(食材名称), quantity(数量/重量, 估算), expiry_days(预估保质期天数, int), icon(emoji图标)。只返回JSON列表。"},
+                {"type": "image_url", "image_url": {"url": processed_url}},
+            ]
+        )
+        
+        try:
+            response = await self.llm_vision.ainvoke([message])
+            content = response.content
+            
+            # Clean content similar to recipe response
+            content = content.strip()
+            if "```json" in content:
+                content = content.split("```json")[1].split("```")[0]
+            elif "```" in content:
+                content = content.replace("```", "")
+            content = content.strip("` \n")
+            
+            return json.loads(content)
+        except Exception as e:
+            print(f"AI Service Error (Fridge): {e}")
+            # Fallback mock for demo if AI fails or returns bad format
+            return []
+
     async def chat_completion(self, messages: List[Dict[str, Any]], model: str = "Qwen/Qwen3-8B") -> str:
         """General chat using LangChain"""
         # Convert dict messages to LangChain Message objects

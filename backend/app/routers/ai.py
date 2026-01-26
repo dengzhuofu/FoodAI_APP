@@ -27,6 +27,23 @@ async def get_history(
     logs = await query.order_by("-created_at").offset(offset).limit(limit)
     return {"history": logs}
 
+@router.post("/recognize-fridge")
+async def recognize_fridge(
+    request: RecognizeFridgeRequest,
+    current_user: User = Depends(get_current_user)
+):
+    items = await ai_service.recognize_fridge_items(request.image_url)
+    
+    # Log to DB
+    await AILog.create(
+        user=current_user,
+        feature="recognize-fridge",
+        input_summary="Fridge Recognition",
+        output_result={"items": items}
+    )
+    
+    return {"items": items}
+
 @router.post("/generate-recipe-image")
 async def generate_recipe_image(
     request: GenerateRecipeImageRequest,

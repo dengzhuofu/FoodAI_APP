@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { theme } from '../../../styles/theme';
 import { fridgeToRecipe, getHistory, AILog } from '../../../../api/ai';
+import { getFridgeItems, FridgeItem } from '../../../../api/inventory';
 
 const FridgeToRecipeFeature = () => {
   const navigation = useNavigation<any>();
@@ -12,10 +13,41 @@ const FridgeToRecipeFeature = () => {
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<AILog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [inventory, setInventory] = useState<FridgeItem[]>([]);
+  const [loadingInventory, setLoadingInventory] = useState(false);
 
   useEffect(() => {
     fetchHistory();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchInventory();
+    }, [])
+  );
+
+  const fetchInventory = async () => {
+    setLoadingInventory(true);
+    try {
+        const items = await getFridgeItems();
+        // Calculate daysLeft for each item if backend doesn't provide it
+        const processedItems = items.map(item => {
+            let daysLeft = 0;
+            if (item.expiry_date) {
+                const today = new Date();
+                const expiry = new Date(item.expiry_date);
+                const diffTime = expiry.getTime() - today.getTime();
+                daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            }
+            return { ...item, daysLeft };
+        });
+        setInventory(processedItems);
+    } catch (error) {
+        console.error('Failed to fetch inventory', error);
+    } finally {
+        setLoadingInventory(false);
+    }
+  };
 
   const fetchHistory = async () => {
     setLoadingHistory(true);
@@ -29,21 +61,11 @@ const FridgeToRecipeFeature = () => {
     }
   };
 
-  // Mock fridge inventory
-  const inventory = [
-    { id: '鸡蛋', name: '鸡蛋', daysLeft: 5, icon: '🥚' },
-    { id: '西红柿', name: '西红柿', daysLeft: 3, icon: '🍅' },
-    { id: '洋葱', name: '洋葱', daysLeft: 7, icon: '🧅' },
-    { id: '土豆', name: '土豆', daysLeft: 10, icon: '🥔' },
-    { id: '牛肉', name: '牛肉', daysLeft: 2, icon: '🥩' },
-    { id: '青椒', name: '青椒', daysLeft: 4, icon: '🫑' },
-  ];
-
-  const toggleSelection = (id: string) => {
-    if (selectedItems.includes(id)) {
-      setSelectedItems(selectedItems.filter(item => item !== id));
+  const toggleSelection = (name: string) => {
+    if (selectedItems.includes(name)) {
+      setSelectedItems(selectedItems.filter(item => item !== name));
     } else {
-      setSelectedItems([...selectedItems, id]);
+      setSelectedItems([...selectedItems, name]);
     }
   };
 
@@ -85,41 +107,56 @@ const FridgeToRecipeFeature = () => {
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>选择库存食材</Text>
-            <TouchableOpacity onPress={() => setSelectedItems(inventory.map(i => i.id))}>
+            <TouchableOpacity onPress={() => setSelectedItems(inventory.map(i => i.name))}>
               <Text style={styles.actionText}>全选</Text>
             </TouchableOpacity>
           </View>
           
-          <View style={styles.grid}>
-            {inventory.map((item) => {
-              const isSelected = selectedItems.includes(item.id);
-              const isUrgent = item.daysLeft <= 3;
-              
-              return (
-                <TouchableOpacity 
-                  key={item.id} 
-                  style={[styles.itemCard, isSelected && styles.itemCardSelected]}
-                  onPress={() => toggleSelection(item.id)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.itemIcon}>{item.icon}</Text>
-                  <Text style={[styles.itemName, isSelected && styles.itemNameSelected]}>{item.name}</Text>
-                  
-                  {isUrgent && (
-                    <View style={styles.urgentBadge}>
-                      <Text style={styles.urgentText}>即将过期</Text>
-                    </View>
-                  )}
-                  
-                  {isSelected && (
-                    <View style={styles.checkIcon}>
-                      <Ionicons name="checkmark-circle" size={20} color="#1A1A1A" />
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          {loadingInventory ? (
+             <ActivityIndicator color="#1A1A1A" style={{ marginVertical: 20 }} />
+          ) : inventory.length === 0 ? (
+             <View style={styles.emptyState}>
+                 <Ionicons name="cube-outline" size={48} color="#CCC" />
+                 <Text style={styles.emptyStateText}>冰箱空空如也，快去添加食材吧</Text>
+                 <TouchableOpacity 
+                    style={styles.goToFridgeButton}
+                    onPress={() => navigation.navigate('MyKitchen')}
+                 >
+                     <Text style={styles.goToFridgeText}>去管理冰箱</Text>
+                 </TouchableOpacity>
+             </View>
+          ) : (
+            <View style={styles.grid}>
+                {inventory.map((item) => {
+                const isSelected = selectedItems.includes(item.name);
+                const isUrgent = (item.daysLeft || 0) <= 3;
+                
+                return (
+                    <TouchableOpacity 
+                    key={item.id} 
+                    style={[styles.itemCard, isSelected && styles.itemCardSelected]}
+                    onPress={() => toggleSelection(item.name)}
+                    activeOpacity={0.8}
+                    >
+                    <Text style={styles.itemIcon}>{item.icon || '🥘'}</Text>
+                    <Text style={[styles.itemName, isSelected && styles.itemNameSelected]}>{item.name}</Text>
+                    
+                    {isUrgent && (
+                        <View style={styles.urgentBadge}>
+                        <Text style={styles.urgentText}>即将过期</Text>
+                        </View>
+                    )}
+                    
+                    {isSelected && (
+                        <View style={styles.checkIcon}>
+                        <Ionicons name="checkmark-circle" size={20} color="#1A1A1A" />
+                        </View>
+                    )}
+                    </TouchableOpacity>
+                );
+                })}
+            </View>
+          )}
 
           {/* History Section */}
           <View style={styles.historySection}>
@@ -135,7 +172,11 @@ const FridgeToRecipeFeature = () => {
                     onPress={() => handleHistoryPress(item)}
                   >
                     <View style={styles.historyIcon}>
-                      <Ionicons name="nutrition-outline" size={20} color="#666" />
+                      {item.output_result?.image_url ? (
+                        <Image source={{ uri: item.output_result.image_url }} style={styles.historyImage} />
+                      ) : (
+                        <Ionicons name="nutrition-outline" size={20} color="#666" />
+                      )}
                     </View>
                     <View style={styles.historyContent}>
                       <Text style={styles.historyTitle} numberOfLines={1}>
@@ -327,6 +368,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  historyImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   historyContent: {
     flex: 1,
@@ -346,6 +393,30 @@ const styles = StyleSheet.create({
     color: '#999',
     fontSize: 14,
     marginTop: 20,
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: 40,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    marginTop: 10,
+  },
+  emptyStateText: {
+    marginTop: 16,
+    marginBottom: 24,
+    color: '#999',
+    fontSize: 14,
+  },
+  goToFridgeButton: {
+    backgroundColor: '#1A1A1A',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  goToFridgeText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
   },
 });
 
