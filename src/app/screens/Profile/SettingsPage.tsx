@@ -32,11 +32,10 @@ const SettingsPage = () => {
   };
 
   const changeLanguage = () => {
-    Alert.alert(t('common.language'), undefined, [
-      { text: 'English', onPress: () => i18n.changeLanguage('en') },
-      { text: '简体中文', onPress: () => i18n.changeLanguage('zh') },
-      { text: t('common.cancel'), style: 'cancel' }
-    ]);
+    const currentLng = i18n.language;
+    // Simple toggle logic: if currently zh, switch to en, otherwise switch to zh
+    const nextLng = currentLng === 'zh' ? 'en' : 'zh';
+    i18n.changeLanguage(nextLng);
   };
 
   const handleLogout = async () => {
