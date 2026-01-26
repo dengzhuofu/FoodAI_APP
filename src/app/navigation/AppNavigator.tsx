@@ -55,7 +55,11 @@ const Stack = createStackNavigator<RootStackParamList>();
 // Placeholder for Publish Button functionality (handled in TabBar listener usually or as a modal)
 const PublishPlaceholder = () => <View />;
 
+import { useTranslation } from 'react-i18next';
+
 const MainTabs = () => {
+  const { t } = useTranslation();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -103,12 +107,12 @@ const MainTabs = () => {
       <Tab.Screen 
         name="Recommend" 
         component={RecommendScreen} 
-        options={{ title: 'Home' }}
+        options={{ title: t('nav.home') }}
       />
       <Tab.Screen 
         name="Explore" 
         component={ExploreScreen} 
-        options={{ title: 'Explore' }}
+        options={{ title: t('nav.explore') }}
       />
       <Tab.Screen 
         name="PublishTab" 
@@ -145,12 +149,12 @@ const MainTabs = () => {
       <Tab.Screen 
         name="AIKitchen" 
         component={AIKitchenScreen} 
-        options={{ title: 'AI Kitchen' }}
+        options={{ title: t('nav.kitchen') }}
       />
       <Tab.Screen 
         name="Profile" 
         component={ProfilePage} 
-        options={{ title: 'Me' }}
+        options={{ title: t('nav.profile') }}
       />
     </Tab.Navigator>
   );

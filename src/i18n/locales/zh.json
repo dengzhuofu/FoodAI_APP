@@ -1,0 +1,30 @@
+{
+  "common": {
+    "welcome": "欢迎",
+    "loading": "加载中...",
+    "save": "保存",
+    "cancel": "取消",
+    "confirm": "确认",
+    "back": "返回",
+    "settings": "设置",
+    "language": "语言",
+    "theme": "主题"
+  },
+  "auth": {
+    "login": "登录",
+    "register": "注册",
+    "logout": "退出登录"
+  },
+  "nav": {
+    "home": "首页",
+    "explore": "发现",
+    "kitchen": "AI厨房",
+    "profile": "我的"
+  },
+  "profile": {
+    "editProfile": "编辑资料",
+    "myRecipes": "我的菜谱",
+    "myCollections": "我的收藏",
+    "settings": "设置"
+  }
+}

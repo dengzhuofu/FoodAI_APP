@@ -43,10 +43,6 @@ const RegisterScreen = () => {
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
-      <LinearGradient
-        colors={['#FFF5F5', '#FFFFFF', '#FFFFFF']}
-        style={StyleSheet.absoluteFill}
-      />
       
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView 
@@ -54,82 +50,77 @@ const RegisterScreen = () => {
           style={styles.keyboardView}
         >
           <View style={styles.content}>
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-              <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-            </TouchableOpacity>
-
             <View style={styles.header}>
-              <Text style={styles.title}>创建账号</Text>
-              <Text style={styles.subtitle}>加入我们，探索美食的无限可能</Text>
+              <Image 
+                source={require('../../../../assets/icon.png')} 
+                style={styles.logo}
+                resizeMode="contain"
+              />
             </View>
 
-            <View style={styles.form}>
-              <View style={styles.inputContainer}>
-                <Ionicons name="person-outline" size={20} color={theme.colors.textSecondary} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="用户名 (登录用)"
-                  placeholderTextColor={theme.colors.textTertiary}
-                  value={username}
-                  onChangeText={setUsername}
-                  autoCapitalize="none"
-                />
-              </View>
+            <View style={styles.mainSection}>
+              <Text style={styles.title}>创建你的账号</Text>
 
-              <View style={styles.inputContainer}>
-                <Ionicons name="happy-outline" size={20} color={theme.colors.textSecondary} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="昵称 (显示用)"
-                  placeholderTextColor={theme.colors.textTertiary}
-                  value={nickname}
-                  onChangeText={setNickname}
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color={theme.colors.textSecondary} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="密码"
-                  placeholderTextColor={theme.colors.textTertiary}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                  <Ionicons 
-                    name={showPassword ? "eye-outline" : "eye-off-outline"} 
-                    size={20} 
-                    color={theme.colors.textSecondary} 
+              <View style={styles.form}>
+                <View style={styles.inputWrapper}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="用户名"
+                    placeholderTextColor={theme.colors.textTertiary}
+                    value={username}
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
                   />
-                </TouchableOpacity>
-              </View>
+                </View>
 
+                <View style={styles.inputWrapper}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="昵称"
+                    placeholderTextColor={theme.colors.textTertiary}
+                    value={nickname}
+                    onChangeText={setNickname}
+                  />
+                </View>
+
+                <View style={styles.inputWrapper}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="密码"
+                    placeholderTextColor={theme.colors.textTertiary}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                  />
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                    <Ionicons 
+                      name={showPassword ? "eye-outline" : "eye-off-outline"} 
+                      size={20} 
+                      color={theme.colors.textSecondary} 
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.bottomSection}>
               <TouchableOpacity 
                 style={styles.registerButton} 
                 onPress={handleRegister}
                 disabled={loading}
                 activeOpacity={0.8}
               >
-                <LinearGradient
-                  colors={[theme.colors.secondary, theme.colors.warning]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.gradientButton}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="white" />
-                  ) : (
-                    <Text style={styles.registerButtonText}>注册</Text>
-                  )}
-                </LinearGradient>
+                {loading ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text style={styles.registerButtonText}>注册</Text>
+                )}
               </TouchableOpacity>
 
               <View style={styles.footer}>
                 <Text style={styles.footerText}>已有账号？</Text>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                  <Text style={styles.linkText}>去登录</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                  <Text style={styles.linkText}>登录</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -143,7 +134,7 @@ const RegisterScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#FFFFFF',
   },
   safeArea: {
     flex: 1,
@@ -153,68 +144,75 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: theme.spacing.lg,
-  },
-  backButton: {
-    marginTop: theme.spacing.sm,
-    marginBottom: theme.spacing.lg,
+    paddingHorizontal: 32,
+    justifyContent: 'space-between',
+    paddingBottom: 20,
   },
   header: {
-    marginBottom: 40,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  logo: {
+    width: 40,
+    height: 40,
+  },
+  mainSection: {
+    flex: 1,
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: theme.colors.textSecondary,
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#0F1419',
+    marginBottom: 32,
+    textAlign: 'left',
   },
   form: {
     width: '100%',
   },
-  inputContainer: {
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.lg,
-    marginBottom: theme.spacing.md,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 4,
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: '#CFD9DE',
     height: 56,
-    paddingHorizontal: theme.spacing.md,
-    ...theme.shadows.sm,
-  },
-  inputIcon: {
-    marginRight: theme.spacing.sm,
+    paddingHorizontal: 12,
   },
   input: {
     flex: 1,
-    fontSize: 16,
-    color: theme.colors.text,
+    fontSize: 17,
+    color: '#0F1419',
   },
   eyeIcon: {
-    padding: theme.spacing.xs,
+    padding: 8,
+  },
+  bottomSection: {
+    width: '100%',
+    paddingBottom: 20,
   },
   registerButton: {
-    borderRadius: theme.borderRadius.round,
-    marginTop: theme.spacing.lg,
-    marginBottom: theme.spacing.lg,
-    ...theme.shadows.md,
-  },
-  gradientButton: {
-    paddingVertical: 16,
-    borderRadius: theme.borderRadius.round,
+    backgroundColor: '#0F1419',
+    borderRadius: 9999,
+    height: 50,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  gradientButton: {
+    // Deprecated
   },
   registerButtonText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    letterSpacing: 1,
   },
   footer: {
     flexDirection: 'row',
@@ -222,13 +220,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    color: theme.colors.textSecondary,
-    fontSize: 14,
+    color: '#536471',
+    fontSize: 15,
     marginRight: 4,
   },
   linkText: {
     color: theme.colors.primary,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: 'bold',
   },
 });

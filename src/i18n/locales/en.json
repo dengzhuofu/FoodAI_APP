@@ -1,0 +1,30 @@
+{
+  "common": {
+    "welcome": "Welcome",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "back": "Back",
+    "settings": "Settings",
+    "language": "Language",
+    "theme": "Theme"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout"
+  },
+  "nav": {
+    "home": "Home",
+    "explore": "Explore",
+    "kitchen": "AI Kitchen",
+    "profile": "Profile"
+  },
+  "profile": {
+    "editProfile": "Edit Profile",
+    "myRecipes": "My Recipes",
+    "myCollections": "My Collections",
+    "settings": "Settings"
+  }
+}

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, RefreshControl, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -25,10 +25,19 @@ const ProfilePage = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  // Edit Profile State
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editNickname, setEditNickname] = useState('');
+  const [editBio, setEditBio] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+
   const fetchUserData = async () => {
     try {
       const userData = await getMe();
       setUser(userData);
+      setEditNickname(userData.nickname || '');
+      setEditBio(userData.bio || '');
+      
       const profileData = await getProfile();
       setProfile(profileData);
       const statsData = await getUserStats();
@@ -88,6 +97,29 @@ const ProfilePage = () => {
     } catch (error) {
       console.error("Image picker error", error);
       setUploading(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editNickname.trim()) {
+      Alert.alert("提示", "昵称不能为空");
+      return;
+    }
+
+    setSavingProfile(true);
+    try {
+      const updatedUser = await updateProfile({
+        nickname: editNickname,
+        bio: editBio
+      });
+      setUser(updatedUser);
+      setEditModalVisible(false);
+      Alert.alert("成功", "个人资料已更新");
+    } catch (error) {
+      console.error("Failed to update profile", error);
+      Alert.alert("错误", "更新失败，请稍后重试");
+    } finally {
+      setSavingProfile(false);
     }
   };
 
@@ -166,7 +198,16 @@ const ProfilePage = () => {
               </TouchableOpacity>
             </View>
             
-            <Text style={styles.userName}>{user?.nickname || '未登录'}</Text>
+            <View style={styles.userInfoContainer}>
+              <Text style={styles.userName}>{user?.nickname || '未登录'}</Text>
+              <TouchableOpacity 
+                style={styles.editProfileIcon}
+                onPress={() => setEditModalVisible(true)}
+              >
+                <Ionicons name="pencil" size={16} color={theme.colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            
             <Text style={styles.userBio}>{user?.bio || '热爱美食，热爱生活 🥑'}</Text>
             
             <View style={styles.tagsRow}>
@@ -182,10 +223,10 @@ const ProfilePage = () => {
 
             <View style={styles.statsContainer}>
               {statsList.map((stat, index) => (
-                <View key={index} style={styles.statItem}>
+                <TouchableOpacity key={index} style={styles.statItem} activeOpacity={0.7}>
                   <Text style={styles.statValue}>{stat.value}</Text>
                   <Text style={styles.statLabel}>{stat.label}</Text>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
           </View>
@@ -258,6 +299,65 @@ const ProfilePage = () => {
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      {/* Edit Profile Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={editModalVisible}
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>编辑个人资料</Text>
+              <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+                <Ionicons name="close" size={24} color={theme.colors.text} />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>昵称</Text>
+              <TextInput
+                style={styles.input}
+                value={editNickname}
+                onChangeText={setEditNickname}
+                placeholder="请输入昵称"
+                maxLength={20}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>简介</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={editBio}
+                onChangeText={setEditBio}
+                placeholder="介绍一下自己吧..."
+                multiline
+                numberOfLines={3}
+                maxLength={100}
+                textAlignVertical="top"
+              />
+            </View>
+
+            <TouchableOpacity 
+              style={styles.saveButton} 
+              onPress={handleSaveProfile}
+              disabled={savingProfile}
+            >
+              {savingProfile ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.saveButtonText}>保存修改</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 };
@@ -332,16 +432,26 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#FFF',
   },
+  userInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   userName: {
     fontSize: 24,
     fontWeight: 'bold',
     color: theme.colors.text,
-    marginBottom: 4,
+    marginRight: 8,
+  },
+  editProfileIcon: {
+    padding: 4,
   },
   userBio: {
     fontSize: 14,
     color: theme.colors.textSecondary,
     marginBottom: 16,
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
   tagsRow: {
     flexDirection: 'row',
@@ -522,6 +632,59 @@ const styles = StyleSheet.create({
   versionText: {
     fontSize: 12,
     color: theme.colors.textTertiary,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: theme.colors.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: theme.spacing.lg,
+    paddingBottom: Platform.OS === 'ios' ? 40 : theme.spacing.lg,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+  },
+  inputGroup: {
+    marginBottom: theme.spacing.md,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: '#F5F6FA',
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 16,
+    color: theme.colors.text,
+  },
+  textArea: {
+    height: 100,
+  },
+  saveButton: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: theme.spacing.lg,
+  },
+  saveButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

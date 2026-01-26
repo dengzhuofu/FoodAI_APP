@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert } f
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { theme } from '../../styles/theme';
 import { logout } from '../../../api/auth';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -10,6 +11,7 @@ import { RootStackParamList } from '../../navigation/types';
 
 const SettingsPage = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const { t, i18n } = useTranslation();
   
   const [settings, setSettings] = useState({
     notifications: true,
@@ -24,16 +26,24 @@ const SettingsPage = () => {
 
   const handleCacheClear = () => {
     Alert.alert('清除缓存', '确定要清除所有应用缓存吗？', [
-      { text: '取消', style: 'cancel' },
-      { text: '确定', onPress: () => Alert.alert('成功', '缓存已清除') }
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.confirm'), onPress: () => Alert.alert('成功', '缓存已清除') }
+    ]);
+  };
+
+  const changeLanguage = () => {
+    Alert.alert(t('common.language'), undefined, [
+      { text: 'English', onPress: () => i18n.changeLanguage('en') },
+      { text: '简体中文', onPress: () => i18n.changeLanguage('zh') },
+      { text: t('common.cancel'), style: 'cancel' }
     ]);
   };
 
   const handleLogout = async () => {
-    Alert.alert('退出登录', '确定要退出登录吗？', [
-      { text: '取消', style: 'cancel' },
+    Alert.alert(t('auth.logout'), '确定要退出登录吗？', [
+      { text: t('common.cancel'), style: 'cancel' },
       { 
-        text: '确定', 
+        text: t('common.confirm'), 
         style: 'destructive',
         onPress: async () => {
           await logout();
@@ -93,7 +103,7 @@ const SettingsPage = () => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={theme.typography.h2}>设置</Text>
+        <Text style={theme.typography.h2}>{t('common.settings')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -104,7 +114,7 @@ const SettingsPage = () => {
             <View style={styles.divider} />
             {renderSwitchItem('提示音效', 'musical-note-outline', settings.sound, () => toggleSwitch('sound'))}
             <View style={styles.divider} />
-            {renderActionItem('多语言', 'language-outline', () => {}, '简体中文')}
+            {renderActionItem(t('common.language'), 'language-outline', changeLanguage, i18n.language === 'zh' ? '简体中文' : 'English')}
           </>
         ))}
 
@@ -139,7 +149,7 @@ const SettingsPage = () => {
         ))}
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>退出登录</Text>
+          <Text style={styles.logoutText}>{t('auth.logout')}</Text>
         </TouchableOpacity>
         
         <Text style={styles.copyright}>© 2024 FoodAI App. All rights reserved.</Text>

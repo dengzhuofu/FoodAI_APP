@@ -42,10 +42,6 @@ const LoginScreen = () => {
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
-      <LinearGradient
-        colors={['#FFF5F5', '#FFFFFF', '#FFFFFF']}
-        style={StyleSheet.absoluteFill}
-      />
       
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView 
@@ -54,79 +50,70 @@ const LoginScreen = () => {
         >
           <View style={styles.content}>
             <View style={styles.header}>
-              <View style={styles.logoContainer}>
-                <Image 
-                  source={require('../../../../assets/icon.png')} 
-                  style={styles.logo}
-                  resizeMode="contain"
-                />
-              </View>
-              <Text style={styles.title}>欢迎回来</Text>
-              <Text style={styles.subtitle}>登录您的 FoodAI 账号，开启美食之旅</Text>
+              <Image 
+                source={require('../../../../assets/icon.png')} 
+                style={styles.logo}
+                resizeMode="contain"
+              />
             </View>
 
-            <View style={styles.form}>
-              <View style={styles.inputContainer}>
-                <Ionicons name="person-outline" size={20} color={theme.colors.textSecondary} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="用户名"
-                  placeholderTextColor={theme.colors.textTertiary}
-                  value={username}
-                  onChangeText={setUsername}
-                  autoCapitalize="none"
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Ionicons name="lock-closed-outline" size={20} color={theme.colors.textSecondary} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="密码"
-                  placeholderTextColor={theme.colors.textTertiary}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                  <Ionicons 
-                    name={showPassword ? "eye-outline" : "eye-off-outline"} 
-                    size={20} 
-                    color={theme.colors.textSecondary} 
+            <View style={styles.mainSection}>
+              <Text style={styles.title}>登录 FoodAI</Text>
+              
+              <View style={styles.form}>
+                <View style={styles.inputWrapper}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="用户名"
+                    placeholderTextColor={theme.colors.textTertiary}
+                    value={username}
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
                   />
-                </TouchableOpacity>
-              </View>
+                </View>
 
-              <TouchableOpacity style={styles.forgotPassword}>
-                <Text style={styles.forgotPasswordText}>忘记密码？</Text>
-              </TouchableOpacity>
+                <View style={styles.inputWrapper}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="密码"
+                    placeholderTextColor={theme.colors.textTertiary}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                  />
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                    <Ionicons 
+                      name={showPassword ? "eye-outline" : "eye-off-outline"} 
+                      size={20} 
+                      color={theme.colors.textSecondary} 
+                    />
+                  </TouchableOpacity>
+                </View>
 
-              <TouchableOpacity 
-                style={styles.loginButton} 
-                onPress={handleLogin}
-                disabled={loading}
-                activeOpacity={0.8}
-              >
-                <LinearGradient
-                  colors={[theme.colors.primary, theme.colors.primaryDark]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.gradientButton}
+                <TouchableOpacity 
+                  style={styles.loginButton} 
+                  onPress={handleLogin}
+                  disabled={loading}
+                  activeOpacity={0.8}
                 >
                   {loading ? (
                     <ActivityIndicator color="white" />
                   ) : (
-                    <Text style={styles.loginButtonText}>登录</Text>
+                    <Text style={styles.loginButtonText}>下一步</Text>
                   )}
-                </LinearGradient>
-              </TouchableOpacity>
+                </TouchableOpacity>
 
-              <View style={styles.footer}>
-                <Text style={styles.footerText}>还没有账号？</Text>
-                <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                  <Text style={styles.linkText}>立即注册</Text>
+                <TouchableOpacity style={styles.forgotPassword}>
+                  <Text style={styles.forgotPasswordText}>忘记密码？</Text>
                 </TouchableOpacity>
               </View>
+            </View>
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>还没有账号？</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                <Text style={styles.linkText}>注册</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -138,7 +125,7 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#FFFFFF',
   },
   safeArea: {
     flex: 1,
@@ -148,102 +135,101 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: theme.spacing.lg,
-    justifyContent: 'center',
+    paddingHorizontal: 32,
+    justifyContent: 'space-between',
+    paddingBottom: 20,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
-  },
-  logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    backgroundColor: theme.colors.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: theme.spacing.lg,
-    ...theme.shadows.md,
+    marginTop: 20,
   },
   logo: {
-    width: 60,
-    height: 60,
+    width: 40,
+    height: 40,
+  },
+  mainSection: {
+    flex: 1,
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#0F1419',
+    marginBottom: 32,
+    textAlign: 'left',
   },
   form: {
     width: '100%',
   },
-  inputContainer: {
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.lg,
-    marginBottom: theme.spacing.md,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 4,
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: '#CFD9DE',
     height: 56,
-    paddingHorizontal: theme.spacing.md,
-    ...theme.shadows.sm,
-  },
-  inputIcon: {
-    marginRight: theme.spacing.sm,
+    paddingHorizontal: 12,
   },
   input: {
     flex: 1,
-    fontSize: 16,
-    color: theme.colors.text,
+    fontSize: 17,
+    color: '#0F1419',
   },
   eyeIcon: {
-    padding: theme.spacing.xs,
+    padding: 8,
   },
   forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: theme.spacing.lg,
+    marginTop: 24,
+    alignSelf: 'center',
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#CFD9DE',
+    borderRadius: 9999,
+    width: '100%',
+    alignItems: 'center',
   },
   forgotPasswordText: {
-    color: theme.colors.textSecondary,
-    fontSize: 14,
+    color: '#0F1419',
+    fontSize: 15,
+    fontWeight: 'bold',
   },
   loginButton: {
-    borderRadius: theme.borderRadius.round,
-    marginBottom: theme.spacing.lg,
-    ...theme.shadows.primaryGlow,
-  },
-  gradientButton: {
-    paddingVertical: 16,
-    borderRadius: theme.borderRadius.round,
+    backgroundColor: '#0F1419',
+    borderRadius: 9999,
+    height: 50,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  gradientButton: {
+    // Deprecated in this style
   },
   loginButtonText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    letterSpacing: 1,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 16,
   },
   footerText: {
-    color: theme.colors.textSecondary,
-    fontSize: 14,
+    color: '#536471',
+    fontSize: 15,
     marginRight: 4,
   },
   linkText: {
     color: theme.colors.primary,
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: 'bold',
   },
 });
