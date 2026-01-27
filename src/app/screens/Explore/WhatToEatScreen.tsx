@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Animated, Easing, Alert, Dimensions, ScrollView, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Animated, Easing, Alert, Dimensions, ScrollView, StatusBar, Modal, ActivityIndicator } from 'react-native';
+import { generateWhatToEat } from '../../../api/ai';
+import { getWhatToEatPresets, createWhatToEatPreset, deleteWhatToEatPreset, WhatToEatPreset } from '../../../api/users';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
