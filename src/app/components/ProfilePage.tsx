@@ -11,6 +11,7 @@ import { RootStackParamList } from '../navigation/types';
 import { theme } from '../styles/theme';
 import { getMe } from '../../api/auth';
 import { useAuth } from '../../context/AuthContext';
+import { useUserStore } from '../../store/useUserStore';
 import { getProfile } from '../../api/profile';
 import { getUserStats, UserStats, updateProfile } from '../../api/users';
 import { uploadFile } from '../../api/upload';
@@ -21,7 +22,8 @@ const ProfilePage = () => {
   const navigation = useNavigation<ProfilePageNavigationProp>();
   const { t } = useTranslation();
   const { signOut } = useAuth();
-  const [user, setUser] = useState<any>(null);
+  const user = useUserStore(state => state.user);
+  const setUser = useUserStore(state => state.setUser);
   const [profile, setProfile] = useState<any>(null);
   const [stats, setStats] = useState<UserStats>({ recipes_count: 0, followers_count: 0, following_count: 0 });
   const [refreshing, setRefreshing] = useState(false);

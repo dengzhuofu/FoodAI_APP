@@ -1,8 +1,9 @@
 import React, { createContext, useState, useEffect, useMemo, useContext } from 'react';
 import { Platform, ActivityIndicator, View } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { login as apiLogin, logout as apiLogout } from '../api/auth';
+import { login as apiLogin, logout as apiLogout, getMe } from '../api/auth';
 import { authEvents } from '../utils/authEvents';
+import { useUserStore } from '../store/useUserStore';
 
 interface AuthContextType {
   isLoading: boolean;
@@ -30,6 +31,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Restoring token failed', e);
       }
       setUserToken(token);
+      
+      if (token) {
+        try {
+          const user = await getMe();
+          useUserStore.getState().setUser(user);
+        } catch (e) {
+          console.error('Failed to restore user session', e);
+        }
+      }
+      
       setIsLoading(false);
     };
 
@@ -58,10 +69,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const response = await apiLogin(username, password);
         const { access_token } = response;
         setUserToken(access_token);
+        
+        try {
+          const user = await getMe();
+          useUserStore.getState().setUser(user);
+        } catch (e) {
+          console.error('Failed to fetch user data after login', e);
+        }
       },
       signOut: async () => {
         await apiLogout();
         setUserToken(null);
+        useUserStore.getState().clearUser();
       },
     }),
     [isLoading, userToken]

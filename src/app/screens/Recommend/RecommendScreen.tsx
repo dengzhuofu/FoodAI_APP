@@ -11,6 +11,7 @@ import { getRecommendations, getHealthNews, HealthNews, FeedItem } from '../../.
 import FeedCard from '../../components/FeedCard';
 import Svg, { Circle } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
+import { useUserStore } from '../../../store/useUserStore';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -21,6 +22,7 @@ const COLUMN_WIDTH = (width - 30 - SPACING) / 2;
 const RecommendScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const { t } = useTranslation();
+  const user = useUserStore(state => state.user);
   const [refreshing, setRefreshing] = useState(false);
   const [recipes, setRecipes] = useState<FeedItem[]>([]);
   const [banners, setBanners] = useState<HealthNews[]>([]);
@@ -64,7 +66,7 @@ const RecommendScreen = () => {
           activeOpacity={0.8}
         >
           <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&auto=format&fit=crop&q=60' }} 
+            source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&auto=format&fit=crop&q=60' }} 
             style={styles.avatar} 
           />
           <View style={styles.notificationDot} />
@@ -72,7 +74,7 @@ const RecommendScreen = () => {
       </View>
       
       <View style={styles.welcomeContainer}>
-        <Text style={styles.greetingText}>{t('home.greeting')}</Text>
+        <Text style={styles.greetingText}>{t('home.greeting')} {user?.nickname}</Text>
         <Text style={styles.titleText}>{t('home.readyToCook')}</Text>
       </View>
 
