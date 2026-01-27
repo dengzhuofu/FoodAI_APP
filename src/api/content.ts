@@ -50,6 +50,7 @@ export interface Recipe {
 }
 
 export interface Restaurant {
+  description: ReactNode;
   id: number;
   name: string;
   title: string;
