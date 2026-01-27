@@ -474,12 +474,19 @@ class AIService:
                     "thoughts": thoughts
                 }
             
+            # If no tool calls, check if we should force a thought for better UX?
+            # Or just return empty thoughts. 
+            # If the user asks "what to eat", and the agent didn't call tools, it might be an issue with the model or prompt.
+            # But we can't force it here easily without re-prompting.
+            
             return {
                 "answer": response.content,
                 "thoughts": []
             }
         except Exception as e:
             print(f"Agent Error: {e}")
+            import traceback
+            traceback.print_exc()
             return {
                 "answer": "抱歉，我遇到了一些问题，无法处理您的请求。",
                 "thoughts": []

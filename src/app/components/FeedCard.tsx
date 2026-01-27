@@ -67,10 +67,11 @@ const FeedCard: React.FC<FeedCardProps> = ({ item, onPress, height = 200, style 
             />
             <Text style={styles.authorName} numberOfLines={1}>{item.author}</Text>
           </View>
-          <TouchableOpacity style={styles.likeBtn}>
+          <TouchableOpacity style={styles.likeBtn} onPress={(e) => { e.preventDefault(); /* TODO: Implement direct like on card */ }}>
             <Ionicons name="heart-outline" size={16} color="#1A1A1A" />
             <Text style={styles.likeCount}>{item.likes}</Text>
           </TouchableOpacity>
+          {/* Add Collection Indicator/Button if needed, for now just keeping like consistent */}
         </View>
       </View>
     </TouchableOpacity>
