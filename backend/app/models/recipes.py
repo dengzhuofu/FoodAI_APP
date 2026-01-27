@@ -46,3 +46,26 @@ class Collection(models.Model):
 
     class Meta:
         table = "collections"
+        unique_together = ("user", "target_id", "target_type")
+
+class Like(models.Model):
+    id = fields.BigIntField(pk=True)
+    user = fields.ForeignKeyField("models.User", related_name="likes")
+    target_id = fields.BigIntField()
+    target_type = fields.CharField(max_length=20)  # 'recipe', 'restaurant'
+    created_at = fields.DatetimeField(auto_now_add=True)
+
+    class Meta:
+        table = "likes"
+        unique_together = ("user", "target_id", "target_type")
+
+class ViewHistory(models.Model):
+    id = fields.BigIntField(pk=True)
+    user = fields.ForeignKeyField("models.User", related_name="view_history")
+    target_id = fields.BigIntField()
+    target_type = fields.CharField(max_length=20)  # 'recipe', 'restaurant'
+    created_at = fields.DatetimeField(auto_now_add=True)
+    updated_at = fields.DatetimeField(auto_now=True)
+
+    class Meta:
+        table = "view_history"

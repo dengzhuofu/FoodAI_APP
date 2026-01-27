@@ -197,3 +197,19 @@ export const getCollections = async (targetType: 'recipe' | 'restaurant', page: 
   });
   return response.data;
 };
+
+// Likes
+export const toggleLike = async (targetId: number, targetType: 'recipe' | 'restaurant'): Promise<{ message: string }> => {
+  const response = await client.post('/likes', null, {
+    params: { target_id: targetId, target_type: targetType },
+  });
+  return response.data;
+};
+
+// Views
+export const recordView = async (targetId: number, targetType: 'recipe' | 'restaurant'): Promise<{ message: string }> => {
+  const response = await client.post('/views', null, {
+    params: { target_id: targetId, target_type: targetType },
+  });
+  return response.data;
+};

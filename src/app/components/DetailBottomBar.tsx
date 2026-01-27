@@ -17,6 +17,8 @@ interface DetailBottomBarProps {
   replyTo: Comment | null;
   onCancelReply: () => void;
   currentUserAvatar?: string;
+  onLike?: () => void;
+  isLiked?: boolean;
 }
 
 const DetailBottomBar: React.FC<DetailBottomBarProps> = ({ 
@@ -29,7 +31,9 @@ const DetailBottomBar: React.FC<DetailBottomBarProps> = ({
   onCommentSuccess,
   replyTo,
   onCancelReply,
-  currentUserAvatar
+  currentUserAvatar,
+  onLike,
+  isLiked
 }) => {
   const [isInputVisible, setIsInputVisible] = useState(false);
   const [content, setContent] = useState('');
@@ -138,9 +142,13 @@ const DetailBottomBar: React.FC<DetailBottomBarProps> = ({
                 Let's keep the icons.
             */}
             <View style={styles.actionsRow}>
+              <TouchableOpacity style={styles.actionItem} onPress={onLike}>
+                 <Ionicons name={isLiked ? "thumbs-up" : "thumbs-up-outline"} size={24} color={isLiked ? "#FF6B6B" : "#333"} />
+                 <Text style={styles.actionText}>{likesCount}</Text>
+              </TouchableOpacity>
+
               <TouchableOpacity style={styles.actionItem} onPress={onCollect}>
                  <Ionicons name={isCollected ? "star" : "star-outline"} size={24} color={isCollected ? "#FFD700" : "#333"} />
-                 <Text style={styles.actionText}>{likesCount}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity style={styles.actionItem}>

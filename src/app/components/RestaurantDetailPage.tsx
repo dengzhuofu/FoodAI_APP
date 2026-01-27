@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../styles/theme';
 import { RootStackParamList } from '../navigation/types';
-import { getRestaurant, getComments, toggleCollection, Restaurant, Comment } from '../../api/content';
+import { getRestaurant, getComments, toggleCollection, Restaurant, Comment, toggleLike, recordView } from '../../api/content';
 import { getMe } from '../../api/auth';
 import CommentsSection from './CommentsSection';
 import DetailBottomBar from './DetailBottomBar';
@@ -26,7 +26,19 @@ const RestaurantDetailPage = () => {
   const [currentUserId, setCurrentUserId] = useState<number | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [isCollected, setIsCollected] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
+
+  const handleLike = async () => {
+    try {
+      await toggleLike(parseInt(id), 'restaurant');
+      setIsLiked(!isLiked);
+      setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+    } catch (error) {
+      // ignore
+    }
+  };
 
   const handleCommentSuccess = (newComment: Comment) => {
     fetchComments(newComment);
@@ -68,6 +80,7 @@ const RestaurantDetailPage = () => {
           getMe().catch(() => null)
         ]);
         setRestaurant(restaurantData);
+        setLikesCount(restaurantData.likes_count || 0);
         if (userData) {
           setCurrentUserId(userData.id);
           setCurrentUser(userData);
@@ -75,7 +88,9 @@ const RestaurantDetailPage = () => {
         
         // Initial comment fetch
         await fetchComments();
-        // TODO: Check if collected
+        // Record View
+        await recordView(restaurantId, 'restaurant');
+        // TODO: Check if collected/liked status
       } catch (error) {
         console.error('Failed to fetch restaurant:', error);
         Alert.alert('错误', '加载餐厅失败');
@@ -238,7 +253,7 @@ const RestaurantDetailPage = () => {
         <DetailBottomBar 
           targetId={parseInt(id)}
           targetType="restaurant"
-          likesCount={restaurant.likes_count || 0}
+          likesCount={likesCount}
           commentsCount={comments.length}
           isCollected={isCollected}
           onCollect={handleCollection}
@@ -246,6 +261,8 @@ const RestaurantDetailPage = () => {
           replyTo={replyTo}
           onCancelReply={() => setReplyTo(null)}
           currentUserAvatar={currentUser?.avatar}
+          onLike={handleLike}
+          isLiked={isLiked}
         />
       )}
     </View>
@@ -300,7 +317,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
-    backdropFilter: 'blur(10px)',
+    // backdropFilter: 'blur(10px)',
   },
   headerContent: {
     position: 'absolute',

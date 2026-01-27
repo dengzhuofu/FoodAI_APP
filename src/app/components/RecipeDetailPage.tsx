@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../styles/theme';
 import { RootStackParamList } from '../navigation/types';
-import { getRecipe, getComments, toggleCollection, Recipe, Comment } from '../../api/content';
+import { getRecipe, getComments, toggleCollection, Recipe, Comment, toggleLike, recordView } from '../../api/content';
 import { getMe } from '../../api/auth';
 import CommentsSection from './CommentsSection';
 import DetailBottomBar from './DetailBottomBar';
@@ -28,6 +28,8 @@ const RecipeDetailPage = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<number | undefined>(undefined);
   const [isCollected, setIsCollected] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
 
   const handleCollection = async () => {
@@ -37,6 +39,16 @@ const RecipeDetailPage = () => {
       Alert.alert(isCollected ? '已取消收藏' : '收藏成功');
     } catch (error) {
       Alert.alert('错误', '操作失败');
+    }
+  };
+
+  const handleLike = async () => {
+    try {
+      const res = await toggleLike(parseInt(id), 'recipe');
+      setIsLiked(!isLiked);
+      setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+    } catch (error) {
+      // Alert.alert('错误', '操作失败');
     }
   };
 
@@ -84,13 +96,16 @@ const RecipeDetailPage = () => {
           getMe().catch(() => null)
         ]);
         setRecipe(recipeData);
+        setLikesCount(recipeData.likes_count || 0);
         if (userData) {
           setCurrentUserId(userData.id);
           setCurrentUser(userData);
         }
         
         await fetchComments();
-        // TODO: Check if collected
+        // Record View
+        await recordView(recipeId, 'recipe');
+        // TODO: Check if collected/liked status from backend if available
       } catch (error) {
         console.error('Failed to fetch recipe:', error);
         Alert.alert('错误', '加载菜谱失败');
@@ -306,7 +321,7 @@ const RecipeDetailPage = () => {
         <DetailBottomBar 
           targetId={parseInt(id)}
           targetType="recipe"
-          likesCount={recipe.likes_count || 0}
+          likesCount={likesCount}
           commentsCount={comments.length}
           isCollected={isCollected}
           onCollect={handleCollection}
@@ -314,6 +329,8 @@ const RecipeDetailPage = () => {
           replyTo={replyTo}
           onCancelReply={() => setReplyTo(null)}
           currentUserAvatar={currentUser?.avatar}
+          onLike={handleLike}
+          isLiked={isLiked}
         />
       )}
     </View>
@@ -368,7 +385,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
-    backdropFilter: 'blur(10px)', // Note: This prop is for web, on native it might need expo-blur
+    // backdropFilter: 'blur(10px)', // Note: This prop is for web, on native it might need expo-blur
   },
   headerContent: {
     position: 'absolute',

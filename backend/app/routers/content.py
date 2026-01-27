@@ -9,7 +9,7 @@ from app.schemas.content import (
     RestaurantCreate, RestaurantOut,
     CommentCreate, CommentOut
 )
-from app.models.recipes import Recipe, Comment, Collection
+from app.models.recipes import Recipe, Comment, Collection, Like, ViewHistory
 from app.models.restaurants import Restaurant
 from app.models.users import User
 from app.core.deps import get_current_user
@@ -294,3 +294,68 @@ async def toggle_collection(
             user=current_user, target_id=target_id, target_type=target_type
         )
         return {"message": "Collected"}
+
+# --- Like Endpoints ---
+
+@router.post("/likes")
+async def toggle_like(
+    target_id: int,
+    target_type: str,
+    current_user: User = Depends(get_current_user)
+):
+    exists = await Like.filter(
+        user=current_user, target_id=target_id, target_type=target_type
+    ).exists()
+    
+    if exists:
+        await Like.filter(
+            user=current_user, target_id=target_id, target_type=target_type
+        ).delete()
+        
+        # Decrement counter
+        if target_type == 'recipe':
+            recipe = await Recipe.get_or_none(id=target_id)
+            if recipe and recipe.likes_count > 0:
+                recipe.likes_count -= 1
+                await recipe.save()
+        
+        return {"message": "Unliked"}
+    else:
+        await Like.create(
+            user=current_user, target_id=target_id, target_type=target_type
+        )
+        
+        # Increment counter
+        if target_type == 'recipe':
+            recipe = await Recipe.get_or_none(id=target_id)
+            if recipe:
+                recipe.likes_count += 1
+                await recipe.save()
+        
+        return {"message": "Liked"}
+
+# --- View History Endpoints ---
+
+@router.post("/views")
+async def record_view(
+    target_id: int,
+    target_type: str,
+    current_user: User = Depends(get_current_user)
+):
+    # Update or create view history
+    view, created = await ViewHistory.get_or_create(
+        user=current_user, target_id=target_id, target_type=target_type,
+        defaults={"target_id": target_id, "target_type": target_type}
+    )
+    
+    if not created:
+        await view.save() # Updates updated_at
+    
+    # Increment view counter on target
+    if target_type == 'recipe':
+        recipe = await Recipe.get_or_none(id=target_id)
+        if recipe:
+            recipe.views_count += 1
+            await recipe.save()
+            
+    return {"message": "View recorded"}

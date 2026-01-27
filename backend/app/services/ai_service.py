@@ -5,6 +5,8 @@ import json
 import base64
 import os
 from app.models.inventory import FridgeItem, ShoppingItem
+from app.models.recipes import Recipe, Collection, Like
+from app.models.users import UserProfile
 
 # ai框架
 from langchain_openai import ChatOpenAI
@@ -376,14 +378,35 @@ class AIService:
                 return "购物清单是空的。"
             return json.dumps([{"name": i.name} for i in items], ensure_ascii=False)
 
-        tools = [get_fridge_items, add_shopping_item, get_shopping_list]
+        async def get_user_preferences() -> str:
+            """获取用户的饮食偏好，包括口味、过敏源、喜欢的食谱等"""
+            profile = await UserProfile.get_or_none(user_id=user_id)
+            
+            # Get liked recipes (Generic relation manual query)
+            liked_ids = await Like.filter(user_id=user_id, target_type='recipe').values_list('target_id', flat=True)
+            liked_recipes = await Recipe.filter(id__in=liked_ids).limit(5).values_list('title', flat=True)
+            
+            # Get collected recipes
+            collected_ids = await Collection.filter(user_id=user_id, target_type='recipe').values_list('target_id', flat=True)
+            collected_recipes = await Recipe.filter(id__in=collected_ids).limit(5).values_list('title', flat=True)
+            
+            prefs = {
+                "allergies": profile.allergies if profile else [],
+                "health_goals": profile.health_goals if profile else [],
+                "taste_preferences": profile.preferences if profile else [],
+                "recently_liked": list(liked_recipes),
+                "recently_collected": list(collected_recipes)
+            }
+            return json.dumps(prefs, ensure_ascii=False)
+
+        tools = [get_fridge_items, add_shopping_item, get_shopping_list, get_user_preferences]
         
         # 2. Bind tools to LLM
         llm_with_tools = self.llm_text.bind_tools(tools)
 
         # 3. Construct Messages
         messages = [
-            SystemMessage(content="你是智能厨房管家。你可以查看我的冰箱库存，并帮我管理购物清单。请根据我的指令调用相应的工具。如果不需要调用工具，直接回答即可。")
+            SystemMessage(content="你是智能厨房管家。你可以查看我的冰箱库存、购物清单以及我的饮食偏好。当用户询问'吃什么'、'推荐菜谱'或'制定计划'时，请务必先调用 get_user_preferences 获取偏好，并结合冰箱库存进行推荐。")
         ]
         
         # Convert history
@@ -427,6 +450,9 @@ class AIService:
                     elif fn_name == "get_shopping_list":
                         thoughts[-1]["description"] = "正在查看购物清单..."
                         result = await get_shopping_list(**args)
+                    elif fn_name == "get_user_preferences":
+                        thoughts[-1]["description"] = "正在获取您的饮食偏好..."
+                        result = await get_user_preferences(**args)
                     
                     messages.append(ToolMessage(tool_call_id=tool_call["id"], content=str(result)))
                 
