@@ -199,6 +199,23 @@ async def text_to_recipe(
     
     return {"result": result, "log_id": log.id}
 
+@router.post("/generate-what-to-eat")
+async def generate_what_to_eat(
+    request: GenerateWhatToEatRequest,
+    current_user: User = Depends(get_current_user)
+):
+    options = await ai_service.generate_what_to_eat_options(request.categories, request.quantity)
+    
+    # Log to DB
+    await AILog.create(
+        user=current_user,
+        feature="what-to-eat",
+        input_summary=f"Categories: {request.categories}, Qty: {request.quantity}",
+        output_result={"options": options}
+    )
+    
+    return {"options": options}
+
 @router.post("/text-to-image")
 async def text_to_image(
     request: TextToImageRequest,

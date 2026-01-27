@@ -46,6 +46,19 @@ const WhatToEatScreen = () => {
   const scaleValue = useRef(new Animated.Value(1)).current;
   const lightsAnim = useRef(new Animated.Value(0)).current;
 
+  // New State for AI and Presets
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [showPresetModal, setShowPresetModal] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  
+  const [aiCategories, setAiCategories] = useState('中餐, 西餐, 日料');
+  const [aiQuantity, setAiQuantity] = useState('8');
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  
+  const [presets, setPresets] = useState<WhatToEatPreset[]>([]);
+  const [presetName, setPresetName] = useState('');
+  const [isLoadingPresets, setIsLoadingPresets] = useState(false);
+
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -53,7 +66,79 @@ const WhatToEatScreen = () => {
         Animated.timing(lightsAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
       ])
     ).start();
+    
+    fetchPresets();
   }, []);
+
+  const fetchPresets = async () => {
+    try {
+      const data = await getWhatToEatPresets();
+      setPresets(data);
+    } catch (error) {
+      console.log('Error fetching presets:', error);
+    }
+  };
+
+  const handleGenerateAI = async () => {
+    if (!aiCategories.trim()) {
+      Alert.alert('提示', '请输入食物种类');
+      return;
+    }
+    const qty = parseInt(aiQuantity);
+    if (isNaN(qty) || qty < 2 || qty > 20) {
+      Alert.alert('提示', '数量请在 2 到 20 之间');
+      return;
+    }
+
+    setIsLoadingAI(true);
+    try {
+      const categories = aiCategories.split(/[,，]/).map(c => c.trim()).filter(c => c);
+      const generatedOptions = await generateWhatToEat(categories, qty);
+      if (generatedOptions && generatedOptions.length > 0) {
+        setOptions(generatedOptions);
+        setShowAIModal(false);
+        Alert.alert('成功', 'AI已为您生成新的转盘选项！');
+      } else {
+        Alert.alert('提示', 'AI未能生成选项，请重试');
+      }
+    } catch (error) {
+      Alert.alert('错误', '生成失败，请稍后重试');
+      console.error(error);
+    } finally {
+      setIsLoadingAI(false);
+    }
+  };
+
+  const handleSavePreset = async () => {
+    if (!presetName.trim()) {
+      Alert.alert('提示', '请输入预设名称');
+      return;
+    }
+    try {
+      await createWhatToEatPreset(presetName, options);
+      setShowSaveModal(false);
+      setPresetName('');
+      fetchPresets();
+      Alert.alert('成功', '预设已保存');
+    } catch (error) {
+      Alert.alert('错误', '保存失败');
+    }
+  };
+
+  const handleLoadPreset = (preset: WhatToEatPreset) => {
+    setOptions(preset.options);
+    setShowPresetModal(false);
+    Alert.alert('提示', `已加载预设：${preset.name}`);
+  };
+
+  const handleDeletePreset = async (id: number) => {
+    try {
+      await deleteWhatToEatPreset(id);
+      fetchPresets();
+    } catch (error) {
+      Alert.alert('错误', '删除失败');
+    }
+  };
 
   const handleAddOption = () => {
     if (newOption.trim()) {
@@ -216,7 +301,23 @@ const WhatToEatScreen = () => {
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           
-          {/* Wheel Section */}
+            {/* Toolbar */}
+            <View style={styles.toolbar}>
+              <TouchableOpacity style={[styles.toolBtn, {backgroundColor: '#9B5DE5'}]} onPress={() => setShowAIModal(true)}>
+                <Ionicons name="sparkles" size={18} color="white" />
+                <Text style={styles.toolBtnText}>AI生成</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.toolBtn, {backgroundColor: '#FF9F1C'}]} onPress={() => setShowSaveModal(true)}>
+                <Ionicons name="save" size={18} color="white" />
+                <Text style={styles.toolBtnText}>保存</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.toolBtn, {backgroundColor: '#4ECDC4'}]} onPress={() => setShowPresetModal(true)}>
+                <Ionicons name="list" size={18} color="white" />
+                <Text style={styles.toolBtnText}>预设</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Wheel Section */}
           <View style={styles.wheelSection}>
             <View style={styles.wheelBorder}>
               {renderLights()}
@@ -302,6 +403,92 @@ const WhatToEatScreen = () => {
           
           <View style={{height: 40}} />
         </ScrollView>
+
+        {/* AI Modal */}
+        <Modal visible={showAIModal} animationType="fade" transparent={true} onRequestClose={() => setShowAIModal(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>AI 智能生成</Text>
+              <Text style={styles.label}>想吃什么种类？(逗号分隔)</Text>
+              <TextInput 
+                style={styles.input} 
+                value={aiCategories} 
+                onChangeText={setAiCategories}
+                placeholder="例如：中餐, 火锅, 奶茶"
+              />
+              <Text style={styles.label}>生成数量 (2-20)</Text>
+              <TextInput 
+                style={styles.input} 
+                value={aiQuantity} 
+                onChangeText={setAiQuantity}
+                keyboardType="numeric"
+                maxLength={2}
+              />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity style={[styles.modalBtn, styles.cancelBtn]} onPress={() => setShowAIModal(false)}>
+                  <Text style={styles.modalBtnText}>取消</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.modalBtn, styles.confirmBtn]} onPress={handleGenerateAI} disabled={isLoadingAI}>
+                  {isLoadingAI ? <ActivityIndicator color="white" /> : <Text style={styles.modalBtnText}>生成</Text>}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Save Preset Modal */}
+        <Modal visible={showSaveModal} animationType="fade" transparent={true} onRequestClose={() => setShowSaveModal(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>保存当前转盘</Text>
+              <Text style={styles.label}>预设名称</Text>
+              <TextInput 
+                style={styles.input} 
+                value={presetName} 
+                onChangeText={setPresetName}
+                placeholder="例如：周末大餐"
+              />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity style={[styles.modalBtn, styles.cancelBtn]} onPress={() => setShowSaveModal(false)}>
+                  <Text style={styles.modalBtnText}>取消</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.modalBtn, styles.confirmBtn]} onPress={handleSavePreset}>
+                  <Text style={styles.modalBtnText}>保存</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Presets List Modal */}
+        <Modal visible={showPresetModal} animationType="fade" transparent={true} onRequestClose={() => setShowPresetModal(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, {maxHeight: '70%'}]}>
+              <Text style={styles.modalTitle}>我的预设</Text>
+              <ScrollView style={{width: '100%'}}>
+                {presets.length === 0 ? (
+                  <Text style={{textAlign: 'center', color: '#999', marginVertical: 20}}>暂无预设</Text>
+                ) : (
+                  presets.map(preset => (
+                    <View key={preset.id} style={styles.presetItem}>
+                      <TouchableOpacity style={styles.presetInfo} onPress={() => handleLoadPreset(preset)}>
+                        <Text style={styles.presetName}>{preset.name}</Text>
+                        <Text style={styles.presetCount}>{preset.options.length} 个选项</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => handleDeletePreset(preset.id)} style={{padding: 5}}>
+                        <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
+                      </TouchableOpacity>
+                    </View>
+                  ))
+                )}
+              </ScrollView>
+              <TouchableOpacity style={[styles.modalBtn, styles.cancelBtn, {marginTop: 15, width: '100%'}]} onPress={() => setShowPresetModal(false)}>
+                <Text style={[styles.modalBtnText, {color: '#333'}]}>关闭</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
       </SafeAreaView>
     </View>
   );
@@ -541,6 +728,123 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 14,
     fontWeight: '700',
+  },
+  toolbar: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 15,
+    marginBottom: 20,
+    marginTop: 10,
+    width: '100%',
+    paddingHorizontal: 20,
+  },
+  toolBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 20,
+    gap: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  toolBtnText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '85%',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#333',
+  },
+  label: {
+    alignSelf: 'flex-start',
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 5,
+    marginLeft: 5,
+  },
+  input: {
+    width: '100%',
+    height: 50,
+    backgroundColor: '#F7F9FC',
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    marginBottom: 15,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#eee',
+    color: '#333',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 10,
+    gap: 10,
+  },
+  modalBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cancelBtn: {
+    backgroundColor: '#eee',
+  },
+  confirmBtn: {
+    backgroundColor: '#333',
+  },
+  modalBtnText: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: 'white',
+  },
+  presetItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    width: '100%',
+  },
+  presetInfo: {
+    flex: 1,
+  },
+  presetName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  presetCount: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
   },
 });
 

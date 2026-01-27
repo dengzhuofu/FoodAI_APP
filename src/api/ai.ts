@@ -138,3 +138,12 @@ export const recognizeFridge = async (imageUrl: string): Promise<RecognizedItem[
   });
   return response.data.items;
 };
+
+// What To Eat Generation
+export const generateWhatToEat = async (categories: string[], quantity: number): Promise<string[]> => {
+  const response = await client.post('/ai/generate-what-to-eat', {
+    categories,
+    quantity
+  });
+  return response.data.options;
+};

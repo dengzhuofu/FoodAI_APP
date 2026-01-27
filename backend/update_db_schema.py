@@ -25,6 +25,22 @@ async def upgrade_db():
     except Exception as e:
         print(f"Failed to add category to restaurants (might already exist): {e}")
 
+    # Add what_to_eat_presets table
+    try:
+        await conn.execute_script("""
+            CREATE TABLE IF NOT EXISTS `what_to_eat_presets` (
+                `id` INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+                `name` VARCHAR(50) NOT NULL,
+                `options` JSON NOT NULL,
+                `created_at` DATETIME(6) NOT NULL  DEFAULT CURRENT_TIMESTAMP(6),
+                `user_id` BIGINT NOT NULL,
+                CONSTRAINT `fk_what_to__users_e80d4` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+            );
+        """)
+        print("Created what_to_eat_presets table")
+    except Exception as e:
+        print(f"Failed to create what_to_eat_presets table: {e}")
+
     await Tortoise.close_connections()
 
 if __name__ == "__main__":

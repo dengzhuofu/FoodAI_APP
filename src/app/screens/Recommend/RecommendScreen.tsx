@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { getRecommendations, getHealthNews, HealthNews, FeedItem } from '../../../api/explore';
 import FeedCard from '../../components/FeedCard';
 import Svg, { Circle } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -19,6 +20,7 @@ const COLUMN_WIDTH = (width - 30 - SPACING) / 2;
 
 const RecommendScreen = () => {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation();
   const [refreshing, setRefreshing] = useState(false);
   const [recipes, setRecipes] = useState<FeedItem[]>([]);
   const [banners, setBanners] = useState<HealthNews[]>([]);
@@ -70,8 +72,8 @@ const RecommendScreen = () => {
       </View>
       
       <View style={styles.welcomeContainer}>
-        <Text style={styles.greetingText}>Good Morning,</Text>
-        <Text style={styles.titleText}>Ready to Cook?</Text>
+        <Text style={styles.greetingText}>{t('home.greeting')}</Text>
+        <Text style={styles.titleText}>{t('home.readyToCook')}</Text>
       </View>
 
       <TouchableOpacity 
@@ -80,7 +82,7 @@ const RecommendScreen = () => {
         activeOpacity={0.9}
       >
         <Ionicons name="search" size={20} color="#1A1A1A" />
-        <Text style={styles.searchText}>Find recipes, chefs, etc.</Text>
+        <Text style={styles.searchText}>{t('home.searchPlaceholder')}</Text>
         <View style={styles.searchButton}>
            <Ionicons name="arrow-forward" size={16} color="#FFF" />
         </View>
@@ -106,17 +108,17 @@ const RecommendScreen = () => {
 
         <View style={styles.whatToEatContent}>
           <View style={styles.badgeContainer}>
-             <Text style={styles.badgeText}>POPULAR</Text>
+             <Text style={styles.badgeText}>{t('home.popular')}</Text>
           </View>
-          <Text style={styles.whatToEatTitle}>Daily{'\n'}Roulette</Text>
-          <Text style={styles.whatToEatSubtitle}>Don't know what to eat?</Text>
+          <Text style={styles.whatToEatTitle}>{t('home.dailyRoulette')}</Text>
+          <Text style={styles.whatToEatSubtitle}>{t('home.dailyRouletteSubtitle')}</Text>
         </View>
         <View style={styles.rouletteVisual}>
-          <Text style={{ fontSize: 48 }}>�</Text>
+          <Text style={{ fontSize: 48 }}>🎰</Text>
         </View>
         
         <View style={styles.playButton}>
-           <Text style={styles.playButtonText}>PLAY</Text>
+           <Text style={styles.playButtonText}>{t('home.play')}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -125,7 +127,7 @@ const RecommendScreen = () => {
   const renderBanner = () => (
     <View style={styles.sectionContainer}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Trending Now</Text>
+        <Text style={styles.sectionTitle}>{t('home.trending')}</Text>
         <TouchableOpacity>
           <Ionicons name="ellipsis-horizontal" size={24} color="#1A1A1A" />
         </TouchableOpacity>
@@ -141,13 +143,13 @@ const RecommendScreen = () => {
           />
           <View style={styles.bannerContent}>
             <View style={styles.bannerTag}>
-              <Text style={styles.bannerTagText}>HEALTHY</Text>
+              <Text style={styles.bannerTagText}>{t('home.healthy')}</Text>
             </View>
             <Text style={styles.bannerTitle} numberOfLines={2}>
               {banners.length > 0 ? banners[0].title : 'The Art of Balanced Breakfast: A Complete Guide'}
             </Text>
             <TouchableOpacity style={styles.readMoreBtn} onPress={() => console.log('Read')}>
-              <Text style={styles.readMoreText}>Read Article</Text>
+              <Text style={styles.readMoreText}>{t('home.readArticle')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -172,7 +174,7 @@ const RecommendScreen = () => {
   const renderFeed = () => {
     return (
       <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>为你推荐</Text>
+        <Text style={styles.sectionTitle}>{t('home.recommended')}</Text>
         {loading ? (
           <ActivityIndicator size="large" color="#1A1A1A" style={{ marginTop: 20 }} />
         ) : (

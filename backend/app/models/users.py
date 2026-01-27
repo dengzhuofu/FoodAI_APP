@@ -33,3 +33,13 @@ class Follow(models.Model):
     class Meta:
         table = "follows"
         unique_together = ("follower", "following")
+
+class WhatToEatPreset(models.Model):
+    id = fields.IntField(pk=True)
+    user = fields.ForeignKeyField("models.User", related_name="what_to_eat_presets", on_delete=fields.CASCADE)
+    name = fields.CharField(max_length=50)
+    options = fields.JSONField()  # List of strings
+    created_at = fields.DatetimeField(auto_now_add=True)
+
+    class Meta:
+        table = "what_to_eat_presets"

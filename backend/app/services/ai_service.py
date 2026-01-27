@@ -315,4 +315,39 @@ class AIService:
         response = await self.llm_text.ainvoke(lc_messages)
         return response.content
 
+    async def generate_what_to_eat_options(self, categories: List[str], quantity: int) -> List[str]:
+        """Generate food options based on categories and quantity"""
+        template = """请根据以下食物种类，生成总共 {quantity} 个具体的食物名称。
+        
+        种类: {categories_str}
+        
+        要求：
+        1. 必须从指定的种类中选择具体的食物。
+        2. 生成的食物数量总和必须接近 {quantity} 个。
+        3. 请根据你的判断合理分配每个种类的数量。
+        4. 只返回一个JSON字符串列表，不要包含任何其他文字。
+        5. 示例格式: ["麻辣火锅", " pepperoni pizza", "豚骨拉面"]
+        
+        只返回JSON列表。"""
+        
+        prompt = PromptTemplate.from_template(template)
+        chain = prompt | self.llm_text
+        
+        response = await chain.ainvoke({
+            "categories_str": ", ".join(categories),
+            "quantity": quantity
+        })
+        
+        content = response.content.strip()
+        try:
+            if "```json" in content:
+                content = content.split("```json")[1].split("```")[0]
+            elif "```" in content:
+                content = content.replace("```", "")
+            content = content.strip("` \n")
+            return json.loads(content)
+        except Exception as e:
+            print(f"Error parsing AI response: {e}")
+            return []
+
 ai_service = AIService()

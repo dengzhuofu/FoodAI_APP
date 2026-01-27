@@ -8,6 +8,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { theme } from '../../styles/theme';
 import { getRecommendations, getPopularTags, getHealthNews, FeedItem, HealthNews } from '../../../api/explore';
 import FeedCard from '../../components/FeedCard';
+import { useTranslation } from 'react-i18next';
 
 type ExploreScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -15,10 +16,9 @@ const { width } = Dimensions.get('window');
 const SPACING = 12;
 const COLUMN_WIDTH = (width - 30 - SPACING) / 2;
 
-const CATEGORIES = ['AI推荐', '探店', '菜谱', '健康'];
-
 const ExploreScreen = () => {
   const navigation = useNavigation<ExploreScreenNavigationProp>();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('AI推荐');
   const [sortBy, setSortBy] = useState<'default' | 'time' | 'likes' | 'views'>('default');
   const [selectedTag, setSelectedTag] = useState<string | undefined>(undefined);
@@ -28,6 +28,13 @@ const ExploreScreen = () => {
   const [tags, setTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  const CATEGORIES = [
+    { label: t('explore.tabAI'), value: 'AI推荐' },
+    { label: t('explore.tabStore'), value: '探店' },
+    { label: t('explore.tabRecipe'), value: '菜谱' },
+    { label: t('explore.tabHealth'), value: '健康' },
+  ];
 
   const fetchTags = async () => {
     try {
@@ -74,10 +81,10 @@ const ExploreScreen = () => {
     if (!isFilterOpen || activeTab === '健康') return null;
 
     const sorts: { label: string; value: 'default' | 'time' | 'likes' | 'views' }[] = [
-      { label: '综合排序', value: 'default' },
-      { label: '最新发布', value: 'time' },
-      { label: '最多浏览', value: 'views' },
-      { label: '最多点赞', value: 'likes' },
+      { label: t('explore.sortDefault'), value: 'default' },
+      { label: t('explore.sortTime'), value: 'time' },
+      { label: t('explore.sortViews'), value: 'views' },
+      { label: t('explore.sortLikes'), value: 'likes' },
     ];
 
     return (
@@ -92,13 +99,13 @@ const ExploreScreen = () => {
             <TouchableWithoutFeedback>
               <View style={styles.dropdownContainer}>
                 <View style={styles.dropdownHeader}>
-                  <Text style={styles.dropdownMainTitle}>筛选与排序</Text>
+                  <Text style={styles.dropdownMainTitle}>{t('explore.filterTitle')}</Text>
                   <TouchableOpacity onPress={() => setIsFilterOpen(false)} style={styles.closeButton}>
                     <Ionicons name="close" size={20} color="#1A1A1A" />
                   </TouchableOpacity>
                 </View>
 
-                <Text style={styles.dropdownTitle}>排序方式</Text>
+                <Text style={styles.dropdownTitle}>{t('explore.sortTitle')}</Text>
                 <View style={styles.dropdownSection}>
                   {sorts.map((sort) => (
                     <TouchableOpacity 
@@ -113,7 +120,7 @@ const ExploreScreen = () => {
                   ))}
                 </View>
 
-                <Text style={styles.dropdownTitle}>热门标签</Text>
+                <Text style={styles.dropdownTitle}>{t('explore.popularTags')}</Text>
                 <View style={styles.dropdownSection}>
                   {tags.map((tag, index) => (
                     <TouchableOpacity 
@@ -132,7 +139,7 @@ const ExploreScreen = () => {
                   style={styles.confirmButton}
                   onPress={() => setIsFilterOpen(false)}
                 >
-                  <Text style={styles.confirmButtonText}>完成筛选</Text>
+                  <Text style={styles.confirmButtonText}>{t('explore.applyFilter')}</Text>
                 </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
@@ -148,11 +155,11 @@ const ExploreScreen = () => {
         {CATEGORIES.map((cat, index) => (
           <TouchableOpacity 
             key={index} 
-            style={[styles.tabItem, activeTab === cat && styles.activeTabItem]}
-            onPress={() => setActiveTab(cat)}
+            style={[styles.tabItem, activeTab === cat.value && styles.activeTabItem]}
+            onPress={() => setActiveTab(cat.value)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.tabText, activeTab === cat && styles.activeTabText]}>{cat}</Text>
+            <Text style={[styles.tabText, activeTab === cat.value && styles.activeTabText]}>{cat.label}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -237,7 +244,7 @@ const ExploreScreen = () => {
         <View style={styles.header}>
           <View style={styles.searchBar}>
             <Ionicons name="search-outline" size={20} color="#666" />
-            <Text style={styles.searchPlaceholder}>搜索菜品、餐厅、风味...</Text>
+            <Text style={styles.searchPlaceholder}>{t('explore.searchPlaceholder')}</Text>
           </View>
         </View>
 

@@ -27,6 +27,36 @@ async def update_user_me(
     await current_user.save()
     return current_user
 
+@router.get("/me/what-to-eat-presets", response_model=List[WhatToEatPresetOut])
+async def get_my_presets(current_user: User = Depends(get_current_user)):
+    return await WhatToEatPreset.filter(user=current_user).all()
+
+@router.post("/me/what-to-eat-presets", response_model=WhatToEatPresetOut)
+async def create_preset(
+    preset: WhatToEatPresetCreate,
+    current_user: User = Depends(get_current_user)
+):
+    # Check limit if needed, e.g. max 20 presets
+    count = await WhatToEatPreset.filter(user=current_user).count()
+    if count >= 20:
+        raise HTTPException(status_code=400, detail="Maximum 20 presets allowed")
+        
+    return await WhatToEatPreset.create(
+        user=current_user,
+        name=preset.name,
+        options=preset.options
+    )
+
+@router.delete("/me/what-to-eat-presets/{preset_id}")
+async def delete_preset(
+    preset_id: int,
+    current_user: User = Depends(get_current_user)
+):
+    deleted_count = await WhatToEatPreset.filter(id=preset_id, user=current_user).delete()
+    if not deleted_count:
+        raise HTTPException(status_code=404, detail="Preset not found")
+    return {"message": "Deleted successfully"}
+
 @router.get("/me/stats")
 async def get_user_stats(current_user: User = Depends(get_current_user)):
     # Import here to avoid circular imports if any

@@ -6,6 +6,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../navigation/types';
 import { theme } from '../../styles/theme';
+import { useTranslation } from 'react-i18next';
 
 type AIKitchenScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -14,65 +15,66 @@ const SPACING = 16;
 // 2 columns
 const CARD_WIDTH = (width - SPACING * 3) / 2;
 
-const FEATURES = [
-  { 
-    name: '拍照识别', 
-    desc: '识别食材', 
-    route: 'ImageToRecipe', 
-    icon: 'camera', 
-    color: '#1A1A1A',
-    bg: '#FFFFFF',
-    border: '#E0E0E0'
-  },
-  { 
-    name: '热量计算', 
-    desc: '卡路里监控', 
-    route: 'ImageToCalorie', 
-    icon: 'flame', 
-    color: '#1A1A1A',
-    bg: '#FFFFFF',
-    border: '#E0E0E0'
-  },
-  { 
-    name: '美食绘图', 
-    desc: '生成图片', 
-    route: 'TextToImage', 
-    icon: 'brush', 
-    color: '#1A1A1A',
-    bg: '#FFFFFF',
-    border: '#E0E0E0'
-  },
-  { 
-    name: '定制菜谱', 
-    desc: 'AI 推荐', 
-    route: 'TextToRecipe', 
-    icon: 'restaurant', 
-    color: '#1A1A1A',
-    bg: '#FFFFFF',
-    border: '#E0E0E0'
-  },
-  { 
-    name: '冰箱管家', 
-    desc: '清空库存', 
-    route: 'FridgeToRecipe', 
-    icon: 'ice-cream', 
-    color: '#1A1A1A',
-    bg: '#FFFFFF',
-    border: '#E0E0E0'
-  },
-  { 
-    name: '语音助手', 
-    desc: '动口不动手', 
-    route: 'VoiceAssistant', 
-    icon: 'mic', 
-    color: '#1A1A1A',
-    bg: '#FFFFFF',
-    border: '#E0E0E0'
-  },
-] as const;
-
 const AIKitchenScreen = () => {
   const navigation = useNavigation<AIKitchenScreenNavigationProp>();
+  const { t } = useTranslation();
+
+  const FEATURES = [
+    { 
+      name: t('kitchen.featureImageToRecipe'), 
+      desc: t('kitchen.featureImageToRecipeDesc'), 
+      route: 'ImageToRecipe', 
+      icon: 'camera', 
+      color: '#1A1A1A',
+      bg: '#FFFFFF',
+      border: '#E0E0E0'
+    },
+    { 
+      name: t('kitchen.featureImageToCalorie'), 
+      desc: t('kitchen.featureImageToCalorieDesc'), 
+      route: 'ImageToCalorie', 
+      icon: 'flame', 
+      color: '#1A1A1A',
+      bg: '#FFFFFF',
+      border: '#E0E0E0'
+    },
+    { 
+      name: t('kitchen.featureTextToImage'), 
+      desc: t('kitchen.featureTextToImageDesc'), 
+      route: 'TextToImage', 
+      icon: 'brush', 
+      color: '#1A1A1A',
+      bg: '#FFFFFF',
+      border: '#E0E0E0'
+    },
+    { 
+      name: t('kitchen.featureTextToRecipe'), 
+      desc: t('kitchen.featureTextToRecipeDesc'), 
+      route: 'TextToRecipe', 
+      icon: 'restaurant', 
+      color: '#1A1A1A',
+      bg: '#FFFFFF',
+      border: '#E0E0E0'
+    },
+    { 
+      name: t('kitchen.featureFridgeToRecipe'), 
+      desc: t('kitchen.featureFridgeToRecipeDesc'), 
+      route: 'FridgeToRecipe', 
+      icon: 'ice-cream', 
+      color: '#1A1A1A',
+      bg: '#FFFFFF',
+      border: '#E0E0E0'
+    },
+    { 
+      name: t('kitchen.featureVoiceAssistant'), 
+      desc: t('kitchen.featureVoiceAssistantDesc'), 
+      route: 'VoiceAssistant', 
+      icon: 'mic', 
+      color: '#1A1A1A',
+      bg: '#FFFFFF',
+      border: '#E0E0E0'
+    },
+  ] as const;
 
   return (
     <View style={styles.container}>
@@ -83,8 +85,8 @@ const AIKitchenScreen = () => {
           {/* Header */}
           <View style={styles.header}>
             <View>
-              <Text style={styles.headerSubtitle}>AI KITCHEN</Text>
-              <Text style={styles.headerTitle}>智能厨房实验室</Text>
+              <Text style={styles.headerSubtitle}>{t('kitchen.subtitle')}</Text>
+              <Text style={styles.headerTitle}>{t('kitchen.title')}</Text>
             </View>
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <TouchableOpacity 
@@ -111,19 +113,19 @@ const AIKitchenScreen = () => {
               </View>
               <View style={styles.statusBadge}>
                 <View style={styles.statusDot} />
-                <Text style={styles.statusText}>运行中</Text>
+                <Text style={styles.statusText}>{t('kitchen.running')}</Text>
               </View>
             </View>
             
             <View style={styles.heroContent}>
-              <Text style={styles.heroTitle}>我的智能冰箱</Text>
+              <Text style={styles.heroTitle}>{t('kitchen.myFridge')}</Text>
               <Text style={styles.heroDesc}>
-                库存监控 · 过期提醒 · 智能补货
+                {t('kitchen.myFridgeDesc')}
               </Text>
             </View>
 
             <View style={styles.heroFooter}>
-              <Text style={styles.heroLink}>进入管理</Text>
+              <Text style={styles.heroLink}>{t('kitchen.manage')}</Text>
               <Ionicons name="arrow-forward" size={16} color="white" />
             </View>
 
@@ -134,7 +136,7 @@ const AIKitchenScreen = () => {
 
           {/* Section Divider */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>功能矩阵</Text>
+            <Text style={styles.sectionTitle}>{t('kitchen.features')}</Text>
             <View style={styles.sectionLine} />
           </View>
 

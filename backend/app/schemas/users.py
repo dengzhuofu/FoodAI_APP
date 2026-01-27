@@ -30,3 +30,15 @@ class UserUpdate(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+class WhatToEatPresetCreate(BaseModel):
+    name: str
+    options: List[str]
+
+class WhatToEatPresetOut(BaseModel):
+    id: int
+    name: str
+    options: List[str]
+    
+    class Config:
+        from_attributes = True
