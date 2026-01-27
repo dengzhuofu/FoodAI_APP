@@ -4,10 +4,11 @@ from typing import List, Dict, Any, Optional
 import json
 import base64
 import os
+from app.models.inventory import FridgeItem, ShoppingItem
 
 # ai框架
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage, AIMessage
 from langchain_core.prompts import PromptTemplate
 
 class AIService:
@@ -349,5 +350,102 @@ class AIService:
         except Exception as e:
             print(f"Error parsing AI response: {e}")
             return []
+
+    async def kitchen_agent_chat(self, user_id: int, message: str, history: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Agent with tool use for kitchen management.
+        Returns dict with answer and thoughts.
+        """
+        # 1. Define Tools with user_id context
+        async def get_fridge_items() -> str:
+            """查看冰箱里现有的食材列表"""
+            items = await FridgeItem.filter(user_id=user_id).all()
+            if not items:
+                return "冰箱是空的。"
+            return json.dumps([{"name": i.name, "quantity": i.quantity, "expiry": str(i.expiry_date)} for i in items], ensure_ascii=False)
+
+        async def add_shopping_item(item_name: str) -> str:
+            """添加物品到购物清单"""
+            await ShoppingItem.create(user_id=user_id, name=item_name, is_bought=False)
+            return f"已将 '{item_name}' 添加到购物清单。"
+
+        async def get_shopping_list() -> str:
+            """查看当前的购物清单"""
+            items = await ShoppingItem.filter(user_id=user_id, is_bought=False).all()
+            if not items:
+                return "购物清单是空的。"
+            return json.dumps([{"name": i.name} for i in items], ensure_ascii=False)
+
+        tools = [get_fridge_items, add_shopping_item, get_shopping_list]
+        
+        # 2. Bind tools to LLM
+        llm_with_tools = self.llm_text.bind_tools(tools)
+
+        # 3. Construct Messages
+        messages = [
+            SystemMessage(content="你是智能厨房管家。你可以查看我的冰箱库存，并帮我管理购物清单。请根据我的指令调用相应的工具。如果不需要调用工具，直接回答即可。")
+        ]
+        
+        # Convert history
+        for msg in history:
+            if msg["role"] == "user":
+                messages.append(HumanMessage(content=msg["content"]))
+            elif msg["role"] == "assistant":
+                messages.append(AIMessage(content=msg["content"]))
+        
+        messages.append(HumanMessage(content=message))
+
+        thoughts = []
+
+        # 4. Agent Loop
+        try:
+            # First turn: LLM decides to call tools or not
+            response = await llm_with_tools.ainvoke(messages)
+            messages.append(response)
+
+            # If tool calls exist
+            if response.tool_calls:
+                for tool_call in response.tool_calls:
+                    fn_name = tool_call["name"]
+                    args = tool_call["args"]
+                    
+                    # Record thought
+                    thoughts.append({
+                        "tool": fn_name,
+                        "args": args,
+                        "description": f"正在调用 {fn_name}..."
+                    })
+
+                    # Execute tool
+                    result = "Tool Error"
+                    if fn_name == "get_fridge_items":
+                        thoughts[-1]["description"] = "正在查看冰箱库存..."
+                        result = await get_fridge_items(**args)
+                    elif fn_name == "add_shopping_item":
+                        thoughts[-1]["description"] = f"正在将 {args.get('item_name', '物品')} 加入清单..."
+                        result = await add_shopping_item(**args)
+                    elif fn_name == "get_shopping_list":
+                        thoughts[-1]["description"] = "正在查看购物清单..."
+                        result = await get_shopping_list(**args)
+                    
+                    messages.append(ToolMessage(tool_call_id=tool_call["id"], content=str(result)))
+                
+                # Second turn: LLM generates final response based on tool outputs
+                final_response = await llm_with_tools.ainvoke(messages)
+                return {
+                    "answer": final_response.content,
+                    "thoughts": thoughts
+                }
+            
+            return {
+                "answer": response.content,
+                "thoughts": []
+            }
+        except Exception as e:
+            print(f"Agent Error: {e}")
+            return {
+                "answer": "抱歉，我遇到了一些问题，无法处理您的请求。",
+                "thoughts": []
+            }
 
 ai_service = AIService()

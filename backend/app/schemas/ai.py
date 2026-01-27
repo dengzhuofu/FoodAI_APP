@@ -28,3 +28,7 @@ class GenerateRecipeImageRequest(BaseModel):
 class GenerateWhatToEatRequest(BaseModel):
     categories: List[str]
     quantity: int
+
+class KitchenAgentRequest(BaseModel):
+    message: str
+    history: List[dict] = []

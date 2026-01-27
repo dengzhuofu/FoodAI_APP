@@ -4,51 +4,138 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { theme } from '../../../styles/theme';
-import { getHistory, AILog } from '../../../../api/ai';
+import { getHistory, AILog, chatWithKitchenAgent } from '../../../../api/ai';
+import { GiftedChat, IMessage, Bubble, InputToolbar } from 'react-native-gifted-chat';
+
+const ThinkingBubble = ({ thoughts }: { thoughts: any[] }) => {
+  const [expanded, setExpanded] = useState(false);
+  
+  if (!thoughts || thoughts.length === 0) return null;
+
+  return (
+    <View style={styles.thinkingContainer}>
+      <TouchableOpacity 
+        style={styles.thinkingHeader} 
+        onPress={() => setExpanded(!expanded)}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="sparkles" size={14} color="#666" />
+        <Text style={styles.thinkingTitle}>
+          AI 思考过程 ({thoughts.length} 步)
+        </Text>
+        <Ionicons 
+          name={expanded ? "chevron-up" : "chevron-down"} 
+          size={14} 
+          color="#666" 
+        />
+      </TouchableOpacity>
+      
+      {expanded && (
+        <View style={styles.thinkingContent}>
+          {thoughts.map((thought, index) => (
+            <View key={index} style={styles.thoughtItem}>
+              <View style={styles.thoughtLine} />
+              <View style={styles.thoughtDot} />
+              <Text style={styles.thoughtText}>{thought.description}</Text>
+              {/* <Text style={styles.thoughtArgs}>{JSON.stringify(thought.args)}</Text> */}
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+};
 
 const VoiceAssistantFeature = () => {
   const navigation = useNavigation();
-  const [isListening, setIsListening] = useState(false);
-  const [scaleAnim] = useState(new Animated.Value(1));
-  const [history, setHistory] = useState<AILog[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [messages, setMessages] = useState<IMessage[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
 
   useEffect(() => {
-    fetchHistory();
+    setMessages([
+      {
+        _id: 1,
+        text: '你好！我是你的智能厨房管家。我可以帮你查看冰箱库存，或者管理购物清单。你可以直接告诉我你的需求，比如"看看冰箱里有什么？"或"把牛奶加入购物清单"。',
+        createdAt: new Date(),
+        user: {
+          _id: 2,
+          name: 'AI Chef',
+          avatar: 'https://img.icons8.com/color/48/000000/chef-hat.png',
+        },
+      },
+    ]);
   }, []);
 
-  const fetchHistory = async () => {
-    setLoadingHistory(true);
+  const onSend = async (newMessages: IMessage[] = []) => {
+    const userMessage = newMessages[0];
+    setMessages((previousMessages) => GiftedChat.append(previousMessages, newMessages));
+    setIsTyping(true);
+
     try {
-      const data = await getHistory(5, 0, 'voice-assistant');
-      setHistory(data);
+      const history = messages.map(msg => ({
+        role: msg.user._id === 1 ? 'user' : 'assistant',
+        content: msg.text
+      })).reverse();
+
+      const aiResponse = await chatWithKitchenAgent(userMessage.text, history);
+      // aiResponse is now { answer: string, thoughts: Array }
+      
+      const botMessage: IMessage = {
+        _id: Math.random().toString(),
+        text: aiResponse.answer,
+        createdAt: new Date(),
+        user: {
+          _id: 2,
+          name: 'AI Chef',
+          avatar: 'https://img.icons8.com/color/48/000000/chef-hat.png',
+        },
+        // Store thoughts in custom property
+        // @ts-ignore
+        thoughts: aiResponse.thoughts
+      };
+
+      setMessages((previousMessages) => GiftedChat.append(previousMessages, [botMessage]));
     } catch (error) {
-      console.error('Failed to fetch history:', error);
+      console.error('Chat Error:', error);
+      // ... error handling
     } finally {
-      setLoadingHistory(false);
+      setIsTyping(false);
     }
   };
 
-  useEffect(() => {
-    if (isListening) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(scaleAnim, {
-            toValue: 1.2,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scaleAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    } else {
-      scaleAnim.setValue(1);
-    }
-  }, [isListening]);
+  const renderBubble = (props: any) => {
+    const { currentMessage } = props;
+    const thoughts = currentMessage.thoughts;
+
+    return (
+      <View>
+        {thoughts && thoughts.length > 0 && (
+           <ThinkingBubble thoughts={thoughts} />
+        )}
+        <Bubble
+          {...props}
+          wrapperStyle={{
+            left: {
+              backgroundColor: 'white',
+              borderRadius: 16,
+              borderTopLeftRadius: 4,
+              padding: 4,
+            },
+            right: {
+              backgroundColor: '#1A1A1A',
+              borderRadius: 16,
+              borderTopRightRadius: 4,
+              padding: 4,
+            },
+          }}
+          textStyle={{
+            left: { color: '#333' },
+            right: { color: 'white' },
+          }}
+        />
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -57,63 +144,33 @@ const VoiceAssistantFeature = () => {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>语音助手</Text>
+          <Text style={styles.headerTitle}>厨房管家</Text>
           <View style={{ width: 40 }} />
         </View>
 
         <View style={styles.content}>
-          <View style={styles.chatArea}>
-            <View style={styles.botMessage}>
-              <View style={styles.botAvatar}>
-                <Ionicons name="restaurant" size={20} color="white" />
-              </View>
-              <View style={styles.messageBubble}>
-                <Text style={styles.messageText}>
-                  你好！我是你的智能烹饪助手。
-                  你可以问我："如何煮出完美的水煮蛋？" 或者 "番茄炒蛋先放什么？"
-                </Text>
-              </View>
-            </View>
-
-            {/* History Section - Hidden if empty */}
-            {history.length > 0 && (
-              <View style={styles.historySection}>
-                <Text style={styles.historySectionTitle}>历史对话</Text>
-                <View style={styles.historyList}>
-                  {history.map((item) => (
-                    <View key={item.id} style={styles.historyItem}>
-                      <Ionicons name="chatbubble-outline" size={16} color="#666" />
-                      <Text style={styles.historyText} numberOfLines={1}>
-                        {item.input_summary || '对话记录'}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
+          <GiftedChat
+            messages={messages}
+            onSend={(messages) => onSend(messages)}
+            user={{
+              _id: 1,
+            }}
+            renderBubble={renderBubble}
+            isTyping={isTyping}
+            placeholder="输入消息..."
+            timeTextStyle={{ left: { color: '#999' }, right: { color: '#ccc' } }}
+            renderInputToolbar={(props) => (
+              <InputToolbar
+                {...props}
+                containerStyle={{
+                  backgroundColor: 'white',
+                  borderTopColor: '#eee',
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                }}
+              />
             )}
-          </View>
-
-          <View style={styles.bottomSection}>
-            <Text style={styles.statusText}>
-              {isListening ? '正在聆听...' : '点击麦克风开始提问'}
-            </Text>
-            
-            <TouchableOpacity 
-              activeOpacity={0.8}
-              onPress={() => setIsListening(!isListening)}
-              style={styles.micWrapper}
-            >
-              <Animated.View style={[
-                styles.micRing, 
-                { transform: [{ scale: scaleAnim }] },
-                isListening ? { backgroundColor: 'rgba(26, 26, 26, 0.1)' } : { backgroundColor: 'transparent' }
-              ]} />
-              
-              <View style={[styles.micButton, isListening && styles.micButtonActive]}>
-                <Ionicons name={isListening ? "mic" : "mic-outline"} size={32} color="white" />
-              </View>
-            </TouchableOpacity>
-          </View>
+          />
         </View>
       </SafeAreaView>
     </View>
@@ -134,6 +191,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   backButton: {
     width: 40,
@@ -148,108 +208,60 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'space-between',
   },
-  chatArea: {
-    padding: 20,
-  },
-  botMessage: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  botAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#1A1A1A',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  messageBubble: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 16,
-    borderTopLeftRadius: 4,
+  thinkingContainer: {
+    marginVertical: 4,
+    marginLeft: 8,
     maxWidth: '80%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
   },
-  messageText: {
-    fontSize: 15,
-    color: '#333',
-    lineHeight: 22,
-  },
-  bottomSection: {
+  thinkingHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingBottom: 60,
+    backgroundColor: '#F0F0F0',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    borderBottomLeftRadius: 4,
   },
-  statusText: {
-    marginBottom: 32,
-    color: '#999',
-    fontSize: 14,
+  thinkingTitle: {
+    fontSize: 12,
+    color: '#666',
+    marginHorizontal: 6,
     fontWeight: '600',
   },
-  micWrapper: {
-    width: 80,
-    height: 80,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
+  thinkingContent: {
+    marginTop: 4,
+    padding: 10,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#EEE',
   },
-  micRing: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-  },
-  micButton: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#1A1A1A',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  micButtonActive: {
-    backgroundColor: '#FF5252',
-  },
-  historySection: {
-    marginTop: 32,
-    paddingTop: 24,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-  },
-  historySectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#999',
-    marginBottom: 12,
-    marginLeft: 4,
-  },
-  historyList: {
-    gap: 12,
-  },
-  historyItem: {
+  thoughtItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    gap: 12,
+    marginBottom: 6,
   },
-  historyText: {
-    fontSize: 14,
+  thoughtLine: {
+    position: 'absolute',
+    left: 3,
+    top: 10,
+    bottom: -10,
+    width: 1,
+    backgroundColor: '#DDD',
+    zIndex: -1,
+  },
+  thoughtDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#4CAF50',
+    marginRight: 8,
+  },
+  thoughtText: {
+    fontSize: 12,
     color: '#333',
-    flex: 1,
+    lineHeight: 16,
   },
 });
 

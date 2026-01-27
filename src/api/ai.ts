@@ -32,6 +32,21 @@ export interface AILog {
   created_at: string;
 }
 
+export interface KitchenAgentRequest {
+  message: string;
+  history: Array<{ role: string; content: string }>;
+}
+
+export const chatWithKitchenAgent = async (message: string, history: Array<{ role: string; content: string }> = []) => {
+  try {
+    const response = await client.post('/ai/agent/chat', { message, history });
+    return response.data.response; // returns { answer: string, thoughts: Array }
+  } catch (error) {
+    console.error('Kitchen Agent Error:', error);
+    throw error;
+  }
+};
+
 export const getHistory = async (limit: number = 20, offset: number = 0, feature?: string): Promise<AILog[]> => {
   const response = await client.get('/ai/history', {
     params: { limit, offset, feature }

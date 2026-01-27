@@ -122,13 +122,13 @@ const MainTabs = () => {
           tabBarLabel: () => null,
           tabBarIcon: ({ focused }) => (
             <View style={{
-              width: 56,
-              height: 56,
+              width: 50,
+              height: 50,
               borderRadius: 28,
               backgroundColor: '#1A1A1A',
               justifyContent: 'center',
               alignItems: 'center',
-              marginBottom: 24,
+              marginBottom: 0,
               shadowColor: '#1A1A1A',
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.3,

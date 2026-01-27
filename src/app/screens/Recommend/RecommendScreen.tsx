@@ -435,6 +435,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#1A1A1A',
     letterSpacing: -0.3,
+    marginBottom: 12,
   },
   seeMoreText: {
     fontSize: 12,

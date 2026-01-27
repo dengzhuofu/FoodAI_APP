@@ -11,10 +11,23 @@ from app.schemas.ai import (
     FridgeToRecipeRequest,
     GenerateRecipeImageRequest,
     RecognizeFridgeRequest,
-    GenerateWhatToEatRequest
+    GenerateWhatToEatRequest,
+    KitchenAgentRequest
 )
 
 router = APIRouter()
+
+@router.post("/agent/chat")
+async def kitchen_agent_chat(
+    request: KitchenAgentRequest,
+    current_user: User = Depends(get_current_user)
+):
+    response = await ai_service.kitchen_agent_chat(current_user.id, request.message, request.history)
+    
+    # Optional: Log agent interactions
+    # await AILog.create(...)
+    
+    return {"response": response}
 
 @router.get("/history")
 async def get_history(
