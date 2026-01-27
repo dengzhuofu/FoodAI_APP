@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from app.schemas.users import UserOut, UserUpdate
+from app.schemas.users import UserOut, UserUpdate, WhatToEatPresetCreate, WhatToEatPresetOut
 from app.schemas.content import CommentOut
-from app.models.users import User, Follow
+from app.models.users import User, Follow, WhatToEatPreset
 from app.models.recipes import Comment
 from app.core.deps import get_current_user
 from typing import List, Dict
