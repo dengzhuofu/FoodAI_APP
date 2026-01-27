@@ -5,7 +5,6 @@ on:
     branches:
       - main  # 如果你的分支叫 master，请改这里
     paths:
-      # - 'backend/**'  # 只在 backend 文件夹有改动时触发
       - 'backend/**'  # 只在 backend 文件夹有改动时触发
 
       - '.github/workflows/deploy.yml' # 修改部署脚本也触发
@@ -32,6 +31,10 @@ jobs:
           echo "TENCENT_COS_REGION=${{ secrets.TENCENT_COS_REGION }}" >> .env
           echo "TENCENT_COS_BUCKET=${{ secrets.TENCENT_COS_BUCKET }}" >> .env
 
+      - name: Compress backend files
+        run: |
+          tar -czf release.tar.gz -C backend .
+
       - name: Copy files to server via SCP
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -39,9 +42,8 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
           # 如果使用密钥登录，请把 password 换成 key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "backend/"
-          target: "/var/www/foodai"
-          strip_components: 1 # 去掉 backend 这一层目录，直接把内容传到 /var/www/foodai
+          source: "release.tar.gz"
+          target: "/tmp"
 
       - name: Execute remote commands via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -51,10 +53,31 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           # key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            # 确保目标目录存在
+            sudo mkdir -p /var/www/foodai
+            
+            # 解压文件到目标目录 (使用 sudo 避免权限问题)
+            sudo tar -xzf /tmp/release.tar.gz -C /var/www/foodai
+            
+            # 清理临时文件
+            rm /tmp/release.tar.gz
+            
             cd /var/www/foodai
+            
+            # 确保 venv 存在
+            if [ ! -d "venv" ]; then
+              sudo apt-get install -y python3-venv || true
+              python3 -m venv venv
+            fi
+            
             # 激活虚拟环境并安装依赖
             ./venv/bin/pip install -r requirements.txt
+            
+            # 确保日志目录权限 (如果需要)
+            # sudo chown -R www-data:www-data /var/www/foodai
+            
             # 重启服务
             sudo systemctl restart foodai
+            
             # 检查状态
             sudo systemctl status foodai | grep Active
