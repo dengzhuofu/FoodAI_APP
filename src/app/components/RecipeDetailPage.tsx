@@ -97,6 +97,9 @@ const RecipeDetailPage = () => {
         ]);
         setRecipe(recipeData);
         setLikesCount(recipeData.likes_count || 0);
+        setIsLiked(recipeData.is_liked);
+        setIsCollected(recipeData.is_collected);
+        
         if (userData) {
           setCurrentUserId(userData.id);
           setCurrentUser(userData);
@@ -105,7 +108,6 @@ const RecipeDetailPage = () => {
         await fetchComments();
         // Record View
         await recordView(recipeId, 'recipe');
-        // TODO: Check if collected/liked status from backend if available
       } catch (error) {
         console.error('Failed to fetch recipe:', error);
         Alert.alert('错误', '加载菜谱失败');

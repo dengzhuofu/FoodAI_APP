@@ -46,11 +46,12 @@ export interface Recipe {
   steps: string[];
   author: User;
   likes_count: number;
+  is_liked: boolean;
+  is_collected: boolean;
   created_at: string;
 }
 
 export interface Restaurant {
-  description: ReactNode;
   id: number;
   name: string;
   title: string;
@@ -65,6 +66,8 @@ export interface Restaurant {
   phone?: string;
   author: User;
   likes_count: number;
+  is_liked: boolean;
+  is_collected: boolean;
   created_at: string;
 }
 

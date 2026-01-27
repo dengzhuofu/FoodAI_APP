@@ -63,10 +63,35 @@ async def get_recipes(
     return await query.offset((page - 1) * page_size).limit(page_size).prefetch_related("author")
 
 @router.get("/recipes/{recipe_id}", response_model=RecipeOut)
-async def get_recipe_detail(recipe_id: int):
+async def get_recipe_detail(
+    recipe_id: int,
+    current_user: User = Depends(get_current_user)
+):
     recipe = await Recipe.get_or_none(id=recipe_id).prefetch_related("author")
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
+        
+    # Check if liked and collected
+    is_liked = await Like.filter(
+        user=current_user, target_id=recipe_id, target_type='recipe'
+    ).exists()
+    
+    is_collected = await Collection.filter(
+        user=current_user, target_id=recipe_id, target_type='recipe'
+    ).exists()
+    
+    # Manually attach these fields (Pydantic schema will need update or return dict)
+    # Since we use response_model, we might need to update the schema or return a dict that matches
+    # Let's update the return to include these extra fields if the schema supports it, 
+    # OR for now, just return the recipe object and let frontend handle it if we modify schema.
+    # To avoid schema validation error, let's update schema first.
+    # But for quick fix without changing global schema, we can return a dict and update frontend to expect it?
+    # No, better update schema.
+    
+    # Actually, we can attach them to the recipe object dynamically
+    recipe.is_liked = is_liked
+    recipe.is_collected = is_collected
+    
     return recipe
 
 # --- Restaurant Endpoints ---
@@ -109,10 +134,25 @@ async def get_restaurants(
     return await query.offset((page - 1) * page_size).limit(page_size).prefetch_related("author")
 
 @router.get("/restaurants/{restaurant_id}", response_model=RestaurantOut)
-async def get_restaurant_detail(restaurant_id: int):
+async def get_restaurant_detail(
+    restaurant_id: int,
+    current_user: User = Depends(get_current_user)
+):
     restaurant = await Restaurant.get_or_none(id=restaurant_id).prefetch_related("author")
     if not restaurant:
         raise HTTPException(status_code=404, detail="Restaurant not found")
+        
+    is_liked = await Like.filter(
+        user=current_user, target_id=restaurant_id, target_type='restaurant'
+    ).exists()
+    
+    is_collected = await Collection.filter(
+        user=current_user, target_id=restaurant_id, target_type='restaurant'
+    ).exists()
+    
+    restaurant.is_liked = is_liked
+    restaurant.is_collected = is_collected
+    
     return restaurant
 
 # --- Comment Endpoints ---

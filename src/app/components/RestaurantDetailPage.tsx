@@ -81,6 +81,9 @@ const RestaurantDetailPage = () => {
         ]);
         setRestaurant(restaurantData);
         setLikesCount(restaurantData.likes_count || 0);
+        setIsLiked(restaurantData.is_liked);
+        setIsCollected(restaurantData.is_collected);
+        
         if (userData) {
           setCurrentUserId(userData.id);
           setCurrentUser(userData);
@@ -90,7 +93,6 @@ const RestaurantDetailPage = () => {
         await fetchComments();
         // Record View
         await recordView(restaurantId, 'restaurant');
-        // TODO: Check if collected/liked status
       } catch (error) {
         console.error('Failed to fetch restaurant:', error);
         Alert.alert('错误', '加载餐厅失败');

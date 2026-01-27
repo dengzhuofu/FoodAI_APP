@@ -49,6 +49,8 @@ class RecipeOut(RecipeBase):
     author: UserOut
     likes_count: int
     views_count: int = 0
+    is_liked: bool = False
+    is_collected: bool = False
     created_at: datetime
     
     class Config:
@@ -76,6 +78,8 @@ class RestaurantOut(RestaurantBase):
     author: UserOut
     likes_count: int
     views_count: int = 0
+    is_liked: bool = False
+    is_collected: bool = False
     created_at: datetime
     
     class Config:
