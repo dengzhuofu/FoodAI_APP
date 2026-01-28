@@ -12,6 +12,12 @@ async def upgrade_db():
     except Exception as e:
         print(f"Failed to update recipes (might already exist): {e}")
 
+    try:
+        await conn.execute_script("ALTER TABLE `recipes` ADD COLUMN `images` JSON;")
+        print("Added images to recipes")
+    except Exception as e:
+        print(f"Failed to add images to recipes (might already exist): {e}")
+
     # Update restaurants table
     try:
         await conn.execute_script("ALTER TABLE `restaurants` ADD COLUMN `views_count` INT DEFAULT 0;")
