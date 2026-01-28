@@ -452,11 +452,13 @@ const VoiceAssistantFeature = () => {
                     <Text style={[styles.sessionTitle, item.id === currentSessionId && styles.sessionTitleActive]} numberOfLines={1}>
                       {item.title}
                     </Text>
-                    {item.id === currentSessionId && (
-                       <TouchableOpacity onPress={() => handleDeleteSession(item.id)} style={{padding: 4}}>
-                          <Ionicons name="trash-outline" size={16} color="#FF6B6B" />
-                       </TouchableOpacity>
-                    )}
+                    
+                    <TouchableOpacity 
+                      onPress={() => handleDeleteSession(item.id)} 
+                      style={{padding: 4}}
+                    >
+                      <Ionicons name="trash-outline" size={16} color="#FF6B6B" />
+                    </TouchableOpacity>
                   </TouchableOpacity>
                 )}
                 contentContainerStyle={{padding: 16}}

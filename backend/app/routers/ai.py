@@ -241,7 +241,13 @@ async def kitchen_agent_chat(
     # Reverse to chronological
     history_for_ai = [{"role": m.role, "content": m.content} for m in reversed(previous_msgs)]
 
-    response = await ai_service.kitchen_agent_chat(current_user.id, request.message, history_for_ai)
+    response = await ai_service.kitchen_agent_chat(
+        user_id=current_user.id, 
+        message=request.message, 
+        history=history_for_ai,
+        agent_id=session.agent_id,
+        session_id=session.id
+    )
     
     # Save Assistant Message
     await ChatMessage.create(
