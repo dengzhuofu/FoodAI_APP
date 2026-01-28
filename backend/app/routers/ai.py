@@ -2,7 +2,7 @@ from fastapi import APIRouter, UploadFile, File, Form, Depends, Body
 from app.services.ai_service import ai_service
 from app.models.users import User
 from app.core.deps import get_current_user
-from app.models.ai_logs import AILog
+from app.models.chat import ChatSession, ChatMessage, AgentPreset
 from app.schemas.ai import (
     TextToRecipeRequest, 
     TextToImageRequest, 
@@ -12,22 +12,252 @@ from app.schemas.ai import (
     GenerateRecipeImageRequest,
     RecognizeFridgeRequest,
     GenerateWhatToEatRequest,
-    KitchenAgentRequest
+    KitchenAgentRequest,
+    ChatSessionCreate,
+    ChatSessionUpdate,
+    ChatSessionOut,
+    ChatMessageOut,
+    AgentPresetCreate,
+    AgentPresetUpdate,
+    AgentPresetOut
 )
+from typing import List
 
 router = APIRouter()
+
+# --- Agent Presets Endpoints ---
+
+@router.post("/presets", response_model=AgentPresetOut)
+async def create_agent_preset(
+    request: AgentPresetCreate,
+    current_user: User = Depends(get_current_user)
+):
+    preset = await AgentPreset.create(
+        user=current_user,
+        name=request.name,
+        description=request.description,
+        system_prompt=request.system_prompt,
+        allowed_tools=request.allowed_tools
+    )
+    return preset
+
+@router.put("/presets/{preset_id}", response_model=AgentPresetOut)
+async def update_agent_preset(
+    preset_id: int,
+    request: AgentPresetUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    preset = await AgentPreset.get_or_none(id=preset_id, user=current_user)
+    if not preset:
+        # Check if system preset
+        exists = await AgentPreset.get_or_none(id=preset_id)
+        if exists and await exists.user == None:
+             raise HTTPException(status_code=403, detail="Cannot edit system preset")
+        raise HTTPException(status_code=404, detail="Preset not found")
+        
+    update_data = request.dict(exclude_unset=True)
+    if update_data:
+        for key, value in update_data.items():
+            setattr(preset, key, value)
+        await preset.save()
+        
+    return preset
+
+@router.get("/presets", response_model=List[AgentPresetOut])
+async def get_agent_presets(
+    current_user: User = Depends(get_current_user)
+):
+    # Get user presets
+    user_presets = await AgentPreset.filter(user=current_user).all()
+    # Get system presets (user is null)
+    system_presets = await AgentPreset.filter(user=None).all()
+    
+    # Mark system presets
+    result = []
+    for p in system_presets:
+        p_dict = dict(p)
+        p.is_system = True # Manually set for response
+        # Or better, just return list. Pydantic might need a field for is_system
+        # Since AgentPresetOut has is_system, we need to ensure it's set.
+        # But Tortoise model doesn't have is_system column, it's computed.
+        # We can construct Pydantic models manually or let Tortoise model method handle it if we added one.
+        # For simplicity:
+        result.append(p)
+        
+    result.extend(user_presets)
+    return result
+
+@router.get("/presets/{preset_id}", response_model=AgentPresetOut)
+async def get_agent_preset(
+    preset_id: int,
+    current_user: User = Depends(get_current_user)
+):
+    preset = await AgentPreset.get_or_none(id=preset_id)
+    if not preset:
+        raise HTTPException(status_code=404, detail="Preset not found")
+    
+    # Check access: allow if system preset (user is None) OR belongs to current user
+    user_id = await preset.user_id # Access foreign key ID
+    if user_id is not None and user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+        
+    return preset
+
+@router.delete("/presets/{preset_id}")
+async def delete_agent_preset(
+    preset_id: int,
+    current_user: User = Depends(get_current_user)
+):
+    # Only allow deleting own presets
+    deleted_count = await AgentPreset.filter(id=preset_id, user=current_user).delete()
+    if deleted_count == 0:
+         # Check if it exists but is system
+         exists = await AgentPreset.get_or_none(id=preset_id)
+         if exists and await exists.user == None:
+             raise HTTPException(status_code=403, detail="Cannot delete system preset")
+         raise HTTPException(status_code=404, detail="Preset not found")
+    return {"message": "Preset deleted"}
+
+@router.get("/agent/tools")
+async def get_available_agent_tools(
+    current_user: User = Depends(get_current_user)
+):
+    """Return list of available tools for agents"""
+    # This list should match the available_tools_map in ai_service.kitchen_agent_chat
+    # Ideally, we should export this from ai_service, but for now we define it here as metadata
+    return [
+        { "id": 'get_fridge_items', "name": '查看冰箱库存', "description": '获取冰箱内的食材列表' },
+        { "id": 'add_shopping_item', "name": '管理购物清单', "description": '添加物品到购物清单' },
+        { "id": 'get_shopping_list', "name": '查看购物清单', "description": '获取当前的购物清单' },
+        { "id": 'get_user_preferences', "name": '获取用户偏好', "description": '读取用户的口味和过敏源信息' },
+    ]
+
+# --- Chat Session Endpoints ---
+
+@router.post("/sessions", response_model=ChatSessionOut)
+async def create_chat_session(
+    request: ChatSessionCreate,
+    current_user: User = Depends(get_current_user)
+):
+    session = await ChatSession.create(
+        user=current_user,
+        title=request.title,
+        agent_id=request.agent_id
+    )
+    return session
+
+@router.get("/sessions", response_model=List[ChatSessionOut])
+async def get_chat_sessions(
+    current_user: User = Depends(get_current_user)
+):
+    return await ChatSession.filter(user=current_user).order_by("-updated_at")
+
+@router.get("/sessions/{session_id}/messages", response_model=List[ChatMessageOut])
+async def get_session_messages(
+    session_id: int,
+    current_user: User = Depends(get_current_user)
+):
+    session = await ChatSession.get_or_none(id=session_id, user=current_user)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    return await ChatMessage.filter(session=session).order_by("created_at")
+
+@router.delete("/sessions/{session_id}")
+async def delete_chat_session(
+    session_id: int,
+    current_user: User = Depends(get_current_user)
+):
+    deleted_count = await ChatSession.filter(id=session_id, user=current_user).delete()
+    if deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return {"message": "Session deleted"}
+
+# --- Agent Chat Endpoint ---
 
 @router.post("/agent/chat")
 async def kitchen_agent_chat(
     request: KitchenAgentRequest,
     current_user: User = Depends(get_current_user)
 ):
-    response = await ai_service.kitchen_agent_chat(current_user.id, request.message, request.history)
+    # Handle session creation/retrieval
+    session = None
+    if request.session_id:
+        session = await ChatSession.get_or_none(id=request.session_id, user=current_user)
+        if not session:
+             # Fallback or create new? Let's fail if ID provided but not found
+             # Or auto create if not found?
+             pass 
     
-    # Optional: Log agent interactions
-    # await AILog.create(...)
+    if not session:
+        # Create new session if no ID or not found
+        # Use first few words of message as title
+        title = request.message[:20] + "..." if len(request.message) > 20 else request.message
+        session = await ChatSession.create(
+            user=current_user,
+            title=title,
+            agent_id=request.agent_id or "kitchen_agent"
+        )
+
+    # Save User Message
+    await ChatMessage.create(
+        session=session,
+        role="user",
+        content=request.message
+    )
     
-    return {"response": response}
+    # Load history from DB instead of frontend request.history if session exists?
+    # For now, let's mix: use DB history for context
+    # Get last N messages
+    db_history = await ChatMessage.filter(session=session).order_by("created_at").limit(20)
+    
+    # Convert to format expected by AI Service
+    history_for_ai = [
+        {"role": msg.role, "content": msg.content} 
+        for msg in db_history 
+        # Exclude the message we just saved to avoid duplication in context if ai_service appends it
+        # Actually ai_service.kitchen_agent_chat expects previous history, and appends current message
+        # So we should exclude the very last one we just saved?
+        # ai_service code: messages = history + [current_message]
+        # So yes, exclude the one we just saved.
+        if msg.content != request.message or msg.role != "user" # Simplistic check
+    ]
+    # Better: just query all BEFORE the one we just created? 
+    # Or simply pass all previous messages.
+    
+    # Let's trust ai_service to handle the "current message" separation
+    # ai_service.kitchen_agent_chat(..., message, history)
+    # history should NOT include the current message.
+    
+    # Re-fetch history excluding the latest one
+    # history_objs = await ChatMessage.filter(session=session).order_by("created_at")
+    # history_for_ai = [{"role": m.role, "content": m.content} for m in history_objs[:-1]]
+    
+    # Actually, let's just use what we have. 
+    # If we use DB history, we ignore request.history from frontend (which is good for consistency)
+    
+    # Get previous messages (excluding the one we just added)
+    previous_msgs = await ChatMessage.filter(session=session).order_by("-created_at").offset(1).limit(10)
+    # Reverse to chronological
+    history_for_ai = [{"role": m.role, "content": m.content} for m in reversed(previous_msgs)]
+
+    response = await ai_service.kitchen_agent_chat(current_user.id, request.message, history_for_ai)
+    
+    # Save Assistant Message
+    await ChatMessage.create(
+        session=session,
+        role="assistant",
+        content=response["answer"],
+        thoughts=response.get("thoughts")
+    )
+    
+    # Update session updated_at
+    await session.save()
+    
+    return {
+        "response": response,
+        "session_id": session.id
+    }
 
 @router.get("/history")
 async def get_history(

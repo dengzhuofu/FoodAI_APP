@@ -353,11 +353,13 @@ class AIService:
             print(f"Error parsing AI response: {e}")
             return []
 
-    async def kitchen_agent_chat(self, user_id: int, message: str, history: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def kitchen_agent_chat(self, user_id: int, message: str, history: List[Dict[str, Any]], agent_id: str = "kitchen_agent") -> Dict[str, Any]:
         """
         Agent with tool use for kitchen management.
         Returns dict with answer and thoughts.
         """
+        from app.models.chat import AgentPreset
+        
         # 1. Define Tools with user_id context
         async def get_fridge_items() -> str:
             """查看冰箱里现有的食材列表"""
@@ -399,14 +401,20 @@ class AIService:
             }
             return json.dumps(prefs, ensure_ascii=False)
 
-        tools = [get_fridge_items, add_shopping_item, get_shopping_list, get_user_preferences]
-        
-        # 2. Bind tools to LLM
-        llm_with_tools = self.llm_text.bind_tools(tools)
+        # Available tool map
+        available_tools_map = {
+            "get_fridge_items": get_fridge_items,
+            "add_shopping_item": add_shopping_item,
+            "get_shopping_list": get_shopping_list,
+            "get_user_preferences": get_user_preferences
+        }
 
-        # 3. Construct Messages
-        messages = [
-            SystemMessage(content="""你是智能厨房管家。你可以查看用户的冰箱库存、购物清单以及饮食偏好。
+        # 2. Load Agent Preset Configuration
+        system_prompt = ""
+        tools_to_bind = []
+        
+        # Default system prompt
+        default_prompt = """你是智能厨房管家。你可以查看用户的冰箱库存、购物清单以及饮食偏好。
             
             当用户询问'吃什么'、'推荐菜谱'或'制定计划'时，你需要获取足够的信息来给出个性化建议。
             请积极使用工具来获取信息：
@@ -421,7 +429,41 @@ class AIService:
             
             如果推荐的菜谱缺少关键食材，可以询问用户是否需要加入购物清单（调用 `add_shopping_item`）。
             
-            回复风格要亲切、自然，体现出你记得用户的喜好。""")
+            回复风格要亲切、自然，体现出你记得用户的喜好。"""
+
+        # Try to find custom preset
+        preset = None
+        if agent_id and agent_id != "kitchen_agent":
+            # Assuming agent_id is numeric string for custom presets
+            if agent_id.isdigit():
+                preset = await AgentPreset.get_or_none(id=int(agent_id))
+        
+        if preset:
+            system_prompt = preset.system_prompt
+            # Filter tools based on preset.allowed_tools
+            if preset.allowed_tools:
+                for tool_name in preset.allowed_tools:
+                    if tool_name in available_tools_map:
+                        tools_to_bind.append(available_tools_map[tool_name])
+            else:
+                # If list is empty but custom preset, maybe allow all or none?
+                # Let's assume empty means none, or maybe all by default?
+                # Usually empty list means no tools.
+                pass
+        else:
+            # Default "kitchen_agent" behavior
+            system_prompt = default_prompt
+            tools_to_bind = [get_fridge_items, add_shopping_item, get_shopping_list, get_user_preferences]
+
+        # 3. Bind tools to LLM
+        if tools_to_bind:
+            llm_with_tools = self.llm_text.bind_tools(tools_to_bind)
+        else:
+            llm_with_tools = self.llm_text # No tools
+
+        # 4. Construct Messages
+        messages = [
+            SystemMessage(content=system_prompt)
         ]
         
         # Convert history
@@ -437,7 +479,7 @@ class AIService:
         MAX_TURNS = 5
         turn_count = 0
 
-        # 4. Agent Loop
+        # 5. Agent Loop
         try:
             while turn_count < MAX_TURNS:
                 turn_count += 1
@@ -466,18 +508,21 @@ class AIService:
                     # Execute tool
                     result = "Tool Error"
                     try:
-                        if fn_name == "get_fridge_items":
-                            thoughts[-1]["description"] = "正在查看冰箱库存..."
-                            result = await get_fridge_items(**args)
-                        elif fn_name == "add_shopping_item":
-                            thoughts[-1]["description"] = f"正在将 {args.get('item_name', '物品')} 加入清单..."
-                            result = await add_shopping_item(**args)
-                        elif fn_name == "get_shopping_list":
-                            thoughts[-1]["description"] = "正在查看购物清单..."
-                            result = await get_shopping_list(**args)
-                        elif fn_name == "get_user_preferences":
-                            thoughts[-1]["description"] = "正在获取您的饮食偏好..."
-                            result = await get_user_preferences(**args)
+                        if fn_name in available_tools_map:
+                            if fn_name == "get_fridge_items":
+                                thoughts[-1]["description"] = "正在查看冰箱库存..."
+                                result = await get_fridge_items(**args)
+                            elif fn_name == "add_shopping_item":
+                                thoughts[-1]["description"] = f"正在将 {args.get('item_name', '物品')} 加入清单..."
+                                result = await add_shopping_item(**args)
+                            elif fn_name == "get_shopping_list":
+                                thoughts[-1]["description"] = "正在查看购物清单..."
+                                result = await get_shopping_list(**args)
+                            elif fn_name == "get_user_preferences":
+                                thoughts[-1]["description"] = "正在获取您的饮食偏好..."
+                                result = await get_user_preferences(**args)
+                        else:
+                             result = f"Tool {fn_name} is not available or not allowed."
                     except Exception as e:
                         result = f"Error executing tool {fn_name}: {str(e)}"
                     

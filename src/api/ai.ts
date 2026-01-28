@@ -35,16 +35,112 @@ export interface AILog {
 export interface KitchenAgentRequest {
   message: string;
   history: Array<{ role: string; content: string }>;
+  session_id?: number;
+  agent_id?: string;
 }
 
-export const chatWithKitchenAgent = async (message: string, history: Array<{ role: string; content: string }> = []) => {
+export interface ChatSession {
+  id: number;
+  title: string;
+  agent_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChatMessage {
+  id: number;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  thoughts?: Array<any>;
+  created_at: string;
+}
+
+export const chatWithKitchenAgent = async (message: string, history: Array<{ role: string; content: string }> = [], sessionId?: number, agentId: string = 'kitchen_agent') => {
   try {
-    const response = await client.post('/ai/agent/chat', { message, history });
-    return response.data.response; // returns { answer: string, thoughts: Array }
+    const response = await client.post('/ai/agent/chat', { 
+      message, 
+      history,
+      session_id: sessionId,
+      agent_id: agentId
+    });
+    // Response format: { response: { answer: string, thoughts: [] }, session_id: number }
+    return response.data; 
   } catch (error) {
     console.error('Kitchen Agent Error:', error);
     throw error;
   }
+};
+
+export const getChatSessions = async (): Promise<ChatSession[]> => {
+  const response = await client.get('/ai/sessions');
+  return response.data;
+};
+
+export const getSessionMessages = async (sessionId: number): Promise<ChatMessage[]> => {
+  const response = await client.get(`/ai/sessions/${sessionId}/messages`);
+  return response.data;
+};
+
+export interface AgentPreset {
+  id: number;
+  name: string;
+  description?: string;
+  system_prompt: string;
+  allowed_tools: string[];
+  is_system: boolean;
+}
+
+export interface AgentPresetCreate {
+  name: string;
+  description?: string;
+  system_prompt: string;
+  allowed_tools: string[];
+}
+
+export interface AgentPresetUpdate {
+  name?: string;
+  description?: string;
+  system_prompt?: string;
+  allowed_tools?: string[];
+}
+
+export const getAgentPresets = async (): Promise<AgentPreset[]> => {
+  const response = await client.get('/ai/presets');
+  return response.data;
+};
+
+export const createAgentPreset = async (data: AgentPresetCreate): Promise<AgentPreset> => {
+  const response = await client.post('/ai/presets', data);
+  return response.data;
+};
+
+export const updateAgentPreset = async (presetId: number, data: AgentPresetUpdate): Promise<AgentPreset> => {
+  const response = await client.put(`/ai/presets/${presetId}`, data);
+  return response.data;
+};
+
+export const deleteAgentPreset = async (presetId: number): Promise<void> => {
+  await client.delete(`/ai/presets/${presetId}`);
+};
+
+export const createChatSession = async (title: string = "新对话", agentId: string = "kitchen_agent"): Promise<ChatSession> => {
+  const response = await client.post('/ai/sessions', { title, agent_id: agentId });
+  return response.data;
+};
+
+export const deleteChatSession = async (sessionId: number): Promise<void> => {
+  await client.delete(`/ai/sessions/${sessionId}`);
+};
+
+export interface AgentTool {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export const getAvailableAgentTools = async (): Promise<AgentTool[]> => {
+  const response = await client.get('/ai/agent/tools');
+  return response.data;
 };
 
 export const getHistory = async (limit: number = 20, offset: number = 0, feature?: string): Promise<AILog[]> => {

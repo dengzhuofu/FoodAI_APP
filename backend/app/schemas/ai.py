@@ -32,3 +32,55 @@ class GenerateWhatToEatRequest(BaseModel):
 class KitchenAgentRequest(BaseModel):
     message: str
     history: List[dict] = []
+    session_id: Optional[int] = None
+    agent_id: Optional[str] = "kitchen_agent"
+
+class ChatSessionCreate(BaseModel):
+    title: Optional[str] = "新对话"
+    agent_id: str = "kitchen_agent"
+
+class ChatSessionUpdate(BaseModel):
+    title: str
+
+class ChatSessionOut(BaseModel):
+    id: int
+    title: str
+    agent_id: str
+    created_at: str
+    updated_at: str
+    
+    class Config:
+        from_attributes = True
+
+class ChatMessageOut(BaseModel):
+    id: int
+    role: str
+    content: str
+    thoughts: Optional[List[dict]] = None
+    created_at: str
+    
+    class Config:
+        from_attributes = True
+
+class AgentPresetCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    system_prompt: str
+    allowed_tools: List[str] = []
+
+class AgentPresetUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    system_prompt: Optional[str] = None
+    allowed_tools: Optional[List[str]] = None
+
+class AgentPresetOut(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    system_prompt: str
+    allowed_tools: List[str] = []
+    is_system: bool = False
+    
+    class Config:
+        from_attributes = True

@@ -1,15 +1,18 @@
+import { chatWithKitchenAgent, getChatSessions, createChatSession, getSessionMessages, deleteChatSession, ChatSession, getAgentPresets, AgentPreset } from '../../../../api/ai';
+import { GiftedChat, IMessage, Bubble, InputToolbar, Send } from 'react-native-gifted-chat';
+import CreateAgentScreen from './CreateAgentScreen';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, ActivityIndicator, Dimensions, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Image, Alert, FlatList, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { theme } from '../../../styles/theme';
-import { getHistory, AILog, chatWithKitchenAgent } from '../../../../api/ai';
-import { GiftedChat, IMessage, Bubble, InputToolbar, Send } from 'react-native-gifted-chat';
+
 
 const { width } = Dimensions.get('window');
 
+// ... (ThinkingBubble component remains same)
 const ThinkingBubble = ({ thoughts }: { thoughts: any[] }) => {
+  // ... (keep existing implementation)
   const [expanded, setExpanded] = useState(false);
   
   if (!thoughts || thoughts.length === 0) return null;
@@ -59,21 +62,169 @@ const VoiceAssistantFeature = () => {
   const navigation = useNavigation();
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  
+  // Session Management
+  const [currentSessionId, setCurrentSessionId] = useState<number | undefined>(undefined);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+  
+  // Agent Presets
+  const [presets, setPresets] = useState<AgentPreset[]>([]);
+  const [isNewChatModalVisible, setIsNewChatModalVisible] = useState(false);
+  const [selectedPresetId, setSelectedPresetId] = useState<string>("kitchen_agent");
+  const [isCreateAgentVisible, setIsCreateAgentVisible] = useState(false);
+  const [editingPreset, setEditingPreset] = useState<AgentPreset | undefined>(undefined);
 
+  // Load sessions on mount
   useEffect(() => {
-    setMessages([
-      {
-        _id: 1,
-        text: '你好！我是你的智能厨房管家。我可以帮你查看冰箱库存，或者管理购物清单。你可以直接告诉我你的需求，比如"看看冰箱里有什么？"或"把牛奶加入购物清单"。',
-        createdAt: new Date(),
-        user: {
-          _id: 2,
-          name: 'AI Chef',
-          avatar: 'https://img.icons8.com/color/96/000000/chef-hat.png',
-        },
-      },
-    ]);
+    loadSessions();
+    loadPresets();
   }, []);
+
+  const loadPresets = async () => {
+    try {
+      const data = await getAgentPresets();
+      setPresets(data);
+    } catch (error) {
+      console.error("Failed to load presets", error);
+    }
+  };
+
+  const loadSessions = async () => {
+    try {
+      const data = await getChatSessions();
+      setSessions(data);
+      if (data.length > 0 && !currentSessionId) {
+        // Auto load most recent
+        selectSession(data[0].id);
+      } else if (data.length === 0) {
+        // Create new if none
+        // Don't auto create here, let user choose or default
+        // But for UX, maybe auto create default?
+        // Let's create default
+        createNewSession("kitchen_agent");
+      }
+    } catch (error) {
+      console.error("Failed to load sessions", error);
+    }
+  };
+
+  const createNewSession = async (agentId: string) => {
+    try {
+      const newSession = await createChatSession("新对话", agentId);
+      setSessions([newSession, ...sessions]);
+      setCurrentSessionId(newSession.id);
+      
+      // Customize welcome message based on agent?
+      // For now, keep generic
+      setMessages([
+        {
+          _id: 1,
+          text: '你好！我是你的智能厨房管家。我可以帮你查看冰箱库存，或者管理购物清单。你可以直接告诉我你的需求。',
+          createdAt: new Date(),
+          user: {
+            _id: 2,
+            name: 'AI Chef',
+            avatar: 'https://img.icons8.com/color/96/000000/chef-hat.png',
+          },
+        },
+      ]);
+      setIsSidebarVisible(false);
+      setIsNewChatModalVisible(false);
+    } catch (error) {
+      console.error("Failed to create session", error);
+    }
+  };
+
+  const handleCreateNewChat = () => {
+    // Open preset selection modal
+    setIsNewChatModalVisible(true);
+  };
+  
+  const handleCreateAgentSuccess = () => {
+    setIsCreateAgentVisible(false);
+    setEditingPreset(undefined);
+    loadPresets(); // Refresh list
+  };
+
+  const handleEditPreset = (preset: AgentPreset) => {
+    setEditingPreset(preset);
+    setIsNewChatModalVisible(false); // Close selection modal
+    setIsCreateAgentVisible(true); // Open edit modal
+  };
+
+  const selectSession = async (sessionId: number) => {
+    // ... (existing implementation)
+    try {
+      setCurrentSessionId(sessionId);
+      setIsSidebarVisible(false);
+      const msgs = await getSessionMessages(sessionId);
+      
+      // Convert backend messages to GiftedChat format
+      const giftedMessages: IMessage[] = msgs.map(m => ({
+        _id: m.id,
+        text: m.content,
+        createdAt: new Date(m.created_at),
+        user: {
+          _id: m.role === 'user' ? 1 : 2,
+          name: m.role === 'user' ? 'Me' : 'AI Chef',
+          avatar: m.role === 'assistant' ? 'https://img.icons8.com/color/96/000000/chef-hat.png' : undefined,
+        },
+        // @ts-ignore
+        thoughts: m.thoughts
+      })).reverse(); // GiftedChat expects newest first
+      
+      if (giftedMessages.length === 0) {
+         // Add welcome message if empty
+         setMessages([
+          {
+            _id: 1,
+            text: '你好！我是你的智能厨房管家。我可以帮你查看冰箱库存，或者管理购物清单。你可以直接告诉我你的需求。',
+            createdAt: new Date(),
+            user: {
+              _id: 2,
+              name: 'AI Chef',
+              avatar: 'https://img.icons8.com/color/96/000000/chef-hat.png',
+            },
+          },
+        ]);
+      } else {
+        setMessages(giftedMessages);
+      }
+    } catch (error) {
+      console.error("Failed to load messages", error);
+    }
+  };
+
+  const handleDeleteSession = async (sessionId: number) => {
+    Alert.alert(
+      "删除会话",
+      "确定要删除这个会话吗？",
+      [
+        { text: "取消", style: "cancel" },
+        { 
+          text: "删除", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteChatSession(sessionId);
+              const newSessions = sessions.filter(s => s.id !== sessionId);
+              setSessions(newSessions);
+              if (currentSessionId === sessionId) {
+                if (newSessions.length > 0) {
+                  selectSession(newSessions[0].id);
+                } else {
+                  createNewSession("kitchen_agent");
+                }
+              }
+            } catch (error) {
+              console.error("Failed to delete session", error);
+            }
+          }
+        }
+      ]
+    );
+  };
 
   const onSend = async (newMessages: IMessage[] = []) => {
     const userMessage = newMessages[0];
@@ -81,32 +232,27 @@ const VoiceAssistantFeature = () => {
     setIsTyping(true);
 
     try {
-      const history = messages.map(msg => ({
-        role: msg.user._id === 1 ? 'user' : 'assistant',
-        content: msg.text
-      })).reverse();
-
-      const aiResponse = await chatWithKitchenAgent(userMessage.text, history);
-      // aiResponse is now { answer: string, thoughts: Array }
+      const aiResponse = await chatWithKitchenAgent(userMessage.text, [], currentSessionId);
       
       const botMessage: IMessage = {
         _id: Math.random().toString(),
-        text: aiResponse.answer,
+        text: aiResponse.response.answer,
         createdAt: new Date(),
         user: {
           _id: 2,
           name: 'AI Chef',
           avatar: 'https://img.icons8.com/color/96/000000/chef-hat.png',
         },
-        // Store thoughts in custom property
         // @ts-ignore
-        thoughts: aiResponse.thoughts
+        thoughts: aiResponse.response.thoughts
       };
 
       setMessages((previousMessages) => GiftedChat.append(previousMessages, [botMessage]));
+      
+      loadSessions();
+      
     } catch (error) {
       console.error('Chat Error:', error);
-      // ... error handling
     } finally {
       setIsTyping(false);
     }
@@ -117,7 +263,6 @@ const VoiceAssistantFeature = () => {
     const thoughts = currentMessage.thoughts;
     const isAi = currentMessage.user._id !== 1;
 
-    // Custom Avatar rendering inside renderBubble for precise alignment
     const renderCustomAvatar = () => {
       if (isAi && currentMessage.user.avatar) {
         return (
@@ -151,7 +296,6 @@ const VoiceAssistantFeature = () => {
                 shadowRadius: 2,
                 elevation: 1,
                 maxWidth:width * 0.75,
-                // Remove marginLeft since we are handling avatar spacing manually
                 marginLeft: 0,
               },
               right: {
@@ -159,7 +303,6 @@ const VoiceAssistantFeature = () => {
                 borderRadius: 18,
                 borderTopRightRadius: 2,
                 padding: 2,
-                // maxWidth is handled by flex container, but we can keep a max width constraint
                 maxWidth: width * 0.75, 
               },
             }}
@@ -201,47 +344,117 @@ const VoiceAssistantFeature = () => {
 
   return (
     <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>厨房管家</Text>
-          <View style={{ width: 40 }} />
-        </View>
-
-        <View style={styles.content}>
-          <GiftedChat
-            messages={messages}
-            onSend={(messages) => onSend(messages)}
-            user={{
-              _id: 1,
-            }}
-            renderBubble={renderBubble}
-            renderSend={renderSend}
-            // Hide default avatar rendering since we handle it in renderBubble
-            renderAvatar={() => null}
-            showAvatarForEveryMessage={true}
-            isTyping={isTyping}
-            placeholder="输入消息..."
-            timeTextStyle={{ left: { color: '#999', fontSize: 10 }, right: { color: '#ccc', fontSize: 10 } }}
-            renderInputToolbar={(props) => (
-              <InputToolbar
-                {...props}
-                containerStyle={styles.inputToolbar}
-                primaryStyle={{ alignItems: 'center' }}
+      {/* ... (existing UI code) */}
+      
+      {/* New Chat Preset Selection Modal */}
+      <Modal
+        visible={isNewChatModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsNewChatModalVisible(false)}
+      >
+        <View style={styles.modalOverlayCenter}>
+          <View style={styles.presetModalContent}>
+            <View style={styles.presetModalHeader}>
+              <Text style={styles.presetModalTitle}>选择智能体</Text>
+              <TouchableOpacity onPress={() => setIsNewChatModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={{maxHeight: 400}}>
+              <FlatList
+                data={[
+                  {id: "kitchen_agent", name: "默认厨房管家", description: "全能型厨房助手，可以查看库存、管理清单、推荐菜谱。", is_system: true, allowed_tools: [], system_prompt: ""},
+                  ...presets
+                ] as any[]}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({ item }) => (
+                  <TouchableOpacity 
+                    style={[
+                      styles.presetItem, 
+                      selectedPresetId === item.id.toString() && styles.presetItemActive
+                    ]}
+                    onPress={() => setSelectedPresetId(item.id.toString())}
+                  >
+                    <View style={styles.presetIcon}>
+                       <Ionicons name="person" size={20} color={selectedPresetId === item.id.toString() ? "white" : "#666"} />
+                    </View>
+                    <View style={{flex: 1}}>
+                      <Text style={[styles.presetName, selectedPresetId === item.id.toString() && styles.presetNameActive]}>
+                        {item.name}
+                      </Text>
+                      {item.description ? (
+                        <Text style={styles.presetDesc} numberOfLines={2}>{item.description}</Text>
+                      ) : null}
+                    </View>
+                    
+                    {/* Action Buttons */}
+                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                      {!item.is_system && (
+                        <TouchableOpacity 
+                          style={{padding: 8}}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handleEditPreset(item);
+                          }}
+                        >
+                          <Ionicons name="pencil" size={18} color="#666" />
+                        </TouchableOpacity>
+                      )}
+                      
+                      {selectedPresetId === item.id.toString() && (
+                        <Ionicons name="checkmark-circle" size={24} color="#1A1A1A" />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                )}
+                contentContainerStyle={{padding: 16}}
+                ListFooterComponent={
+                  <TouchableOpacity 
+                    style={styles.createNewAgentBtn}
+                    onPress={() => {
+                      setEditingPreset(undefined); // Clear editing state for new creation
+                      setIsNewChatModalVisible(false);
+                      setIsCreateAgentVisible(true);
+                    }}
+                  >
+                    <Ionicons name="add-circle-outline" size={20} color="#666" />
+                    <Text style={styles.createNewAgentText}>创建新智能体</Text>
+                  </TouchableOpacity>
+                }
               />
-            )}
-            textInputStyle={styles.textInput}
-            minInputToolbarHeight={60}
-          />
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.startChatBtn}
+              onPress={() => createNewSession(selectedPresetId)}
+            >
+              <Text style={styles.startChatText}>开始对话</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </SafeAreaView>
+      </Modal>
+
+      {/* Create Agent Modal */}
+      <Modal
+        visible={isCreateAgentVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsCreateAgentVisible(false)}
+      >
+        <CreateAgentScreen 
+          onClose={() => setIsCreateAgentVisible(false)}
+          onSuccess={handleCreateAgentSuccess}
+          initialData={editingPreset}
+        />
+      </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  // ... (keep existing styles)
   container: {
     flex: 1,
     backgroundColor: '#FAFAFA',
@@ -264,6 +477,12 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'flex-start',
+  },
+  menuButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
   },
   headerTitle: {
     fontSize: 17,
@@ -300,21 +519,19 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginBottom: 6,
   },
-  // Custom Avatar Styles
   customAvatar: {
     width: 36,
     height: 36,
     borderRadius: 18,
     marginRight: 8,
-    marginTop: 0, // Top aligned
+    marginTop: 0, 
   },
-  // Thinking Bubble Styles
   thinkingContainer: {
     marginVertical: 4,
     marginBottom: 8,
     marginLeft: 0, 
-    width: '100%', // Take full width of the text column
-    maxWidth: width * 0.7, // Limit width
+    width: '100%', 
+    maxWidth: width * 0.7, 
   },
   thinkingHeader: {
     flexDirection: 'row',
@@ -340,7 +557,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#FFD700', // Gold/Yellow for thinking
+    backgroundColor: '#FFD700', 
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
@@ -391,6 +608,163 @@ const styles = StyleSheet.create({
     color: '#555',
     lineHeight: 18,
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    flexDirection: 'row',
+  },
+  modalBackdrop: {
+    flex: 1,
+  },
+  sidebar: {
+    width: '80%',
+    backgroundColor: 'white',
+    height: '100%',
+    shadowColor: "#000",
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 16,
+  },
+  sidebarHeader: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sidebarTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+  },
+  newChatBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1A1A1A',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  newChatText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  sessionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    gap: 12,
+  },
+  sessionItemActive: {
+    backgroundColor: '#F5F5F5',
+  },
+  sessionTitle: {
+    fontSize: 15,
+    color: '#666',
+    flex: 1,
+  },
+  sessionTitleActive: {
+    color: '#1A1A1A',
+    fontWeight: '600',
+  },
+  // Preset Modal Styles
+  modalOverlayCenter: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  presetModalContent: {
+    width: '100%',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  presetModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  presetModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+  },
+  presetItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#EFEFEF',
+    marginBottom: 12,
+    backgroundColor: 'white',
+  },
+  presetItemActive: {
+    borderColor: '#1A1A1A',
+    backgroundColor: '#F9F9F9',
+  },
+  presetIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  presetName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 4,
+  },
+  presetNameActive: {
+    color: '#1A1A1A',
+  },
+  presetDesc: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
+  },
+  startChatBtn: {
+    backgroundColor: '#1A1A1A',
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  startChatText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  createNewAgentBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    marginTop: 8,
+    gap: 8,
+  },
+  createNewAgentText: {
+    color: '#666',
+    fontSize: 15,
+    fontWeight: '500',
+  }
 });
 
 export default VoiceAssistantFeature;
