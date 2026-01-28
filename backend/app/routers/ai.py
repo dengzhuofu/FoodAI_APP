@@ -257,6 +257,9 @@ async def kitchen_agent_chat(
         thoughts=response.get("thoughts")
     )
     
+    # Refresh session from DB to get any updates (like title) made by ai_service
+    await session.refresh_from_db()
+    
     # Update session updated_at
     await session.save()
     

@@ -157,6 +157,7 @@ const VoiceAssistantFeature = () => {
     setIsCreateAgentVisible(false);
     setEditingPreset(undefined);
     loadPresets(); // Refresh list
+    setIsNewChatModalVisible(true); // Re-open selection modal
   };
 
   const handleEditPreset = (preset: AgentPreset) => {
