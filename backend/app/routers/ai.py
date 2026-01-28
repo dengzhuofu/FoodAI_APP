@@ -3,6 +3,7 @@ from app.services.ai_service import ai_service
 from app.models.users import User
 from app.core.deps import get_current_user
 from app.models.chat import ChatSession, ChatMessage, AgentPreset
+from app.models.ai_log import AILog
 from app.schemas.ai import (
     TextToRecipeRequest, 
     TextToImageRequest, 
