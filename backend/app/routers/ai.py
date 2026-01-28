@@ -260,8 +260,14 @@ async def kitchen_agent_chat(
     # Refresh session from DB to get any updates (like title) made by ai_service
     await session.refresh_from_db()
     
-    # Update session updated_at
-    await session.save()
+    # Do NOT overwrite title if it was changed by ai_service
+    # Only update updated_at
+    # await session.save() # This might be redundant or risky if we don't want to overwrite fields
+    # Tortoise's save() updates all fields by default unless update_fields is specified
+    # We only want to update 'updated_at' (which auto updates on modification usually, but let's be explicit if needed)
+    # Actually, we don't need to save session again if we just want to return it. 
+    # But if we want to ensure 'updated_at' bumps up:
+    await session.save(update_fields=['updated_at'])
     
     return {
         "response": response,
