@@ -35,6 +35,7 @@ export interface Recipe {
   id: number;
   title: string;
   cover_image: string;
+  images: string[];
   description?: string;
   cooking_time?: string;
   difficulty?: string;
@@ -42,8 +43,8 @@ export interface Recipe {
   category?: string;
   calories?: number;
   nutrition?: any;
-  ingredients: string[];
-  steps: string[];
+  ingredients: any[]; // Supports {name, amount} objects
+  steps: any[];       // Supports {description, image} objects
   author: User;
   likes_count: number;
   is_liked: boolean;

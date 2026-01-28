@@ -22,7 +22,6 @@ const RecipeDetailPage = () => {
   const { id } = route.params;
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'ingredients' | 'steps'>('ingredients');
   const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set());
   const [comments, setComments] = useState<Comment[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -58,8 +57,6 @@ const RecipeDetailPage = () => {
 
   const fetchComments = async (newComment?: Comment) => {
     if (newComment) {
-      // If we have a new comment, manually add it to the list to avoid network request
-      // Check if it's a reply (has root_parent_id)
       if (newComment.root_parent_id) {
         setComments(prevComments => 
           prevComments.map(c => {
@@ -73,11 +70,9 @@ const RecipeDetailPage = () => {
           })
         );
       } else {
-        // If it's a top-level comment, add to the beginning of the list
         setComments(prevComments => [newComment, ...prevComments]);
       }
     } else {
-      // Fallback to full refresh
       try {
         const commentsData = await getComments(parseInt(id), 'recipe');
         setComments(commentsData);
@@ -106,7 +101,6 @@ const RecipeDetailPage = () => {
         }
         
         await fetchComments();
-        // Record View
         await recordView(recipeId, 'recipe');
       } catch (error) {
         console.error('Failed to fetch recipe:', error);
@@ -145,147 +139,168 @@ const RecipeDetailPage = () => {
     Alert.alert('成功', `已将 ${count} 个食材加入购物清单`);
   };
 
-  const renderHeader = () => (
-    <View style={styles.imageContainer}>
-      <Image source={{ uri: recipe.image }} style={styles.heroImage} resizeMode="cover" />
-      <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.8)']}
-        style={styles.gradient}
-      />
-      
-      {/* Top Bar */}
-      <View style={[styles.topBar, { top: insets.top }]}>
-        <TouchableOpacity 
-          style={styles.iconButton} 
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={20} color="#FFF" />
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.iconButton} 
-          onPress={handleCollection}
-        >
-          <Ionicons name={isCollected ? "heart" : "heart-outline"} size={20} color={isCollected ? "#FF6B6B" : "#FFF"} />
-        </TouchableOpacity>
-      </View>
+  const renderHeader = () => {
+    // Determine images to show
+    const displayImages = recipe?.images && recipe.images.length > 0 
+      ? recipe.images 
+      : [recipe?.cover_image || 'https://via.placeholder.com/400'];
 
-      <View style={styles.headerContent}>
-        <View style={styles.tagRow}>
-          <View style={styles.difficultyTag}>
-            <Text style={styles.tagText}>{recipe.difficulty}</Text>
-          </View>
-          <View style={styles.timeTag}>
-            <Ionicons name="time" size={12} color="#FFF" />
-            <Text style={styles.tagText}>{recipe.time}</Text>
-          </View>
-        </View>
-        
-        <Text style={styles.title}>{recipe.title}</Text>
-        
-        <View style={styles.authorRow}>
-          <Image source={{ uri: recipe.author.avatar || 'https://via.placeholder.com/150' }} style={styles.avatar} />
-          <Text style={styles.authorName}>{recipe.author.username}</Text>
-        </View>
-      </View>
-    </View>
-  );
-
-  const renderNutrition = () => {
-    if (!recipe.nutrition) {
-      return null;
-    }
-    
     return (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>NUTRITION</Text>
-        <View style={styles.nutritionGrid}>
-          <View style={styles.nutritionItem}>
-            <Text style={styles.nutritionValue}>{recipe.nutrition.calories || '-'}</Text>
-            <Text style={styles.nutritionLabel}>CALORIES</Text>
+      <View style={styles.imageContainer}>
+        <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
+          {displayImages.map((img, index) => (
+            <Image key={index} source={{ uri: img }} style={styles.heroImage} resizeMode="cover" />
+          ))}
+        </ScrollView>
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.8)']}
+          style={styles.gradient}
+        />
+        
+        {/* Top Bar */}
+        <View style={[styles.topBar, { top: insets.top }]}>
+          <TouchableOpacity 
+            style={styles.iconButton} 
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={20} color="#FFF" />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.iconButton} 
+            onPress={handleCollection}
+          >
+            <Ionicons name={isCollected ? "heart" : "heart-outline"} size={20} color={isCollected ? "#FF6B6B" : "#FFF"} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.headerContent}>
+          <View style={styles.tagRow}>
+            {recipe?.difficulty && (
+              <View style={styles.difficultyTag}>
+                <Text style={styles.tagText}>{recipe.difficulty}</Text>
+              </View>
+            )}
+            {recipe?.cooking_time && (
+              <View style={styles.timeTag}>
+                <Ionicons name="time" size={12} color="#FFF" />
+                <Text style={styles.tagText}>{recipe.cooking_time}</Text>
+              </View>
+            )}
           </View>
-          <View style={styles.verticalDivider} />
-          <View style={styles.nutritionItem}>
-            <Text style={styles.nutritionValue}>{recipe.nutrition.protein || '-'}</Text>
-            <Text style={styles.nutritionLabel}>PROTEIN</Text>
-          </View>
-          <View style={styles.verticalDivider} />
-          <View style={styles.nutritionItem}>
-            <Text style={styles.nutritionValue}>{recipe.nutrition.fat || '-'}</Text>
-            <Text style={styles.nutritionLabel}>FAT</Text>
-          </View>
-          <View style={styles.verticalDivider} />
-          <View style={styles.nutritionItem}>
-            <Text style={styles.nutritionValue}>{recipe.nutrition.carbs || '-'}</Text>
-            <Text style={styles.nutritionLabel}>CARBS</Text>
+          
+          <Text style={styles.title}>{recipe?.title}</Text>
+          
+          <View style={styles.authorRow}>
+            <Image source={{ uri: recipe?.author.avatar || 'https://via.placeholder.com/150' }} style={styles.avatar} />
+            <Text style={styles.authorName}>{recipe?.author.username}</Text>
           </View>
         </View>
       </View>
     );
   };
 
-  const renderTabs = () => (
-    <View style={styles.tabContainer}>
-      <TouchableOpacity 
-        style={[styles.tab, activeTab === 'ingredients' && styles.activeTab]}
-        onPress={() => setActiveTab('ingredients')}
-        activeOpacity={0.8}
-      >
-        <Text style={[styles.tabText, activeTab === 'ingredients' && styles.activeTabText]}>Ingredients</Text>
-      </TouchableOpacity>
-      <TouchableOpacity 
-        style={[styles.tab, activeTab === 'steps' && styles.activeTab]}
-        onPress={() => setActiveTab('steps')}
-        activeOpacity={0.8}
-      >
-        <Text style={[styles.tabText, activeTab === 'steps' && styles.activeTabText]}>Instructions</Text>
-      </TouchableOpacity>
-    </View>
-  );
+  const renderNutrition = () => {
+    if (!recipe?.nutrition) {
+      return null;
+    }
+    
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>营养分析 (AI)</Text>
+        <View style={styles.nutritionGrid}>
+          <View style={styles.nutritionItem}>
+            <Text style={styles.nutritionValue}>{recipe.nutrition.calories || '-'}</Text>
+            <Text style={styles.nutritionLabel}>卡路里</Text>
+          </View>
+          <View style={styles.verticalDivider} />
+          <View style={styles.nutritionItem}>
+            <Text style={styles.nutritionValue}>{recipe.nutrition.protein || '-'}</Text>
+            <Text style={styles.nutritionLabel}>蛋白质</Text>
+          </View>
+          <View style={styles.verticalDivider} />
+          <View style={styles.nutritionItem}>
+            <Text style={styles.nutritionValue}>{recipe.nutrition.fat || '-'}</Text>
+            <Text style={styles.nutritionLabel}>脂肪</Text>
+          </View>
+          <View style={styles.verticalDivider} />
+          <View style={styles.nutritionItem}>
+            <Text style={styles.nutritionValue}>{recipe.nutrition.carbs || '-'}</Text>
+            <Text style={styles.nutritionLabel}>碳水</Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
 
   const renderIngredients = () => (
-    <View style={styles.listContainer}>
-      {recipe.ingredients.map((item, index) => (
-        <TouchableOpacity 
-          key={index} 
-          style={[
-            styles.ingredientItem,
-            checkedIngredients.has(index) && styles.ingredientItemChecked
-          ]}
-          onPress={() => toggleIngredient(index)}
-          activeOpacity={0.7}
-        >
-          <View style={[
-            styles.checkbox,
-            checkedIngredients.has(index) && styles.checkboxChecked
-          ]}>
-            {checkedIngredients.has(index) && <Ionicons name="checkmark" size={12} color="#FFF" />}
-          </View>
-          <Text style={[
-            styles.ingredientText,
-            checkedIngredients.has(index) && styles.ingredientTextChecked
-          ]}>{item}</Text>
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>食材清单</Text>
+      <View style={styles.listContainer}>
+        {recipe?.ingredients.map((item: any, index: number) => {
+          const name = typeof item === 'string' ? item : item.name;
+          const amount = typeof item === 'string' ? '' : item.amount;
+          
+          return (
+            <TouchableOpacity 
+              key={index} 
+              style={[
+                styles.ingredientItem,
+                checkedIngredients.has(index) && styles.ingredientItemChecked
+              ]}
+              onPress={() => toggleIngredient(index)}
+              activeOpacity={0.7}
+            >
+              <View style={[
+                styles.checkbox,
+                checkedIngredients.has(index) && styles.checkboxChecked
+              ]}>
+                {checkedIngredients.has(index) && <Ionicons name="checkmark" size={12} color="#FFF" />}
+              </View>
+              <Text style={[
+                styles.ingredientText,
+                checkedIngredients.has(index) && styles.ingredientTextChecked
+              ]}>{name}</Text>
+              {amount ? (
+                <Text style={[
+                  styles.ingredientAmount,
+                  checkedIngredients.has(index) && styles.ingredientTextChecked
+                ]}>{amount}</Text>
+              ) : null}
+            </TouchableOpacity>
+          );
+        })}
+        <TouchableOpacity style={styles.addButton} onPress={addToShoppingList}>
+          <Ionicons name="cart-outline" size={18} color="#FFF" />
+          <Text style={styles.addButtonText}>加入购物清单</Text>
         </TouchableOpacity>
-      ))}
-      <TouchableOpacity style={styles.addButton} onPress={addToShoppingList}>
-        <Ionicons name="cart-outline" size={18} color="#FFF" />
-        <Text style={styles.addButtonText}>Add to Shopping List</Text>
-      </TouchableOpacity>
+      </View>
     </View>
   );
 
   const renderSteps = () => (
-    <View style={styles.listContainer}>
-      {recipe.steps.map((step, index) => (
-        <View key={index} style={styles.stepItem}>
-          <View style={styles.stepNumberContainer}>
-            <Text style={styles.stepNumber}>{index + 1}</Text>
-          </View>
-          <View style={styles.stepContent}>
-            <Text style={styles.stepText}>{step}</Text>
-          </View>
-        </View>
-      ))}
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>烹饪步骤</Text>
+      <View style={styles.listContainer}>
+        {recipe?.steps.map((step: any, index: number) => {
+          const desc = typeof step === 'string' ? step : step.description;
+          const img = typeof step === 'string' ? null : step.image;
+
+          return (
+            <View key={index} style={styles.stepItem}>
+              <View style={styles.stepNumberContainer}>
+                <Text style={styles.stepNumber}>{index + 1}</Text>
+              </View>
+              <View style={styles.stepContent}>
+                <Text style={styles.stepText}>{desc}</Text>
+                {img && (
+                  <Image source={{ uri: img }} style={styles.stepImage} resizeMode="cover" />
+                )}
+              </View>
+            </View>
+          );
+        })}
+      </View>
     </View>
   );
 
@@ -309,12 +324,10 @@ const RecipeDetailPage = () => {
       >
         {renderHeader()}
         <View style={styles.content}>
-          <Text style={styles.description}>{recipe.description}</Text>
+          <Text style={styles.description}>{recipe?.description}</Text>
           {renderNutrition()}
-          <View style={styles.section}>
-            {renderTabs()}
-            {activeTab === 'ingredients' ? renderIngredients() : renderSteps()}
-          </View>
+          {renderIngredients()}
+          {renderSteps()}
           {renderComments()}
         </View>
       </ScrollView>
@@ -353,20 +366,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   imageContainer: {
-    height: 400, // Taller hero image
+    height: 400,
     width: '100%',
     position: 'relative',
   },
   heroImage: {
-    width: '100%',
-    height: '100%',
+    width: width,
+    height: 400,
   },
   gradient: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    height: 240, // Taller gradient for better text readability
+    height: 240,
   },
   topBar: {
     position: 'absolute',
@@ -382,12 +395,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)', // Lighter, glassy background
+    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
-    // backdropFilter: 'blur(10px)', // Note: This prop is for web, on native it might need expo-blur
   },
   headerContent: {
     position: 'absolute',
@@ -406,7 +418,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.9)',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 100, // Fully rounded
+    borderRadius: 100,
   },
   timeTag: {
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -426,8 +438,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   title: {
-    fontSize: 36, // Larger title
-    fontWeight: '900', // Black weight
+    fontSize: 36,
+    fontWeight: '900',
     color: '#FFF',
     marginBottom: 20,
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
@@ -456,9 +468,9 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 24,
-    marginTop: -32, // More overlap
+    marginTop: -32,
     backgroundColor: '#F9F9F9',
-    borderTopLeftRadius: 32, // Larger radius
+    borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
   },
   description: {
@@ -473,7 +485,7 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '900',
     color: '#1A1A1A',
     marginBottom: 20,
@@ -516,36 +528,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.5,
   },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#F0F0F0', // Lighter background
-    padding: 6,
-    borderRadius: 100, // Pill shape
-    marginBottom: 32,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderRadius: 100,
-  },
-  activeTab: {
-    backgroundColor: '#1A1A1A', // Black active tab
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  tabText: {
-    fontSize: 14,
-    color: '#888',
-    fontWeight: '600',
-  },
-  activeTabText: {
-    color: '#FFF', // White text on black
-    fontWeight: '700',
-  },
   listContainer: {
     gap: 16,
   },
@@ -572,7 +554,7 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 24,
     height: 24,
-    borderRadius: 12, // Circle checkbox
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: '#E0E0E0',
     marginRight: 16,
@@ -589,6 +571,11 @@ const styles = StyleSheet.create({
     flex: 1,
     fontWeight: '600',
   },
+  ingredientAmount: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
   ingredientTextChecked: {
     color: '#999',
     textDecorationLine: 'line-through',
@@ -600,7 +587,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1A1A1A',
     padding: 20,
     borderRadius: 24,
-    marginTop: 24,
+    marginTop: 12,
     gap: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
@@ -656,6 +643,13 @@ const styles = StyleSheet.create({
     color: '#333',
     lineHeight: 26,
     fontWeight: '500',
+    marginBottom: 12,
+  },
+  stepImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    marginTop: 8,
   },
 });
 

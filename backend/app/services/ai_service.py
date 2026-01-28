@@ -608,3 +608,35 @@ class AIService:
             }
 
 ai_service = AIService()
+
+
+import random
+from typing import List, Dict
+
+async def analyze_nutrition(ingredients: List[Dict[str, str]], steps: List[Dict[str, str]]) -> Dict[str, str]:
+    """
+    Mock AI service to analyze nutrition based on ingredients and steps.
+    In a real app, this would call an LLM API.
+    """
+    # Simulate processing time or logic
+    
+    # Simple heuristic for demo purposes
+    base_cal = 200
+    base_protein = 10
+    base_fat = 5
+    base_carbs = 20
+    
+    # Add based on number of ingredients
+    factor = len(ingredients)
+    
+    calories = base_cal + (factor * 50) + random.randint(0, 50)
+    protein = base_protein + (factor * 2) + random.randint(0, 5)
+    fat = base_fat + (factor * 1.5) + random.randint(0, 5)
+    carbs = base_carbs + (factor * 4) + random.randint(0, 10)
+    
+    return {
+        "calories": str(int(calories)),
+        "protein": f"{int(protein)}g",
+        "fat": f"{int(fat)}g",
+        "carbs": f"{int(carbs)}g"
+    }

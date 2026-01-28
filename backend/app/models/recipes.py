@@ -5,6 +5,7 @@ class Recipe(models.Model):
     author = fields.ForeignKeyField("models.User", related_name="recipes")
     title = fields.CharField(max_length=100)
     cover_image = fields.CharField(max_length=255)
+    images = fields.JSONField(default=list)  # List of image URLs
     description = fields.TextField(null=True)
     cooking_time = fields.CharField(max_length=20, null=True)
     difficulty = fields.CharField(max_length=20, null=True)

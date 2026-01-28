@@ -13,6 +13,7 @@ from app.models.recipes import Recipe, Comment, Collection, Like, ViewHistory
 from app.models.restaurants import Restaurant
 from app.models.users import User
 from app.core.deps import get_current_user
+from app.services.ai_service import analyze_nutrition
 
 router = APIRouter()
 
@@ -23,6 +24,10 @@ async def create_recipe(
     recipe_in: RecipeCreate,
     current_user: User = Depends(get_current_user)
 ):
+    # Process nutrition if not provided
+    if not recipe_in.nutrition:
+        recipe_in.nutrition = await analyze_nutrition(recipe_in.ingredients, recipe_in.steps)
+
     recipe = await Recipe.create(author=current_user, **recipe_in.dict())
     await recipe.fetch_related("author")
     return recipe

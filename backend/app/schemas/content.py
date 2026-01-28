@@ -31,6 +31,7 @@ CommentOut.model_rebuild()
 class RecipeBase(BaseModel):
     title: str
     cover_image: str
+    images: List[str] = []
     description: Optional[str] = None
     cooking_time: Optional[str] = None
     difficulty: Optional[str] = None
@@ -38,8 +39,8 @@ class RecipeBase(BaseModel):
     category: Optional[str] = None
     calories: Optional[int] = None
     nutrition: Optional[Dict] = None
-    ingredients: List[str] = []
-    steps: List[str] = []
+    ingredients: List[Dict[str, str]] = []  # List of {name: str, amount: str}
+    steps: List[Dict[str, str]] = []        # List of {description: str, image: Optional[str]}
 
 class RecipeCreate(RecipeBase):
     pass
