@@ -1,4 +1,4 @@
-import { chatWithKitchenAgent, getChatSessions, createChatSession, getSessionMessages, deleteChatSession, ChatSession, getAgentPresets, AgentPreset } from '../../../../api/ai';
+import { chatWithKitchenAgent, getChatSessions, createChatSession, getSessionMessages, deleteChatSession, ChatSession, getAgentPresets, AgentPreset, deleteAgentPreset } from '../../../../api/ai';
 import { GiftedChat, IMessage, Bubble, InputToolbar, Send } from 'react-native-gifted-chat';
 import CreateAgentScreen from './CreateAgentScreen';
 import React, { useState, useEffect } from 'react';
@@ -111,21 +111,33 @@ const VoiceAssistantFeature = () => {
 
   const createNewSession = async (agentId: string) => {
     try {
+      // Find agent details for greeting
+      let greeting = '你好！我是你的智能厨房管家。我可以帮你查看冰箱库存，或者管理购物清单。你可以直接告诉我你的需求。';
+      let avatar = 'https://img.icons8.com/color/96/000000/chef-hat.png';
+      
+      const selectedAgent = presets.find(p => p.id.toString() === agentId);
+      if (selectedAgent) {
+        if (selectedAgent.description) {
+           greeting = `你好！我是${selectedAgent.name}。${selectedAgent.description}`;
+        } else {
+           greeting = `你好！我是${selectedAgent.name}。有什么我可以帮你的吗？`;
+        }
+        // Could also support custom avatar per agent later
+      }
+
       const newSession = await createChatSession("新对话", agentId);
       setSessions([newSession, ...sessions]);
       setCurrentSessionId(newSession.id);
       
-      // Customize welcome message based on agent?
-      // For now, keep generic
       setMessages([
         {
           _id: 1,
-          text: '你好！我是你的智能厨房管家。我可以帮你查看冰箱库存，或者管理购物清单。你可以直接告诉我你的需求。',
+          text: greeting,
           createdAt: new Date(),
           user: {
             _id: 2,
-            name: 'AI Chef',
-            avatar: 'https://img.icons8.com/color/96/000000/chef-hat.png',
+            name: selectedAgent ? selectedAgent.name : 'AI Chef',
+            avatar: avatar,
           },
         },
       ]);
@@ -151,6 +163,29 @@ const VoiceAssistantFeature = () => {
     setEditingPreset(preset);
     setIsNewChatModalVisible(false); // Close selection modal
     setIsCreateAgentVisible(true); // Open edit modal
+  };
+
+  const handleDeletePreset = async (presetId: number) => {
+    Alert.alert(
+      "删除智能体",
+      "确定要删除这个智能体吗？此操作不可撤销。",
+      [
+        { text: "取消", style: "cancel" },
+        { 
+          text: "删除", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteAgentPreset(presetId);
+              loadPresets(); // Refresh list
+            } catch (error) {
+              console.error("Failed to delete preset", error);
+              Alert.alert("错误", "删除失败，请重试");
+            }
+          }
+        }
+      ]
+    );
   };
 
   const selectSession = async (sessionId: number) => {
@@ -277,7 +312,7 @@ const VoiceAssistantFeature = () => {
 
     return (
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 }}>
-        {isAi && renderCustomAvatar()}
+        {/* {isAi && renderCustomAvatar()} */}
         <View style={{ flexDirection: 'column', flex: 1, alignItems: isAi ? 'flex-start' : 'flex-end' }}>
           {thoughts && thoughts.length > 0 && (
              <ThinkingBubble thoughts={thoughts} />
@@ -477,15 +512,26 @@ const VoiceAssistantFeature = () => {
                     {/* Action Buttons */}
                     <View style={{flexDirection: 'row', alignItems: 'center'}}>
                       {!item.is_system && (
-                        <TouchableOpacity 
-                          style={{padding: 8}}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            handleEditPreset(item);
-                          }}
-                        >
-                          <Ionicons name="pencil" size={18} color="#666" />
-                        </TouchableOpacity>
+                        <View style={{flexDirection: 'row'}}>
+                          <TouchableOpacity 
+                            style={{padding: 8}}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              handleEditPreset(item);
+                            }}
+                          >
+                            <Ionicons name="pencil" size={18} color="#666" />
+                          </TouchableOpacity>
+                          <TouchableOpacity 
+                            style={{padding: 8}}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              handleDeletePreset(item.id);
+                            }}
+                          >
+                            <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
+                          </TouchableOpacity>
+                        </View>
                       )}
                       
                       {selectedPresetId === item.id.toString() && (

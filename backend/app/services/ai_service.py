@@ -353,14 +353,14 @@ class AIService:
             print(f"Error parsing AI response: {e}")
             return []
 
-    async def kitchen_agent_chat(self, user_id: int, message: str, history: List[Dict[str, Any]], agent_id: str = "kitchen_agent") -> Dict[str, Any]:
+    async def kitchen_agent_chat(self, user_id: int, message: str, history: List[Dict[str, Any]], agent_id: str = "kitchen_agent", session_id: int = None) -> Dict[str, Any]:
         """
         Agent with tool use for kitchen management.
         Returns dict with answer and thoughts.
         """
-        from app.models.chat import AgentPreset
+        from app.models.chat import AgentPreset, ChatSession
         
-        # 1. Define Tools with user_id context
+        # ... (Tools definition same as before) ...
         async def get_fridge_items() -> str:
             """查看冰箱里现有的食材列表"""
             items = await FridgeItem.filter(user_id=user_id).all()
@@ -446,9 +446,6 @@ class AIService:
                     if tool_name in available_tools_map:
                         tools_to_bind.append(available_tools_map[tool_name])
             else:
-                # If list is empty but custom preset, maybe allow all or none?
-                # Let's assume empty means none, or maybe all by default?
-                # Usually empty list means no tools.
                 pass
         else:
             # Default "kitchen_agent" behavior
@@ -480,6 +477,7 @@ class AIService:
         turn_count = 0
 
         # 5. Agent Loop
+        final_answer = ""
         try:
             while turn_count < MAX_TURNS:
                 turn_count += 1
@@ -488,10 +486,8 @@ class AIService:
 
                 if not response.tool_calls:
                     # No more tools needed, return final answer
-                    return {
-                        "answer": response.content,
-                        "thoughts": thoughts
-                    }
+                    final_answer = response.content
+                    break
                 
                 # Execute tools
                 for tool_call in response.tool_calls:
@@ -528,12 +524,37 @@ class AIService:
                     
                     messages.append(ToolMessage(tool_call_id=tool_call["id"], content=str(result)))
             
-            # If max turns reached, force a summary
-            messages.append(SystemMessage(content="Please stop calling tools and summarize the results to the user now."))
-            final_response = await self.llm_text.ainvoke(messages)
-            
+            if not final_answer:
+                # If max turns reached, force a summary
+                messages.append(SystemMessage(content="Please stop calling tools and summarize the results to the user now."))
+                final_response = await self.llm_text.ainvoke(messages)
+                final_answer = final_response.content
+
+            # --- Auto-Title Generation Logic ---
+            if session_id:
+                try:
+                    session = await ChatSession.get_or_none(id=session_id)
+                    if session and (session.title == "新对话" or session.title == "New Chat"):
+                        # Generate summary title
+                        title_prompt = f"""请根据以下对话内容，生成一个简短的标题（不超过10个字），概括用户的意图。
+                        
+                        用户: {message}
+                        AI: {final_answer[:100]}...
+                        
+                        只返回标题文字，不要包含引号或其他内容。"""
+                        
+                        title_response = await self.llm_text.ainvoke([HumanMessage(content=title_prompt)])
+                        new_title = title_response.content.strip().strip('"').strip("《").strip("》")
+                        if len(new_title) > 20:
+                            new_title = new_title[:20]
+                        
+                        session.title = new_title
+                        await session.save()
+                except Exception as e:
+                    print(f"Failed to generate title: {e}")
+
             return {
-                "answer": final_response.content,
+                "answer": final_answer,
                 "thoughts": thoughts
             }
 
