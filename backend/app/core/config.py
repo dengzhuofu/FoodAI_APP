@@ -38,7 +38,8 @@ class Settings(BaseSettings):
                         "app.models.inventory",
                         "app.models.ai_logs",
                         "app.models.notifications",
-                        "app.models.search"
+                        "app.models.search",
+                        "app.models.chat"
                     ],
                     "default_connection": "default",
                 },

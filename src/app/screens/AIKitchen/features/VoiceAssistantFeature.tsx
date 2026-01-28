@@ -344,7 +344,92 @@ const VoiceAssistantFeature = () => {
 
   return (
     <View style={styles.container}>
-      {/* ... (existing UI code) */}
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>厨房管家</Text>
+          <TouchableOpacity onPress={() => setIsSidebarVisible(true)} style={styles.menuButton}>
+            <Ionicons name="menu" size={24} color="#1A1A1A" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.content}>
+          <GiftedChat
+            messages={messages}
+            onSend={(messages) => onSend(messages)}
+            user={{
+              _id: 1,
+            }}
+            renderBubble={renderBubble}
+            renderSend={renderSend}
+            renderAvatar={() => null}
+            showAvatarForEveryMessage={true}
+            isTyping={isTyping}
+            placeholder="输入消息..."
+            timeTextStyle={{ left: { color: '#999', fontSize: 10 }, right: { color: '#ccc', fontSize: 10 } }}
+            renderInputToolbar={(props) => (
+              <InputToolbar
+                {...props}
+                containerStyle={styles.inputToolbar}
+                primaryStyle={{ alignItems: 'center' }}
+              />
+            )}
+            textInputStyle={styles.textInput}
+            minInputToolbarHeight={60}
+          />
+        </View>
+      </SafeAreaView>
+
+      {/* Sidebar Modal */}
+      <Modal
+        visible={isSidebarVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsSidebarVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop} 
+            activeOpacity={1} 
+            onPress={() => setIsSidebarVisible(false)}
+          />
+          <View style={styles.sidebar}>
+            <SafeAreaView style={{flex: 1}}>
+              <View style={styles.sidebarHeader}>
+                <Text style={styles.sidebarTitle}>历史会话</Text>
+                <TouchableOpacity onPress={handleCreateNewChat} style={styles.newChatBtn}>
+                  <Ionicons name="add" size={20} color="white" />
+                  <Text style={styles.newChatText}>新对话</Text>
+                </TouchableOpacity>
+              </View>
+              
+              <FlatList
+                data={sessions}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({ item }) => (
+                  <TouchableOpacity 
+                    style={[styles.sessionItem, item.id === currentSessionId && styles.sessionItemActive]}
+                    onPress={() => selectSession(item.id)}
+                  >
+                    <Ionicons name="chatbubble-outline" size={20} color={item.id === currentSessionId ? "#1A1A1A" : "#666"} />
+                    <Text style={[styles.sessionTitle, item.id === currentSessionId && styles.sessionTitleActive]} numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                    {item.id === currentSessionId && (
+                       <TouchableOpacity onPress={() => handleDeleteSession(item.id)} style={{padding: 4}}>
+                          <Ionicons name="trash-outline" size={16} color="#FF6B6B" />
+                       </TouchableOpacity>
+                    )}
+                  </TouchableOpacity>
+                )}
+                contentContainerStyle={{padding: 16}}
+              />
+            </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
       
       {/* New Chat Preset Selection Modal */}
       <Modal
