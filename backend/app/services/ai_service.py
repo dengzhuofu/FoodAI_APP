@@ -441,12 +441,18 @@ class AIService:
         if preset:
             system_prompt = preset.system_prompt
             # Filter tools based on preset.allowed_tools
+            allowed_tool_names = []
             if preset.allowed_tools:
                 for tool_name in preset.allowed_tools:
                     if tool_name in available_tools_map:
                         tools_to_bind.append(available_tools_map[tool_name])
+                        allowed_tool_names.append(tool_name)
+            
+            # Inject allowed tools into system prompt to avoid hallucinations
+            if allowed_tool_names:
+                system_prompt += f"\n\nSystem Note: You have access to the following tools: {', '.join(allowed_tool_names)}. Do not claim to have capabilities outside of these tools."
             else:
-                pass
+                system_prompt += "\n\nSystem Note: You do not have access to any external tools (like fridge or shopping list). Just chat with the user."
         else:
             # Default "kitchen_agent" behavior
             system_prompt = default_prompt
