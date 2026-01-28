@@ -41,7 +41,7 @@ async def get_recommendations(
                 "id": r.id,
                 "type": "recipe",
                 "title": r.title,
-                "image": r.cover_image,
+                "image": r.cover_image or (r.images[0] if r.images else ""),
                 "author": r.author.nickname if r.author else "Unknown",
                 "likes": r.likes_count,
                 "views": r.views_count,
