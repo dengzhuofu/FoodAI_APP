@@ -2,16 +2,16 @@ name: Build React Native App
 
 on:
   workflow_dispatch: # 允许手动触发
-  push:
-    branches:
-      - main
-    paths:
-      - 'src/**'
-      - 'assets/**'
-      - 'app.json'
-      - 'eas.json'
-      - 'package.json'
-      - '.github/workflows/build-rn.yml'
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - 'src/**'
+  #     - 'assets/**'
+  #     - 'app.json'
+  #     - 'eas.json'
+  #     - 'package.json'
+  #     - '.github/workflows/build-rn.yml'
 
 jobs:
   build:
