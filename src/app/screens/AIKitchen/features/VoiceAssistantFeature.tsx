@@ -233,6 +233,7 @@ const VoiceAssistantFeature = () => {
   };
 
   const handleDeleteSession = async (sessionId: number) => {
+    console.log("Deleting session:", sessionId);
     Alert.alert(
       "删除会话",
       "确定要删除这个会话吗？",
@@ -457,7 +458,35 @@ const VoiceAssistantFeature = () => {
                     </TouchableOpacity>
                     
                     <TouchableOpacity 
-                      onPress={() => handleDeleteSession(item.id)} 
+                      onPress={() => {
+                          // Direct delete with custom confirmation modal instead of Alert
+                          // For now, let's try a direct approach or a simplified alert
+                          // Reverting to Alert but ensuring it's robust
+                          Alert.alert(
+                            "删除确认",
+                            "是否删除此会话？",
+                            [
+                                { text: "取消", style: "cancel" },
+                                { 
+                                    text: "确认删除", 
+                                    style: "destructive", 
+                                    onPress: () => {
+                                        deleteChatSession(item.id).then(() => {
+                                            const newSessions = sessions.filter(s => s.id !== item.id);
+                                            setSessions(newSessions);
+                                            if (currentSessionId === item.id) {
+                                                if (newSessions.length > 0) {
+                                                    selectSession(newSessions[0].id);
+                                                } else {
+                                                    createNewSession("kitchen_agent");
+                                                }
+                                            }
+                                        }).catch(err => console.error(err));
+                                    }
+                                }
+                            ]
+                          );
+                      }} 
                       style={{padding: 8}}
                       hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
                     >

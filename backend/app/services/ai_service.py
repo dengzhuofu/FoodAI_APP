@@ -536,38 +536,6 @@ class AIService:
                 final_response = await self.llm_text.ainvoke(messages)
                 final_answer = final_response.content
 
-            # --- Auto-Title Generation Logic ---
-            if session_id:
-                try:
-                    session = await ChatSession.get_or_none(id=session_id)
-                    # Check if title is generic or default
-                    is_default_title = session and (
-                        session.title in ["新对话", "New Chat"] or 
-                        session.title.startswith("新对话") or 
-                        session.title.startswith("New Chat") or
-                        len(session.title) < 5 # Short generic titles
-                    )
-                    
-                    if is_default_title:
-                        # Generate summary title
-                        title_prompt = f"""请根据以下对话内容，生成一个简短的标题（不超过10个字），概括用户的意图。
-                        
-                        用户: {message}
-                        AI: {final_answer[:100]}...
-                        
-                        只返回标题文字，不要包含引号或其他内容。"""
-                        
-                        title_response = await self.llm_text.ainvoke([HumanMessage(content=title_prompt)])
-                        new_title = title_response.content.strip().strip('"').strip("《").strip("》")
-                        if len(new_title) > 20:
-                            new_title = new_title[:20]
-                        
-                        print(f"DEBUG: Auto-updating title from '{session.title}' to '{new_title}'")
-                        session.title = new_title
-                        await session.save()
-                except Exception as e:
-                    print(f"Failed to generate title: {e}")
-
             return {
                 "answer": final_answer,
                 "thoughts": thoughts

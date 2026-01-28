@@ -260,14 +260,45 @@ async def kitchen_agent_chat(
     # Refresh session from DB to get any updates (like title) made by ai_service
     await session.refresh_from_db()
     
-    # Do NOT overwrite title if it was changed by ai_service
-    # Only update updated_at
-    # await session.save() # This might be redundant or risky if we don't want to overwrite fields
-    # Tortoise's save() updates all fields by default unless update_fields is specified
-    # We only want to update 'updated_at' (which auto updates on modification usually, but let's be explicit if needed)
-    # Actually, we don't need to save session again if we just want to return it. 
-    # But if we want to ensure 'updated_at' bumps up:
-    await session.save(update_fields=['updated_at'])
+    # --- Auto-Title Generation Logic (Moved to Router) ---
+    try:
+        # Check if title is generic or default
+        # Also check if it's the first few turns (e.g. less than 5 messages) to update title
+        # Or if title matches the user's first message (which is the default behavior for new sessions)
+        is_default_title = (
+            session.title in ["新对话", "New Chat"] or 
+            session.title.startswith("新对话") or 
+            session.title.startswith("New Chat") or
+            len(session.title) < 5 or
+            session.title == request.message[:20] + "..." or
+            session.title == request.message # If title was set to user message
+        )
+        
+        if is_default_title:
+            from langchain_core.messages import HumanMessage
+            
+            # Generate summary title
+            title_prompt = f"""请根据以下对话内容，生成一个简短的标题（不超过10个字），概括用户的意图。
+            
+            用户: {request.message}
+            AI: {response['answer'][:100]}...
+            
+            只返回标题文字，不要包含引号或其他内容。"""
+            
+            # Use ai_service's llm directly
+            title_response = await ai_service.llm_text.ainvoke([HumanMessage(content=title_prompt)])
+            new_title = title_response.content.strip().strip('"').strip("《").strip("》")
+            if len(new_title) > 20:
+                new_title = new_title[:20]
+            
+            print(f"DEBUG: Auto-updating title from '{session.title}' to '{new_title}'")
+            session.title = new_title
+            # We will save this change along with updated_at below
+    except Exception as e:
+        print(f"Failed to generate title in router: {e}")
+
+    # Update session updated_at and potentially title
+    await session.save()
     
     return {
         "response": response,
