@@ -227,7 +227,12 @@ const ProfilePage = () => {
 
             <View style={styles.statsContainer}>
               {statsList.map((stat, index) => (
-                <TouchableOpacity key={index} style={styles.statItem} activeOpacity={0.7}>
+                <TouchableOpacity 
+                  key={index} 
+                  style={styles.statItem} 
+                  activeOpacity={0.7}
+                  onPress={stat.onPress}
+                >
                   <Text style={styles.statValue}>{stat.value}</Text>
                   <Text style={styles.statLabel}>{stat.label}</Text>
                 </TouchableOpacity>

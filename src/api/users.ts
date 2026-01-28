@@ -10,33 +10,52 @@ export interface UserStats {
   following_count: number;
 }
 
-export const updateProfile = async (data: { nickname?: string; bio?: string; avatar?: string }): Promise<User> => {
+export const getUserStats = async (): Promise<UserStats> => {
+  const response = await client.get('/users/me/stats');
+  return response.data;
+};
+
+export const updateProfile = async (data: { nickname?: string; bio?: string; avatar?: string }) => {
   const response = await client.patch('/users/me', data);
   return response.data;
 };
 
-export const followUser = async (userId: number): Promise<{ message: string }> => {
+// Follow System
+export const followUser = async (userId: number) => {
   const response = await client.post(`/users/${userId}/follow`);
   return response.data;
 };
 
-export const unfollowUser = async (userId: number): Promise<{ message: string }> => {
+export const unfollowUser = async (userId: number) => {
   const response = await client.delete(`/users/${userId}/follow`);
   return response.data;
 };
 
-export const getFollowers = async (userId: number, page: number = 1): Promise<User[]> => {
+export const getFollowers = async (userId: number, page = 1) => {
   const response = await client.get(`/users/${userId}/followers`, { params: { page } });
   return response.data;
 };
 
-export const getFollowing = async (userId: number, page: number = 1): Promise<User[]> => {
+export const getFollowing = async (userId: number, page = 1) => {
   const response = await client.get(`/users/${userId}/following`, { params: { page } });
   return response.data;
 };
 
-export const getUserStats = async (): Promise<UserStats> => {
-  const response = await client.get('/users/me/stats');
+// Shopping List
+export interface ShoppingItem {
+  id: number;
+  name: string;
+  amount?: string;
+  is_checked: boolean;
+}
+
+export const getShoppingList = async () => {
+  const response = await client.get('/shopping-list');
+  return response.data;
+};
+
+export const addToShoppingList = async (items: { name: string; amount?: string }[]) => {
+  const response = await client.post('/shopping-list', items);
   return response.data;
 };
 

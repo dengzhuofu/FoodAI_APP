@@ -43,3 +43,14 @@ class WhatToEatPreset(models.Model):
 
     class Meta:
         table = "what_to_eat_presets"
+
+class ShoppingItem(models.Model):
+    id = fields.IntField(pk=True)
+    user = fields.ForeignKeyField("models.User", related_name="shopping_list", on_delete=fields.CASCADE)
+    name = fields.CharField(max_length=100)
+    amount = fields.CharField(max_length=50, null=True)
+    is_checked = fields.BooleanField(default=False)
+    created_at = fields.DatetimeField(auto_now_add=True)
+
+    class Meta:
+        table = "shopping_items"

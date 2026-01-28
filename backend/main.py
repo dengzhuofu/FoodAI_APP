@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from tortoise.contrib.fastapi import register_tortoise
-from app.routers import auth, users, profile, inventory, content, explore, ai, upload, notifications, search
+from app.routers import auth, users, profile, inventory, content, explore, ai, upload, notifications, search, shopping
 import os
 import time
 import json
@@ -117,6 +117,8 @@ app.include_router(search.router, prefix="/api/v1/search", tags=["search"])
 app.include_router(ai.router, prefix="/api/v1/ai", tags=["ai"])
 app.include_router(upload.router, prefix="/api/v1", tags=["upload"])
 app.include_router(notifications.router, prefix="/api/v1", tags=["notifications"])
+app.include_router(shopping.router, prefix="/api/v1/shopping-list", tags=["shopping"])
+
 
 @app.get("/")
 async def root():

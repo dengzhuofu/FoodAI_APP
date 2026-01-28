@@ -8,6 +8,7 @@ import { theme } from '../styles/theme';
 import { RootStackParamList } from '../navigation/types';
 import { getRecipe, getComments, toggleCollection, Recipe, Comment, toggleLike, recordView } from '../../api/content';
 import { getMe } from '../../api/auth';
+import { followUser, unfollowUser, addToShoppingList as apiAddToShoppingList } from '../../api/users';
 import CommentsSection from './CommentsSection';
 import DetailBottomBar from './DetailBottomBar';
 
@@ -28,8 +29,10 @@ const RecipeDetailPage = () => {
   const [currentUserId, setCurrentUserId] = useState<number | undefined>(undefined);
   const [isCollected, setIsCollected] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
+  const [activeSlide, setActiveSlide] = useState(0);
 
   const handleCollection = async () => {
     try {
@@ -119,8 +122,6 @@ const RecipeDetailPage = () => {
       </View>
     );
   }
-
-  const [activeSlide, setActiveSlide] = useState(0);
 
   const toggleIngredient = (index: number) => {
     const newChecked = new Set(checkedIngredients);
@@ -410,6 +411,7 @@ const styles = StyleSheet.create({
     height: 400,
     width: '100%',
     position: 'relative',
+    marginTop: 60, // Adjust for top bar height
   },
   heroImage: {
     width: width,
@@ -424,23 +426,68 @@ const styles = StyleSheet.create({
   },
   topBar: {
     position: 'absolute',
+    top: 0,
     left: 0,
     right: 0,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    zIndex: 10,
-    marginTop: 10,
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    zIndex: 20,
+    backgroundColor: '#FFF', // Make it sticky white header
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  backButton: {
+    padding: 4,
+  },
+  topBarAuthor: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  topBarAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 8,
+    backgroundColor: '#EEE',
+  },
+  topBarAuthorName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+    maxWidth: 150,
+  },
+  topBarActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  followButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 18,
+    backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  followingButton: {
+    backgroundColor: '#F0F0F0',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: '#E0E0E0',
+  },
+  followButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  followingButtonText: {
+    color: '#666',
+  },
+  shareButton: {
+    padding: 4,
   },
   headerContent: {
     position: 'absolute',

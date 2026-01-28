@@ -21,6 +21,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../../styles/theme';
 import { createRecipe } from '../../../api/content';
 import Toast from '../../components/Toast';
+import { uploadFile } from '../../../api/upload';
 
 interface Ingredient {
   name: string;

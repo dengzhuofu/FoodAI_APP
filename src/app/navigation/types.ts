@@ -31,6 +31,7 @@ export type RootStackParamList = {
   MyComments: undefined;
   Settings: undefined;
   FlavorProfile: undefined;
+  UserList: { userId: number; type: 'followers' | 'following'; title: string };
   
   // Core Components
   MyKitchen: undefined;

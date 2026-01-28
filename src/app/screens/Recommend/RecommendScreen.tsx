@@ -41,7 +41,18 @@ const RecommendScreen = () => {
         pageNum === 1 ? getHealthNews() : Promise.resolve([])
       ]);
       
-      const { items, pagination } = recData;
+      let items: FeedItem[] = [];
+      let pagination = { page: 1, limit: 10, total: 0 };
+
+      if (Array.isArray(recData)) {
+        // Fallback for old API response (array)
+        items = recData;
+        pagination.total = 100; // Mock total to allow scrolling if unknown
+      } else if (recData?.items) {
+        // New API response (object with items & pagination)
+        items = recData.items;
+        pagination = recData.pagination;
+      }
 
       if (shouldRefresh || pageNum === 1) {
         setRecipes(items);
@@ -54,6 +65,10 @@ const RecommendScreen = () => {
       setPage(pageNum);
     } catch (error) {
       console.error("Failed to fetch data", error);
+      // Reset loading states on error to prevent UI freeze
+      setLoading(false);
+      setLoadingMore(false);
+      setRefreshing(false);
     } finally {
       setLoading(false);
       setLoadingMore(false);

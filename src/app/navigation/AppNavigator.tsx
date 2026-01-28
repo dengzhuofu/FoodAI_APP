@@ -162,6 +162,7 @@ const MainTabs = () => {
 
 import { useAuth } from '../../context/AuthContext';
 import { ActivityIndicator } from 'react-native';
+import UserListScreen from '../screens/Profile/UserListScreen';
 
 const AppNavigator = () => {
   const { isLoading, userToken } = useAuth();
@@ -232,6 +233,7 @@ const AppNavigator = () => {
             <Stack.Screen name="MyComments" component={MyCommentsPage} options={{ title: '我的评价' }} />
             <Stack.Screen name="Settings" component={SettingsPage} options={{ title: '设置' }} />
             <Stack.Screen name="FlavorProfile" component={FlavorProfilePage} options={{ title: '风味画像' }} />
+            <Stack.Screen name="UserList" component={UserListScreen} options={{ headerShown: false }} />
             
             {/* Other */}
             <Stack.Screen name="MyKitchen" component={MyKitchenPage} options={{ title: '我的冰箱' }} />

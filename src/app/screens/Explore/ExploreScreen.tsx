@@ -60,7 +60,16 @@ const ExploreScreen = () => {
         
         const data = await getRecommendations(pageNum, 20, type, sortBy, selectedTag);
         
-        const { items, pagination } = data;
+        let items: FeedItem[] = [];
+        let pagination = { page: 1, limit: 20, total: 0 };
+
+        if (Array.isArray(data)) {
+          items = data;
+          pagination.total = 100;
+        } else if (data?.items) {
+          items = data.items;
+          pagination = data.pagination;
+        }
 
         if (pageNum === 1) {
           setFeedItems(items);
@@ -73,6 +82,10 @@ const ExploreScreen = () => {
       }
     } catch (error) {
       console.error("Failed to fetch feed", error);
+      // Reset loading states on error
+      setLoading(false);
+      setLoadingMore(false);
+      setRefreshing(false);
     } finally {
       setLoadingMore(false);
     }
