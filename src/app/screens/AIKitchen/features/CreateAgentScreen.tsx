@@ -61,9 +61,7 @@ const CreateAgentScreen = ({ onClose, onSuccess, initialData }: CreateAgentScree
           allowed_tools: selectedTools
         };
         await updateAgentPreset(initialData.id, data);
-        Alert.alert('成功', '智能体更新成功', [
-          { text: '确定', onPress: onSuccess }
-        ]);
+        onSuccess(); // Directly close and refresh
       } else {
         // Create mode
         const data: AgentPresetCreate = {
@@ -73,9 +71,7 @@ const CreateAgentScreen = ({ onClose, onSuccess, initialData }: CreateAgentScree
           allowed_tools: selectedTools
         };
         await createAgentPreset(data);
-        Alert.alert('成功', '智能体创建成功', [
-          { text: '确定', onPress: onSuccess }
-        ]);
+        onSuccess(); // Directly close and refresh
       }
     } catch (error) {
       console.error('Failed to save agent', error);

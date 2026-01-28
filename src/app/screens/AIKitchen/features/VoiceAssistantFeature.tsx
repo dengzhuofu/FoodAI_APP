@@ -444,22 +444,25 @@ const VoiceAssistantFeature = () => {
                 data={sessions}
                 keyExtractor={(item) => item.id.toString()}
                 renderItem={({ item }) => (
-                  <TouchableOpacity 
-                    style={[styles.sessionItem, item.id === currentSessionId && styles.sessionItemActive]}
-                    onPress={() => selectSession(item.id)}
-                  >
-                    <Ionicons name="chatbubble-outline" size={20} color={item.id === currentSessionId ? "#1A1A1A" : "#666"} />
-                    <Text style={[styles.sessionTitle, item.id === currentSessionId && styles.sessionTitleActive]} numberOfLines={1}>
-                      {item.title}
-                    </Text>
+                  <View style={[styles.sessionItem, item.id === currentSessionId && styles.sessionItemActive]}>
+                    <TouchableOpacity 
+                      style={{flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12}}
+                      onPress={() => selectSession(item.id)}
+                    >
+                      <Ionicons name="chatbubble-outline" size={20} color={item.id === currentSessionId ? "#1A1A1A" : "#666"} />
+                      <Text style={[styles.sessionTitle, item.id === currentSessionId && styles.sessionTitleActive]} numberOfLines={1}>
+                        {item.title}
+                      </Text>
+                    </TouchableOpacity>
                     
                     <TouchableOpacity 
                       onPress={() => handleDeleteSession(item.id)} 
-                      style={{padding: 4}}
+                      style={{padding: 8}}
+                      hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
                     >
-                      <Ionicons name="trash-outline" size={16} color="#FF6B6B" />
+                      <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
                     </TouchableOpacity>
-                  </TouchableOpacity>
+                  </View>
                 )}
                 contentContainerStyle={{padding: 16}}
               />

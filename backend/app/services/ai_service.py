@@ -540,7 +540,15 @@ class AIService:
             if session_id:
                 try:
                     session = await ChatSession.get_or_none(id=session_id)
-                    if session and (session.title == "新对话" or session.title == "New Chat"):
+                    # Check if title is generic or default
+                    is_default_title = session and (
+                        session.title in ["新对话", "New Chat"] or 
+                        session.title.startswith("新对话") or 
+                        session.title.startswith("New Chat") or
+                        len(session.title) < 5 # Short generic titles
+                    )
+                    
+                    if is_default_title:
                         # Generate summary title
                         title_prompt = f"""请根据以下对话内容，生成一个简短的标题（不超过10个字），概括用户的意图。
                         
@@ -554,6 +562,7 @@ class AIService:
                         if len(new_title) > 20:
                             new_title = new_title[:20]
                         
+                        print(f"DEBUG: Auto-updating title from '{session.title}' to '{new_title}'")
                         session.title = new_title
                         await session.save()
                 except Exception as e:
