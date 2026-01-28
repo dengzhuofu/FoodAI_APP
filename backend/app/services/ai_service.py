@@ -408,14 +408,18 @@ class AIService:
         messages = [
             SystemMessage(content="""你是智能厨房管家。你可以查看用户的冰箱库存、购物清单以及饮食偏好。
             
-            当用户询问'吃什么'、'推荐菜谱'或'制定计划'时，请遵循以下思考流程：
-            1. **感知**：首先调用 `get_user_preferences` 获取用户的口味、过敏源和最近喜欢的菜品。
-            2. **检查**：接着调用 `get_fridge_items` 查看冰箱里有什么食材。
-            3. **规划**：结合用户的偏好和现有食材进行推荐。
-               - 如果用户最近喜欢'香辣'，且冰箱有'鸡肉'，优先推荐'辣子鸡'。
-               - 避开用户的过敏源。
-               - 优先消耗快过期的食材。
-            4. **行动**：如果推荐的菜谱缺少关键食材，可以询问用户是否需要加入购物清单（调用 `add_shopping_item`）。
+            当用户询问'吃什么'、'推荐菜谱'或'制定计划'时，你需要获取足够的信息来给出个性化建议。
+            请积极使用工具来获取信息：
+            - 使用 `get_user_preferences` 获取用户的口味、过敏源和最近喜欢的菜品。
+            - 使用 `get_fridge_items` 查看冰箱里有什么食材。
+            
+            你可以同时调用多个工具，或者根据需要分步调用。
+            获取信息后，请结合用户的偏好和现有食材进行推荐。
+            - 如果用户最近喜欢'香辣'，且冰箱有'鸡肉'，优先推荐'辣子鸡'。
+            - 避开用户的过敏源。
+            - 优先消耗快过期的食材。
+            
+            如果推荐的菜谱缺少关键食材，可以询问用户是否需要加入购物清单（调用 `add_shopping_item`）。
             
             回复风格要亲切、自然，体现出你记得用户的喜好。""")
         ]
@@ -430,15 +434,24 @@ class AIService:
         messages.append(HumanMessage(content=message))
 
         thoughts = []
+        MAX_TURNS = 5
+        turn_count = 0
 
         # 4. Agent Loop
         try:
-            # First turn: LLM decides to call tools or not
-            response = await llm_with_tools.ainvoke(messages)
-            messages.append(response)
+            while turn_count < MAX_TURNS:
+                turn_count += 1
+                response = await llm_with_tools.ainvoke(messages)
+                messages.append(response)
 
-            # If tool calls exist
-            if response.tool_calls:
+                if not response.tool_calls:
+                    # No more tools needed, return final answer
+                    return {
+                        "answer": response.content,
+                        "thoughts": thoughts
+                    }
+                
+                # Execute tools
                 for tool_call in response.tool_calls:
                     fn_name = tool_call["name"]
                     args = tool_call["args"]
@@ -452,60 +465,33 @@ class AIService:
 
                     # Execute tool
                     result = "Tool Error"
-                    if fn_name == "get_fridge_items":
-                        thoughts[-1]["description"] = "正在查看冰箱库存..."
-                        result = await get_fridge_items(**args)
-                    elif fn_name == "add_shopping_item":
-                        thoughts[-1]["description"] = f"正在将 {args.get('item_name', '物品')} 加入清单..."
-                        result = await add_shopping_item(**args)
-                    elif fn_name == "get_shopping_list":
-                        thoughts[-1]["description"] = "正在查看购物清单..."
-                        result = await get_shopping_list(**args)
-                    elif fn_name == "get_user_preferences":
-                        thoughts[-1]["description"] = "正在获取您的饮食偏好..."
-                        result = await get_user_preferences(**args)
+                    try:
+                        if fn_name == "get_fridge_items":
+                            thoughts[-1]["description"] = "正在查看冰箱库存..."
+                            result = await get_fridge_items(**args)
+                        elif fn_name == "add_shopping_item":
+                            thoughts[-1]["description"] = f"正在将 {args.get('item_name', '物品')} 加入清单..."
+                            result = await add_shopping_item(**args)
+                        elif fn_name == "get_shopping_list":
+                            thoughts[-1]["description"] = "正在查看购物清单..."
+                            result = await get_shopping_list(**args)
+                        elif fn_name == "get_user_preferences":
+                            thoughts[-1]["description"] = "正在获取您的饮食偏好..."
+                            result = await get_user_preferences(**args)
+                    except Exception as e:
+                        result = f"Error executing tool {fn_name}: {str(e)}"
                     
                     messages.append(ToolMessage(tool_call_id=tool_call["id"], content=str(result)))
-                
-                # Second turn: LLM generates final response based on tool outputs
-                print("DEBUG: Sending tool outputs back to LLM...")
-                # Ensure we are using the same LLM instance (llm_with_tools or just llm_text?)
-                # Sometimes bind_tools models might try to call tools again if not instructed to stop.
-                # Let's try invoking the bound LLM again, it should see the ToolMessages and generate text.
-                final_response = await llm_with_tools.ainvoke(messages)
-                
-                print(f"DEBUG: Final Agent Response Content: {final_response.content}")
-                print(f"DEBUG: Final Agent Response ToolCalls: {final_response.tool_calls}")
-
-                # If the model decides to call tools AGAIN (loop), we might need to handle it.
-                # For now, let's assume a simple 1-turn tool use. 
-                # If content is empty but has tool_calls again, it means it wants to do more.
-                # But to avoid infinite loops in this simple implementation, let's force a response or return what we have.
-                
-                answer_content = final_response.content
-                if not answer_content and final_response.tool_calls:
-                     # It wants to call more tools. For now, let's just stop and tell user.
-                     # Or better, recursively call? No, let's keep it simple.
-                     # We can append a system message forcing a response.
-                     messages.append(final_response) # Add the new tool call request
-                     messages.append(SystemMessage(content="Please stop calling tools and summarize the results to the user now."))
-                     final_response_forced = await self.llm_text.ainvoke(messages) # Use raw llm to avoid tools
-                     answer_content = final_response_forced.content
-
-                return {
-                    "answer": answer_content,
-                    "thoughts": thoughts
-                }
             
-            # If no tool calls, check if we should force a thought for better UX?
-            # Or just return empty thoughts. 
-            # If the user asks "what to eat", and the agent didn't call tools, it might be an issue with the model or prompt.
-            # But we can't force it here easily without re-prompting.
+            # If max turns reached, force a summary
+            messages.append(SystemMessage(content="Please stop calling tools and summarize the results to the user now."))
+            final_response = await self.llm_text.ainvoke(messages)
             
             return {
-                "answer": response.content,
-                "thoughts": []
+                "answer": final_response.content,
+                "thoughts": thoughts
             }
+
         except Exception as e:
             print(f"Agent Error: {e}")
             import traceback
