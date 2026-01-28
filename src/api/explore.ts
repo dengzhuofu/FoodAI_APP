@@ -29,6 +29,7 @@ export interface FeedItem {
   type: 'recipe' | 'restaurant';
   title: string;
   image: string;
+  images?: string[]; // Added to support fallback
   author: string;
   likes: number;
   views?: number;
@@ -38,13 +39,24 @@ export interface FeedItem {
   recommendation_reason?: string;
 }
 
+export interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+}
+
+export interface RecommendationResponse {
+  items: FeedItem[];
+  pagination: Pagination;
+}
+
 export const getRecommendations = async (
   page: number = 1, 
   limit: number = 10, 
   type?: 'recipe' | 'restaurant',
   sort_by?: 'default' | 'time' | 'likes' | 'views',
   category?: string
-): Promise<FeedItem[]> => {
+): Promise<RecommendationResponse> => {
   const response = await client.get('/explore/recommendations', { 
     params: { page, limit, type, sort_by, category } 
   });

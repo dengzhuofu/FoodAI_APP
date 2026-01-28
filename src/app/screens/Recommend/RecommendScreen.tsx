@@ -28,31 +28,64 @@ const RecommendScreen = () => {
   const [banners, setBanners] = useState<HealthNews[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = async () => {
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const fetchData = async (pageNum: number = 1, shouldRefresh: boolean = false) => {
     try {
+      if (pageNum === 1) setLoading(true);
+      
       const [recData, newsData] = await Promise.all([
-        getRecommendations(),
-        getHealthNews()
+        getRecommendations(pageNum, 10),
+        pageNum === 1 ? getHealthNews() : Promise.resolve([])
       ]);
-      setRecipes(recData);
-      setBanners(newsData);
+      
+      const { items, pagination } = recData;
+
+      if (shouldRefresh || pageNum === 1) {
+        setRecipes(items);
+        if (pageNum === 1) setBanners(newsData);
+      } else {
+        setRecipes(prev => [...prev, ...items]);
+      }
+      
+      setHasMore(items.length > 0 && pagination.page * pagination.limit < pagination.total);
+      setPage(pageNum);
     } catch (error) {
       console.error("Failed to fetch data", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
   useFocusEffect(
     useCallback(() => {
-      fetchData();
+      // Only fetch if empty (initial load) to avoid resetting scroll position on back nav
+      if (recipes.length === 0) {
+        fetchData(1);
+      }
     }, [])
   );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchData().finally(() => setRefreshing(false));
+    setRecipes([]);
+    setHasMore(true);
+    fetchData(1, true).finally(() => setRefreshing(false));
   }, []);
+
+  const handleLoadMore = () => {
+    if (!hasMore || loadingMore || loading) return;
+    setLoadingMore(true);
+    fetchData(page + 1);
+  };
+
+  const isCloseToBottom = ({ layoutMeasurement, contentOffset, contentSize }: any) => {
+    const paddingToBottom = 20;
+    return layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+  };
 
   const renderHeader = () => (
     <View style={styles.header}>
@@ -200,6 +233,12 @@ const RecommendScreen = () => {
         <ScrollView 
           contentContainerStyle={styles.scrollContent} 
           showsVerticalScrollIndicator={false}
+          onScroll={({ nativeEvent }) => {
+            if (isCloseToBottom(nativeEvent)) {
+              handleLoadMore();
+            }
+          }}
+          scrollEventThrottle={400}
           refreshControl={
             <RefreshControl 
               refreshing={refreshing} 
@@ -213,6 +252,7 @@ const RecommendScreen = () => {
           {renderWhatToEat()}
           {renderBanner()}
           {renderFeed()}
+          {loadingMore && <ActivityIndicator style={{ padding: 20 }} color="#1A1A1A" />}
         </ScrollView>
       </SafeAreaView>
     </View>

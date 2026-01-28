@@ -120,6 +120,8 @@ const RecipeDetailPage = () => {
     );
   }
 
+  const [activeSlide, setActiveSlide] = useState(0);
+
   const toggleIngredient = (index: number) => {
     const newChecked = new Set(checkedIngredients);
     if (newChecked.has(index)) {
@@ -147,15 +149,38 @@ const RecipeDetailPage = () => {
 
     return (
       <View style={styles.imageContainer}>
-        <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
+        <ScrollView 
+          horizontal 
+          pagingEnabled 
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={(event) => {
+            const slide = Math.ceil(event.nativeEvent.contentOffset.x / event.nativeEvent.layoutMeasurement.width);
+            if (slide !== activeSlide) setActiveSlide(slide);
+          }}
+        >
           {displayImages.map((img, index) => (
             <Image key={index} source={{ uri: img }} style={styles.heroImage} resizeMode="cover" />
           ))}
         </ScrollView>
         <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.8)']}
+          colors={['transparent', 'rgba(0,0,0,0.6)']}
           style={styles.gradient}
         />
+        
+        {/* Pagination Dots */}
+        {displayImages.length > 1 && (
+          <View style={styles.paginationContainer}>
+            {displayImages.map((_, index) => (
+              <View 
+                key={index} 
+                style={[
+                  styles.paginationDot, 
+                  activeSlide === index ? styles.paginationDotActive : styles.paginationDotInactive
+                ]} 
+              />
+            ))}
+          </View>
+        )}
         
         {/* Top Bar */}
         <View style={[styles.topBar, { top: insets.top }]}>
@@ -175,20 +200,6 @@ const RecipeDetailPage = () => {
         </View>
 
         <View style={styles.headerContent}>
-          <View style={styles.tagRow}>
-            {recipe?.difficulty && (
-              <View style={styles.difficultyTag}>
-                <Text style={styles.tagText}>{recipe.difficulty}</Text>
-              </View>
-            )}
-            {recipe?.cooking_time && (
-              <View style={styles.timeTag}>
-                <Ionicons name="time" size={12} color="#FFF" />
-                <Text style={styles.tagText}>{recipe.cooking_time}</Text>
-              </View>
-            )}
-          </View>
-          
           <Text style={styles.title}>{recipe?.title}</Text>
           
           <View style={styles.authorRow}>
@@ -199,6 +210,35 @@ const RecipeDetailPage = () => {
       </View>
     );
   };
+
+  const renderTags = () => (
+    <View style={styles.tagsSection}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagsScroll}>
+        {recipe?.difficulty && (
+          <View style={styles.tagChip}>
+            <Ionicons name="speedometer-outline" size={14} color="#666" />
+            <Text style={styles.tagChipText}>{recipe.difficulty}</Text>
+          </View>
+        )}
+        {recipe?.cooking_time && (
+          <View style={styles.tagChip}>
+            <Ionicons name="time-outline" size={14} color="#666" />
+            <Text style={styles.tagChipText}>{recipe.cooking_time}</Text>
+          </View>
+        )}
+        {recipe?.category && (
+          <View style={styles.tagChip}>
+            <Ionicons name="restaurant-outline" size={14} color="#666" />
+            <Text style={styles.tagChipText}>{recipe.category}</Text>
+          </View>
+        )}
+        <View style={styles.tagChip}>
+          <Ionicons name="flame-outline" size={14} color="#666" />
+          <Text style={styles.tagChipText}>{recipe?.calories || '200'} kcal</Text>
+        </View>
+      </ScrollView>
+    </View>
+  );
 
   const renderNutrition = () => {
     if (!recipe?.nutrition) {
@@ -325,6 +365,7 @@ const RecipeDetailPage = () => {
         {renderHeader()}
         <View style={styles.content}>
           <Text style={styles.description}>{recipe?.description}</Text>
+          {renderTags()}
           {renderNutrition()}
           {renderIngredients()}
           {renderSteps()}
@@ -407,46 +448,44 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 24,
-    paddingBottom: 40,
-  },
-  tagRow: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    gap: 8,
-  },
-  difficultyTag: {
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 100,
-  },
-  timeTag: {
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 100,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  tagText: {
-    color: '#1A1A1A',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    paddingBottom: 30,
   },
   title: {
-    fontSize: 36,
+    fontSize: 28,
     fontWeight: '900',
     color: '#FFF',
-    marginBottom: 20,
+    marginBottom: 12,
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 4 },
-    textShadowRadius: 12,
-    lineHeight: 42,
-    letterSpacing: -1,
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
+    lineHeight: 34,
+  },
+  tagsSection: {
+    marginBottom: 24,
+  },
+  tagsScroll: {
+    gap: 10,
+  },
+  tagChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  tagChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
   },
   authorRow: {
     flexDirection: 'row',

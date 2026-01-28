@@ -1,225 +1,723 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TextInput, 
+  TouchableOpacity, 
+  ScrollView, 
+  Image, 
+  Alert,
+  ActivityIndicator,
+  Platform,
+  KeyboardAvoidingView,
+  Modal,
+  FlatList
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../../styles/theme';
 import { createRecipe } from '../../../api/content';
+import Toast from '../../components/Toast';
 
-const PublishRecipeScreen = () => {
-  const navigation = useNavigation();
+interface Ingredient {
+  name: string;
+  amount: string;
+}
+
+interface Step {
+  description: string;
+  image?: string;
+}
+
+const DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
+const COOKING_TIMES = ['15 mins', '30 mins', '45 mins', '1 hour', '> 1 hour'];
+const CATEGORIES = ['Breakfast', 'Lunch', 'Dinner', 'Dessert', 'Snack', 'Drink'];
+
+const PublishRecipe = () => {
+  const navigation = useNavigation<any>();
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'info' as 'success' | 'error' | 'info' });
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToast({ visible: true, message, type });
+  };
+  
+  // Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [ingredients, setIngredients] = useState<{name: string, amount: string}[]>([{name: '', amount: ''}]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [images, setImages] = useState<ImagePicker.ImagePickerAsset[]>([]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([{ name: '', amount: '' }]);
+  const [steps, setSteps] = useState<Step[]>([{ description: '', image: undefined }]);
+  
+  // Metadata State
+  const [difficulty, setDifficulty] = useState('Medium');
+  const [cookingTime, setCookingTime] = useState('30 mins');
+  const [category, setCategory] = useState('Lunch');
+  
+  // Modal State
+  const [activeModal, setActiveModal] = useState<'difficulty' | 'time' | 'category' | null>(null);
 
-  const handleAddIngredient = () => {
+  // 1. Image Picker for Recipe Cover/Gallery
+  const pickImages = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      selectionLimit: 9 - images.length,
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setImages([...images, ...result.assets]);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    const newImages = [...images];
+    newImages.splice(index, 1);
+    setImages(newImages);
+  };
+
+  // 2. Ingredients Logic
+  const addIngredient = () => {
     setIngredients([...ingredients, { name: '', amount: '' }]);
   };
 
-  const handleIngredientChange = (index: number, field: 'name' | 'amount', value: string) => {
+  const updateIngredient = (index: number, field: keyof Ingredient, value: string) => {
     const newIngredients = [...ingredients];
-    newIngredients[index][field] = value;
+    newIngredients[index] = { ...newIngredients[index], [field]: value };
     setIngredients(newIngredients);
   };
 
-  const handlePublish = async () => {
-    if (!title || !description) {
-      Alert.alert('提示', '请填写完整信息');
+  const removeIngredient = (index: number) => {
+    const newIngredients = [...ingredients];
+    newIngredients.splice(index, 1);
+    setIngredients(newIngredients);
+  };
+
+  // 3. Steps Logic
+  const addStep = () => {
+    setSteps([...steps, { description: '', image: undefined }]);
+  };
+
+  const updateStepText = (index: number, text: string) => {
+    const newSteps = [...steps];
+    newSteps[index] = { ...newSteps[index], description: text };
+    setSteps(newSteps);
+  };
+
+  const pickStepImage = async (index: number) => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      const newSteps = [...steps];
+      newSteps[index] = { ...newSteps[index], image: result.assets[0].uri };
+      setSteps(newSteps);
+    }
+  };
+  
+  const removeStep = (index: number) => {
+    const newSteps = [...steps];
+    newSteps.splice(index, 1);
+    setSteps(newSteps);
+  };
+
+  // Submit
+  const handleSubmit = async () => {
+    if (!title.trim() || !description.trim()) {
+      showToast('请填写菜谱名称和简介', 'error');
+      return;
+    }
+    
+    if (images.length === 0) {
+      showToast('请至少上传一张菜品图片', 'error');
+      return;
+    }
+    
+    // Validate ingredients
+    const validIngredients = ingredients.filter(i => i.name.trim() && i.amount.trim());
+    if (validIngredients.length === 0) {
+      showToast('请至少填写一项食材', 'error');
       return;
     }
 
-    setIsSubmitting(true);
+    // Validate steps
+    const validSteps = steps.filter(s => s.description.trim());
+    if (validSteps.length === 0) {
+      showToast('请至少填写一个步骤', 'error');
+      return;
+    }
+
+    setLoading(true);
     try {
-      await createRecipe({
+      // 1. Upload Images
+      const uploadedImages: string[] = [];
+      
+      // Helper to upload with error handling
+      const handleUpload = async (uri: string) => {
+        try {
+          return await uploadFile(uri);
+        } catch (e) {
+          console.error('Upload failed for', uri, e);
+          throw new Error('Image upload failed');
+        }
+      };
+
+      // Upload main images
+      for (const img of images) {
+        const url = await handleUpload(img.uri);
+        uploadedImages.push(url);
+      }
+
+      // Upload step images
+      const processedSteps = await Promise.all(steps.map(async (step) => {
+        if (step.image) {
+          const url = await handleUpload(step.image);
+          return { ...step, image: url };
+        }
+        return step;
+      }));
+
+      const recipeData = {
         title,
         description,
-        cover_image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800', // Mock image
-        ingredients: ingredients.map(i => `${i.name} ${i.amount}`),
-        steps: ['Step 1: Prepare ingredients', 'Step 2: Cook'], // Mock steps
-        cooking_time: '30 mins',
-        difficulty: 'Medium',
-        cuisine: 'Fusion',
-        category: 'Main'
-      });
+        cover_image: uploadedImages[0], // Use first uploaded image as cover
+        images: uploadedImages,
+        ingredients: validIngredients,
+        steps: processedSteps,
+        cooking_time: cookingTime,
+        difficulty: difficulty,
+        category: category,
+        cuisine: "General" 
+      };
       
-      Alert.alert('发布成功', '您的菜谱已发布！', [
-        { text: '确定', onPress: () => navigation.goBack() }
-      ]);
+      await createRecipe(recipeData);
+      
+      showToast('发布成功！', 'success');
+      
+      // Delay navigation to let toast show
+      setTimeout(() => {
+        navigation.navigate('Main', { 
+          screen: 'Recommend'
+        });
+      }, 1500);
+      
     } catch (error) {
       console.error(error);
-      Alert.alert('发布失败', '请稍后重试');
+      showToast('发布失败，请重试', 'error');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="close" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-        <Text style={theme.typography.h2}>发布菜谱</Text>
-        <TouchableOpacity onPress={handlePublish} style={styles.publishButton}>
-          <Text style={styles.publishButtonText}>发布</Text>
-        </TouchableOpacity>
-      </View>
+  const renderSelectionModal = () => {
+    if (!activeModal) return null;
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.imageUpload}>
-          <Ionicons name="camera-outline" size={48} color={theme.colors.textSecondary} />
-          <Text style={styles.uploadText}>上传成品图</Text>
-        </View>
+    let data: string[] = [];
+    let onSelect: (val: string) => void = () => {};
+    let title = '';
 
-        <Text style={styles.label}>菜谱名称</Text>
-        <TextInput 
-          style={styles.input} 
-          placeholder="给你的菜谱起个好听的名字" 
-          value={title}
-          onChangeText={setTitle}
-        />
+    switch (activeModal) {
+      case 'difficulty':
+        data = DIFFICULTIES;
+        onSelect = setDifficulty;
+        title = 'Select Difficulty';
+        break;
+      case 'time':
+        data = COOKING_TIMES;
+        onSelect = setCookingTime;
+        title = 'Select Cooking Time';
+        break;
+      case 'category':
+        data = CATEGORIES;
+        onSelect = setCategory;
+        title = 'Select Category';
+        break;
+    }
 
-        <Text style={styles.label}>心得描述</Text>
-        <TextInput 
-          style={[styles.input, styles.textArea]} 
-          placeholder="分享你的烹饪心得..." 
-          multiline 
-          textAlignVertical="top"
-          value={description}
-          onChangeText={setDescription}
-        />
-
-        <Text style={styles.label}>食材清单</Text>
-        {ingredients.map((item, index) => (
-          <View key={index} style={styles.ingredientRow}>
-            <TextInput 
-              style={[styles.input, styles.ingredientInput, { marginBottom: 0 }]} 
-              placeholder="食材名称 (如: 鸡蛋)" 
-              placeholderTextColor="#999"
-              value={item.name}
-              onChangeText={(text) => handleIngredientChange(index, 'name', text)}
-            />
-            <TextInput 
-              style={[styles.input, styles.ingredientInput, { marginBottom: 0 }]} 
-              placeholder="用量 (如: 2个)" 
-              placeholderTextColor="#999"
-              value={item.amount}
-              onChangeText={(text) => handleIngredientChange(index, 'amount', text)}
+    return (
+      <Modal
+        visible={!!activeModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setActiveModal(null)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setActiveModal(null)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{title}</Text>
+            <FlatList
+              data={data}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <TouchableOpacity 
+                  style={styles.modalItem}
+                  onPress={() => {
+                    onSelect(item);
+                    setActiveModal(null);
+                  }}
+                >
+                  <Text style={styles.modalItemText}>{item}</Text>
+                  {(activeModal === 'difficulty' && difficulty === item ||
+                    activeModal === 'time' && cookingTime === item ||
+                    activeModal === 'category' && category === item) && (
+                    <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
+                  )}
+                </TouchableOpacity>
+              )}
             />
           </View>
-        ))}
-        <TouchableOpacity style={styles.addMore} onPress={handleAddIngredient}>
-          <Ionicons name="add" size={20} color="#1A1A1A" />
-          <Text style={styles.addMoreText}>添加食材</Text>
         </TouchableOpacity>
+      </Modal>
+    );
+  };
 
-      </ScrollView>
-    </SafeAreaView>
+  return (
+    <View style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="close" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>发布菜谱</Text>
+          <TouchableOpacity onPress={handleSubmit} disabled={loading}>
+            {loading ? <ActivityIndicator color={theme.colors.primary} /> : <Text style={styles.publishText}>发布</Text>}
+          </TouchableOpacity>
+        </View>
+
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+        >
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            {/* 1. Images */}
+            <ScrollView horizontal style={styles.imageScroll} showsHorizontalScrollIndicator={false}>
+              {images.map((img, index) => (
+                <View key={index} style={styles.imageWrapper}>
+                  <Image source={{ uri: img.uri }} style={styles.uploadedImage} />
+                  <TouchableOpacity style={styles.removeImageBtn} onPress={() => removeImage(index)}>
+                    <Ionicons name="close-circle" size={20} color="rgba(0,0,0,0.6)" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              <TouchableOpacity style={styles.addImageBtn} onPress={pickImages}>
+                <Ionicons name="camera" size={32} color="#999" />
+                <Text style={styles.addImageText}>{images.length > 0 ? '继续添加' : '上传成品图'}</Text>
+              </TouchableOpacity>
+            </ScrollView>
+
+            {/* 2. Basic Info */}
+            <View style={styles.section}>
+              <TextInput
+                style={styles.titleInput}
+                placeholder="菜谱名称"
+                value={title}
+                onChangeText={setTitle}
+                maxLength={30}
+              />
+              <TextInput
+                style={styles.descInput}
+                placeholder="分享你的美食故事..."
+                value={description}
+                onChangeText={setDescription}
+                multiline
+              />
+              
+              {/* Metadata Selectors */}
+              <View style={styles.metaRow}>
+                <TouchableOpacity style={styles.metaChip} onPress={() => setActiveModal('time')}>
+                  <Ionicons name="time-outline" size={16} color="#666" />
+                  <Text style={styles.metaText}>{cookingTime}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.metaChip} onPress={() => setActiveModal('difficulty')}>
+                  <Ionicons name="speedometer-outline" size={16} color="#666" />
+                  <Text style={styles.metaText}>{difficulty}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.metaChip} onPress={() => setActiveModal('category')}>
+                  <Ionicons name="restaurant-outline" size={16} color="#666" />
+                  <Text style={styles.metaText}>{category}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* 3. Ingredients */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>食材清单</Text>
+              {ingredients.map((item, index) => (
+                <View key={index} style={styles.ingredientRow}>
+                  <View style={styles.inputWrapper}>
+                    <TextInput
+                      style={styles.ingInput}
+                      placeholder="食材名"
+                      value={item.name}
+                      onChangeText={(text) => updateIngredient(index, 'name', text)}
+                    />
+                  </View>
+                  <View style={[styles.inputWrapper, { flex: 0.6 }]}>
+                    <TextInput
+                      style={styles.ingInput}
+                      placeholder="用量"
+                      value={item.amount}
+                      onChangeText={(text) => updateIngredient(index, 'amount', text)}
+                    />
+                  </View>
+                  {ingredients.length > 1 && (
+                    <TouchableOpacity onPress={() => removeIngredient(index)} style={styles.removeIcon}>
+                      <Ionicons name="remove-circle" size={24} color="#FF6B6B" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
+              <TouchableOpacity style={styles.addBtn} onPress={addIngredient}>
+                <Ionicons name="add" size={20} color={theme.colors.primary} />
+                <Text style={styles.addBtnText}>添加食材</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* 4. Steps */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>烹饪步骤</Text>
+              {steps.map((step, index) => (
+                <View key={index} style={styles.stepContainer}>
+                  <View style={styles.stepHeader}>
+                    <View style={styles.stepBadge}>
+                      <Text style={styles.stepIndex}>{index + 1}</Text>
+                    </View>
+                    {steps.length > 1 && (
+                      <TouchableOpacity onPress={() => removeStep(index)}>
+                        <Text style={styles.deleteText}>删除</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <View style={styles.stepContent}>
+                    <TextInput
+                      style={styles.stepInput}
+                      placeholder={`步骤 ${index + 1} 说明...`}
+                      multiline
+                      value={step.description}
+                      onChangeText={(text) => updateStepText(index, text)}
+                    />
+                    <TouchableOpacity style={styles.stepImageBtn} onPress={() => pickStepImage(index)}>
+                      {step.image ? (
+                        <Image source={{ uri: step.image }} style={styles.stepImage} />
+                      ) : (
+                        <View style={styles.stepImagePlaceholder}>
+                          <Ionicons name="image-outline" size={24} color="#CCC" />
+                          <Text style={styles.stepImageText}>添加图</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+              <TouchableOpacity style={styles.addBtn} onPress={addStep}>
+                <Ionicons name="add" size={20} color={theme.colors.primary} />
+                <Text style={styles.addBtnText}>添加步骤</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={{ height: 100 }} />
+          </ScrollView>
+        </KeyboardAvoidingView>
+        
+        {renderSelectionModal()}
+        <Toast 
+          visible={toast.visible} 
+          message={toast.message} 
+          type={toast.type}
+          onDismiss={() => setToast(prev => ({ ...prev, visible: false }))}
+        />
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: '#fff',
+  },
+  safeArea: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5',
+    borderBottomColor: '#f0f0f0',
+    backgroundColor: '#fff',
+    zIndex: 10,
   },
   backButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: '#F5F5F5',
+    padding: 4,
   },
-  publishButton: {
-    backgroundColor: '#1A1A1A',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  publishButtonText: {
-    color: 'white',
+  headerTitle: {
+    fontSize: 17,
     fontWeight: '700',
-    fontSize: 14,
+    color: '#333',
+  },
+  publishText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.primary,
   },
   content: {
-    padding: 20,
-    paddingBottom: 40,
+    flex: 1,
   },
-  imageUpload: {
-    height: 240,
-    backgroundColor: '#F9F9F9',
-    borderRadius: 24,
+  imageScroll: {
+    padding: 16,
+    borderBottomWidth: 8,
+    borderBottomColor: '#f9f9f9',
+  },
+  imageWrapper: {
+    marginRight: 12,
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  uploadedImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 12,
+  },
+  removeImageBtn: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  addImageBtn: {
+    width: 100,
+    height: 100,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#EAEAEA',
+    borderColor: '#E0E0E0',
     borderStyle: 'dashed',
   },
-  uploadText: {
-    marginTop: 12,
+  addImageText: {
+    fontSize: 11,
     color: '#999',
-    fontSize: 14,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  section: {
+    padding: 20,
+    borderBottomWidth: 8,
+    borderBottomColor: '#f9f9f9',
+  },
+  titleInput: {
+    fontSize: 22,
+    fontWeight: '800',
+    marginBottom: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    color: '#1A1A1A',
+  },
+  descInput: {
+    fontSize: 16,
+    color: '#333',
+    minHeight: 80,
+    textAlignVertical: 'top',
+    lineHeight: 24,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 16,
+    flexWrap: 'wrap',
+  },
+  metaChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+  },
+  metaText: {
+    fontSize: 13,
+    color: '#333',
     fontWeight: '500',
   },
-  label: {
-    fontSize: 14,
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: '800',
+    marginBottom: 20,
     color: '#1A1A1A',
-    marginBottom: 12,
-    marginTop: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  input: {
-    backgroundColor: '#F9F9F9',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    fontSize: 16,
-    color: '#1A1A1A',
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  textArea: {
-    height: 140,
-    paddingTop: 16,
   },
   ingredientRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 12,
     gap: 12,
   },
-  ingredientInput: {
+  inputWrapper: {
     flex: 1,
-  },
-  addMore: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
     backgroundColor: '#F9F9F9',
-    borderRadius: 16,
-    marginTop: 8,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#EAEAEA',
+    borderColor: '#F0F0F0',
+  },
+  ingInput: {
+    padding: 12,
+    fontSize: 15,
+    color: '#333',
+  },
+  removeIcon: {
+    padding: 4,
+  },
+  addBtn: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 14,
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    marginTop: 8,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
     borderStyle: 'dashed',
   },
-  addMoreText: {
-    color: '#1A1A1A',
-    marginLeft: 8,
+  addBtnText: {
+    color: theme.colors.primary,
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 15,
+  },
+  stepContainer: {
+    marginBottom: 24,
+    backgroundColor: '#FFF',
+  },
+  stepHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  stepBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#1A1A1A',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepIndex: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  deleteText: {
+    fontSize: 13,
+    color: '#999',
+    fontWeight: '500',
+  },
+  stepContent: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  stepInput: {
+    flex: 1,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 12,
+    padding: 14,
+    textAlignVertical: 'top',
+    height: 100,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  stepImageBtn: {
+    width: 100,
+    height: 100,
+  },
+  stepImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+  },
+  stepImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderStyle: 'dashed',
+  },
+  stepImageText: {
+    fontSize: 11,
+    color: '#999',
+    marginTop: 4,
+  },
+  
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    maxHeight: '50%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
+  },
+  modalItemText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
   },
 });
 
-export default PublishRecipeScreen;
+export default PublishRecipe;

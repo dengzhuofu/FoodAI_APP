@@ -28,6 +28,9 @@ const ExploreScreen = () => {
   const [tags, setTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const CATEGORIES = [
     { label: t('explore.tabAI'), value: 'AI推荐' },
@@ -45,7 +48,7 @@ const ExploreScreen = () => {
     }
   };
 
-  const fetchData = async () => {
+  const fetchData = async (pageNum = 1) => {
     try {
       if (activeTab === '健康') {
         const newsData = await getHealthNews();
@@ -55,11 +58,23 @@ const ExploreScreen = () => {
         if (activeTab === '探店') type = 'restaurant';
         if (activeTab === '菜谱') type = 'recipe';
         
-        const data = await getRecommendations(1, 20, type, sortBy, selectedTag);
-        setFeedItems(data);
+        const data = await getRecommendations(pageNum, 20, type, sortBy, selectedTag);
+        
+        const { items, pagination } = data;
+
+        if (pageNum === 1) {
+          setFeedItems(items);
+        } else {
+          setFeedItems(prev => [...prev, ...items]);
+        }
+        
+        setHasMore(items.length > 0 && pagination.page * pagination.limit < pagination.total);
+        setPage(pageNum);
       }
     } catch (error) {
       console.error("Failed to fetch feed", error);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -76,6 +91,17 @@ const ExploreScreen = () => {
     setRefreshing(true);
     fetchData().finally(() => setRefreshing(false));
   }, [activeTab, sortBy, selectedTag]);
+
+  const handleLoadMore = () => {
+    if (!hasMore || loadingMore || loading || activeTab === '健康') return;
+    setLoadingMore(true);
+    fetchData(page + 1);
+  };
+
+  const isCloseToBottom = ({ layoutMeasurement, contentOffset, contentSize }: any) => {
+    const paddingToBottom = 20;
+    return layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+  };
 
   const renderFilterDropdown = () => {
     if (!isFilterOpen || activeTab === '健康') return null;
@@ -254,6 +280,12 @@ const ExploreScreen = () => {
         <ScrollView 
           contentContainerStyle={styles.scrollContent} 
           showsVerticalScrollIndicator={false}
+          onScroll={({ nativeEvent }) => {
+            if (isCloseToBottom(nativeEvent)) {
+              handleLoadMore();
+            }
+          }}
+          scrollEventThrottle={400}
           refreshControl={
             <RefreshControl 
               refreshing={refreshing} 
@@ -268,6 +300,7 @@ const ExploreScreen = () => {
           ) : (
             <View style={styles.contentContainer}>
               {renderWaterfallFlow()}
+              {loadingMore && <ActivityIndicator style={{ padding: 20 }} color="#1A1A1A" />}
             </View>
           )}
         </ScrollView>

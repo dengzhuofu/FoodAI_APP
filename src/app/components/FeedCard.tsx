@@ -15,6 +15,8 @@ interface FeedCardProps {
 const FeedCard: React.FC<FeedCardProps> = ({ item, onPress, height = 200, style }) => {
   const isRestaurant = item.type === 'restaurant';
 
+  const displayImage = item.image || (item.images && item.images.length > 0 ? item.images[0] : null) || 'https://via.placeholder.com/300';
+
   return (
     <TouchableOpacity 
       style={[styles.container, style]}
@@ -23,7 +25,7 @@ const FeedCard: React.FC<FeedCardProps> = ({ item, onPress, height = 200, style 
     >
       <View style={styles.imageContainer}>
         <Image 
-          source={{ uri: item.image || 'https://via.placeholder.com/300' }} 
+          source={{ uri: displayImage }} 
           style={[styles.image, { height }]} 
           resizeMode="cover"
         />

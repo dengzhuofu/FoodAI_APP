@@ -34,6 +34,9 @@ async def get_recommendations(
         query = Recipe.all()
         if category and category != "全部":
             query = query.filter(category=category)
+        
+        # Get total count for pagination
+        recipe_count = await query.count() if type == "recipe" else 0
             
         recipes = await query.order_by(order_field).offset(offset).limit(limit).prefetch_related("author")
         for r in recipes:
@@ -42,6 +45,7 @@ async def get_recommendations(
                 "type": "recipe",
                 "title": r.title,
                 "image": r.cover_image or (r.images[0] if r.images else ""),
+                "images": r.images, # Include images list for fallback
                 "author": r.author.nickname if r.author else "Unknown",
                 "likes": r.likes_count,
                 "views": r.views_count,
@@ -54,12 +58,10 @@ async def get_recommendations(
         query = Restaurant.all()
         if category and category != "全部":
             query = query.filter(category=category)
-            
-        # Restaurant might not have views_count populated yet, use default logic if field missing in some old records?
-        # Since we added default=0, it should be fine.
         
-        # Note: If sorting by rating for restaurants, we might need special handling, 
-        # but here we unify with likes/views/time.
+        # Get total count for pagination
+        restaurant_count = await query.count() if type == "restaurant" else 0
+            
         if sort_by == "default":
              restaurants = await query.order_by("-rating").offset(offset).limit(limit).prefetch_related("author")
         else:
@@ -71,6 +73,7 @@ async def get_recommendations(
                 "type": "restaurant",
                 "title": r.title,
                 "image": r.images[0] if r.images else "",
+                "images": r.images,
                 "author": r.author.nickname if r.author else "Unknown",
                 "likes": r.likes_count,
                 "views": r.views_count,
@@ -80,13 +83,25 @@ async def get_recommendations(
                 "recommendation_reason": "Top Rated"
             })
     
+    total_count = len(items)
+    if type == "recipe":
+        total_count = recipe_count
+    elif type == "restaurant":
+        total_count = restaurant_count
+    
     if type is None:
-        # Simple merge and sort if mixed (this is approximation for pagination)
-        # In a real system, we'd use a unified index (e.g. Elasticsearch)
         random.shuffle(items)
         items = items[:limit]
+        total_count = 100 # Mock total for mixed feed to allow infinite scroll
         
-    return items
+    return {
+        "items": items,
+        "pagination": {
+            "page": page,
+            "limit": limit,
+            "total": total_count
+        }
+    }
 
 @router.get("/health-diet", response_model=List[RecipeOut])
 async def get_health_diet(
