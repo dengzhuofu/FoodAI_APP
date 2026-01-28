@@ -134,6 +134,20 @@ async def get_available_agent_tools(
 
 # --- Chat Session Endpoints ---
 
+@router.post("/audio/transcribe")
+async def transcribe_audio(
+    file: UploadFile = File(...),
+    # current_user: User = Depends(get_current_user) # Authentication optional for now, or use if needed
+):
+    try:
+        content = await file.read()
+        text = await ai_service.transcribe_audio(content)
+        return {"text": text}
+    except Exception as e:
+        print(f"Transcription error: {e}")
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/sessions", response_model=ChatSessionOut)
 async def create_chat_session(
     request: ChatSessionCreate,

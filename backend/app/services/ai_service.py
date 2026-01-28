@@ -304,6 +304,63 @@ class AIService:
             # Fallback mock for demo if AI fails or returns bad format
             return []
 
+    async def transcribe_audio(self, audio_data: bytes, format: str = "pcm", rate: int = 16000, channel: int = 1) -> str:
+        """
+        Transcribe audio using TeleAI/TeleSpeechASR
+        """
+        try:
+            # Encode audio to base64
+            # encoded_audio = base64.b64encode(audio_data).decode('utf-8')
+            
+            # payload = {
+            #     "model": "TeleAI/TeleSpeech-ASR1.0",
+            #     "audio": encoded_audio,
+            #     "format": format, # "pcm", "wav", "mp3", "opus"
+            #     "rate": rate,
+            #     "channel": channel,
+            #     "lang": "auto" 
+            # }
+            
+            # Use raw post since LangChain might not have ASR abstraction
+            # Check endpoint for SiliconFlow ASR. Usually it's /audio/transcriptions but model specific.
+            # Assuming OpenAI compatible endpoint: /audio/transcriptions
+            # But TeleSpeechASR on SiliconFlow might have specific input format.
+            # Standard OpenAI /audio/transcriptions takes file upload, not json with base64 usually.
+            # Let's check SiliconFlow docs or assume standard OpenAI behavior.
+            # If standard OpenAI, we need to send multipart/form-data.
+            
+            # However, prompt says "TeleAI/TeleSpeechASR".
+            # Let's try standard OpenAI way first which is most common.
+            
+            import io
+            
+            # Create a file-like object
+            file_obj = io.BytesIO(audio_data)
+            file_obj.name = "audio.wav" # Default name
+            
+            files = {
+                "file": (file_obj.name, file_obj, "audio/wav"),
+                "model": (None, "TeleAI/TeleSpeech-ASR1.0")
+            }
+            
+            headers = {
+                "Authorization": f"Bearer {self.api_key}"
+            }
+            
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    f"{self.base_url}/audio/transcriptions",
+                    headers=headers,
+                    files=files
+                )
+                response.raise_for_status()
+                result = response.json()
+                return result.get("text", "")
+                
+        except Exception as e:
+            print(f"ASR Error: {e}")
+            raise e
+
     async def chat_completion(self, messages: List[Dict[str, Any]], model: str = "Qwen/Qwen3-8B") -> str:
         """General chat using LangChain"""
         # Convert dict messages to LangChain Message objects

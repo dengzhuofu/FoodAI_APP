@@ -258,3 +258,19 @@ export const generateWhatToEat = async (categories: string[], quantity: number):
   });
   return response.data.options;
 };
+
+export const transcribeAudio = async (uri: string): Promise<string> => {
+  const formData = new FormData();
+  formData.append('file', {
+    uri: uri,
+    type: 'audio/m4a', // Expo Audio recording usually outputs m4a/mp4 on iOS/Android
+    name: 'recording.m4a',
+  } as any);
+
+  const response = await client.post('/ai/audio/transcribe', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data.text;
+};

@@ -1,12 +1,13 @@
-import { chatWithKitchenAgent, getChatSessions, createChatSession, getSessionMessages, deleteChatSession, ChatSession, getAgentPresets, AgentPreset, deleteAgentPreset } from '../../../../api/ai';
-import { GiftedChat, IMessage, Bubble, InputToolbar, Send } from 'react-native-gifted-chat';
+import { chatWithKitchenAgent, getChatSessions, createChatSession, getSessionMessages, deleteChatSession, ChatSession, getAgentPresets, AgentPreset, deleteAgentPreset, transcribeAudio } from '../../../../api/ai';
+import { GiftedChat, IMessage, Bubble, InputToolbar, Send, MessageText } from 'react-native-gifted-chat';
+import Markdown from 'react-native-markdown-display';
 import CreateAgentScreen from './CreateAgentScreen';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Image, Alert, FlatList, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Image, Alert, FlatList, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-
+import { Audio } from 'expo-av';
 
 const { width } = Dimensions.get('window');
 
@@ -74,6 +75,103 @@ const VoiceAssistantFeature = () => {
   const [selectedPresetId, setSelectedPresetId] = useState<string>("kitchen_agent");
   const [isCreateAgentVisible, setIsCreateAgentVisible] = useState(false);
   const [editingPreset, setEditingPreset] = useState<AgentPreset | undefined>(undefined);
+
+  const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<number | null>(null);
+
+  // Voice Recording State
+  const [recording, setRecording] = useState<Audio.Recording | undefined>(undefined);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isProcessingAudio, setIsProcessingAudio] = useState(false);
+
+  const startRecording = async () => {
+    try {
+      console.log('Requesting permissions..');
+      await Audio.requestPermissionsAsync();
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      console.log('Starting recording..');
+      const { recording } = await Audio.Recording.createAsync( 
+         Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      setRecording(recording);
+      setIsRecording(true);
+      console.log('Recording started');
+    } catch (err) {
+      console.error('Failed to start recording', err);
+      Alert.alert('错误', '无法启动录音，请检查权限');
+    }
+  };
+
+  const stopRecording = async () => {
+    console.log('Stopping recording..');
+    setRecording(undefined);
+    setIsRecording(false);
+    
+    if (!recording) return;
+
+    try {
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI(); 
+      console.log('Recording stopped and stored at', uri);
+      
+      if (uri) {
+        setIsProcessingAudio(true);
+        try {
+          const text = await transcribeAudio(uri);
+          console.log('Transcribed text:', text);
+          if (text && text.trim().length > 0) {
+             onSend([{
+               _id: Math.random().toString(),
+               text: text,
+               createdAt: new Date(),
+               user: { _id: 1 }
+             }]);
+          } else {
+             Alert.alert('提示', '未能识别到语音内容');
+          }
+        } catch (error) {
+          console.error('Transcription failed', error);
+          Alert.alert('错误', '语音识别失败，请重试');
+        } finally {
+          setIsProcessingAudio(false);
+        }
+      }
+    } catch (error) {
+       console.error('Failed to stop recording', error);
+       setIsProcessingAudio(false);
+    }
+  };
+
+  const promptDeleteSession = (sessionId: number) => {
+    setSessionToDelete(sessionId);
+    setIsDeleteConfirmVisible(true);
+  };
+
+  const executeDeleteSession = async () => {
+    if (sessionToDelete !== null) {
+      try {
+        await deleteChatSession(sessionToDelete);
+        const newSessions = sessions.filter(s => s.id !== sessionToDelete);
+        setSessions(newSessions);
+        if (currentSessionId === sessionToDelete) {
+          if (newSessions.length > 0) {
+            selectSession(newSessions[0].id);
+          } else {
+            createNewSession("kitchen_agent");
+          }
+        }
+      } catch (error) {
+        console.error("Failed to delete session", error);
+      } finally {
+        setIsDeleteConfirmVisible(false);
+        setSessionToDelete(null);
+      }
+    }
+  };
 
   // Load sessions on mount
   useEffect(() => {
@@ -295,6 +393,107 @@ const VoiceAssistantFeature = () => {
     }
   };
 
+  const renderMessageText = (props: any) => {
+    const { currentMessage } = props;
+    const isAi = currentMessage.user._id !== 1;
+
+    if (isAi) {
+      // If there is no text, or text is empty, return null to avoid empty bubbles or crashes
+      if (!currentMessage.text) return null;
+
+      return (
+        <View style={{ paddingHorizontal: 12, paddingVertical: 8 }}>
+          <Markdown
+            style={{
+              body: { color: '#333', fontSize: 15, lineHeight: 24 },
+              heading1: { color: '#1A1A1A', fontWeight: 'bold', fontSize: 20, marginBottom: 8, marginTop: 8 },
+              heading2: { color: '#1A1A1A', fontWeight: 'bold', fontSize: 18, marginBottom: 8, marginTop: 8 },
+              heading3: { color: '#1A1A1A', fontWeight: 'bold', fontSize: 16, marginBottom: 6, marginTop: 6 },
+              strong: { fontWeight: 'bold', color: '#1A1A1A' },
+              em: { fontStyle: 'italic', color: '#333' },
+              link: { color: '#2196F3', textDecorationLine: 'underline' },
+              blockquote: { 
+                borderLeftWidth: 4, 
+                borderLeftColor: '#DDD', 
+                paddingLeft: 10, 
+                opacity: 0.9,
+                backgroundColor: '#F5F5F5',
+                marginVertical: 4
+              },
+              code_inline: { 
+                backgroundColor: '#F0F0F0', 
+                color: '#E91E63', 
+                borderRadius: 4, 
+                paddingHorizontal: 4,
+                fontFamily: 'monospace'
+              },
+              code_block: { 
+                backgroundColor: '#F5F5F5', 
+                borderRadius: 8, 
+                padding: 12, 
+                marginVertical: 8, 
+                fontFamily: 'monospace',
+                color: '#333'
+              },
+              fence: { 
+                backgroundColor: '#F5F5F5', 
+                borderRadius: 8, 
+                padding: 12, 
+                marginVertical: 8, 
+                fontFamily: 'monospace',
+                color: '#333'
+              },
+              bullet_list: { marginBottom: 8, marginLeft: 8 },
+              ordered_list: { marginBottom: 8, marginLeft: 8 },
+              list_item: { 
+                flexDirection: 'row', 
+                alignItems: 'flex-start', 
+                marginBottom: 4,
+                justifyContent: 'flex-start'
+              },
+              // Fix for react-native-markdown-display list bullets color
+              bullet_list_icon: { 
+                color: '#333', 
+                marginRight: 8,
+                fontSize: 20,
+                lineHeight: 24
+              },
+              ordered_list_icon: { 
+                color: '#333', 
+                marginRight: 8,
+                fontSize: 15,
+                lineHeight: 24
+              },
+              paragraph: {
+                marginTop: 0,
+                marginBottom: 8,
+                flexWrap: 'wrap',
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                justifyContent: 'flex-start',
+              },
+              text: {
+                color: '#333'
+              }
+            }}
+          >
+            {currentMessage.text}
+          </Markdown>
+        </View>
+      );
+    }
+    
+    return (
+      <MessageText 
+        {...props}
+        textStyle={{
+          left: { color: '#333', fontSize: 15, lineHeight: 22 },
+          right: { color: 'white', fontSize: 15, lineHeight: 22 },
+        }}
+      />
+    );
+  };
+
   const renderBubble = (props: any) => {
     const { currentMessage } = props;
     const thoughts = currentMessage.thoughts;
@@ -379,6 +578,37 @@ const VoiceAssistantFeature = () => {
     );
   };
 
+  const renderInputToolbar = (props: any) => {
+    return (
+      <View style={styles.inputContainer}>
+         <InputToolbar
+            {...props}
+            containerStyle={styles.inputToolbar}
+            primaryStyle={{ alignItems: 'center' }}
+            renderActions={() => (
+              <TouchableOpacity 
+                style={[styles.voiceButton, isRecording && styles.voiceButtonActive]}
+                onPressIn={startRecording}
+                onPressOut={stopRecording}
+                disabled={isProcessingAudio}
+              >
+                {isProcessingAudio ? (
+                   <ActivityIndicator color="#666" size="small" />
+                ) : (
+                   <Ionicons name={isRecording ? "mic" : "mic-outline"} size={24} color={isRecording ? "white" : "#666"} />
+                )}
+              </TouchableOpacity>
+            )}
+          />
+          {isRecording && (
+            <View style={styles.recordingOverlay}>
+               <Text style={styles.recordingText}>正在录音... 松开发送</Text>
+            </View>
+          )}
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -400,19 +630,14 @@ const VoiceAssistantFeature = () => {
               _id: 1,
             }}
             renderBubble={renderBubble}
+            renderMessageText={renderMessageText}
             renderSend={renderSend}
             renderAvatar={() => null}
             showAvatarForEveryMessage={true}
             isTyping={isTyping}
-            placeholder="输入消息..."
+            placeholder={isRecording ? "正在录音..." : "输入消息..."}
             timeTextStyle={{ left: { color: '#999', fontSize: 10 }, right: { color: '#ccc', fontSize: 10 } }}
-            renderInputToolbar={(props) => (
-              <InputToolbar
-                {...props}
-                containerStyle={styles.inputToolbar}
-                primaryStyle={{ alignItems: 'center' }}
-              />
-            )}
+            renderInputToolbar={renderInputToolbar}
             textInputStyle={styles.textInput}
             minInputToolbarHeight={60}
           />
@@ -458,35 +683,7 @@ const VoiceAssistantFeature = () => {
                     </TouchableOpacity>
                     
                     <TouchableOpacity 
-                      onPress={() => {
-                          // Direct delete with custom confirmation modal instead of Alert
-                          // For now, let's try a direct approach or a simplified alert
-                          // Reverting to Alert but ensuring it's robust
-                          Alert.alert(
-                            "删除确认",
-                            "是否删除此会话？",
-                            [
-                                { text: "取消", style: "cancel" },
-                                { 
-                                    text: "确认删除", 
-                                    style: "destructive", 
-                                    onPress: () => {
-                                        deleteChatSession(item.id).then(() => {
-                                            const newSessions = sessions.filter(s => s.id !== item.id);
-                                            setSessions(newSessions);
-                                            if (currentSessionId === item.id) {
-                                                if (newSessions.length > 0) {
-                                                    selectSession(newSessions[0].id);
-                                                } else {
-                                                    createNewSession("kitchen_agent");
-                                                }
-                                            }
-                                        }).catch(err => console.error(err));
-                                    }
-                                }
-                            ]
-                          );
-                      }} 
+                      onPress={() => promptDeleteSession(item.id)} 
                       style={{padding: 8}}
                       hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
                     >
@@ -496,6 +693,29 @@ const VoiceAssistantFeature = () => {
                 )}
                 contentContainerStyle={{padding: 16}}
               />
+
+              {isDeleteConfirmVisible && (
+                <View style={styles.deleteConfirmOverlay}>
+                  <View style={styles.deleteConfirmBox}>
+                    <Text style={styles.deleteConfirmTitle}>删除会话</Text>
+                    <Text style={styles.deleteConfirmText}>确定要删除这个会话吗？</Text>
+                    <View style={styles.deleteConfirmButtons}>
+                      <TouchableOpacity 
+                        onPress={() => setIsDeleteConfirmVisible(false)} 
+                        style={styles.cancelBtn}
+                      >
+                        <Text style={styles.cancelBtnText}>取消</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        onPress={executeDeleteSession} 
+                        style={styles.deleteBtn}
+                      >
+                        <Text style={styles.deleteBtnText}>删除</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              )}
             </SafeAreaView>
           </View>
         </View>
@@ -657,6 +877,38 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  inputContainer: {
+    backgroundColor: 'white',
+  },
+  voiceButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+    marginBottom: 6,
+    backgroundColor: '#F5F5F5',
+  },
+  voiceButtonActive: {
+    backgroundColor: '#FF6B6B',
+  },
+  recordingOverlay: {
+    position: 'absolute',
+    bottom: 70,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  recordingText: {
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    color: 'white',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    fontSize: 14,
   },
   inputToolbar: {
     backgroundColor: 'white',
@@ -930,7 +1182,71 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 15,
     fontWeight: '500',
-  }
+  },
+  deleteConfirmOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    zIndex: 1000,
+  },
+  deleteConfirmBox: {
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  deleteConfirmTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+    marginBottom: 12,
+  },
+  deleteConfirmText: {
+    fontSize: 15,
+    color: '#666',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  deleteConfirmButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  cancelBtnText: {
+    color: '#666',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  deleteBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    backgroundColor: '#000',
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  deleteBtnText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 15,
+  },
 });
 
 export default VoiceAssistantFeature;
