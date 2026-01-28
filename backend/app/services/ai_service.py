@@ -468,9 +468,32 @@ class AIService:
                     messages.append(ToolMessage(tool_call_id=tool_call["id"], content=str(result)))
                 
                 # Second turn: LLM generates final response based on tool outputs
+                print("DEBUG: Sending tool outputs back to LLM...")
+                # Ensure we are using the same LLM instance (llm_with_tools or just llm_text?)
+                # Sometimes bind_tools models might try to call tools again if not instructed to stop.
+                # Let's try invoking the bound LLM again, it should see the ToolMessages and generate text.
                 final_response = await llm_with_tools.ainvoke(messages)
+                
+                print(f"DEBUG: Final Agent Response Content: {final_response.content}")
+                print(f"DEBUG: Final Agent Response ToolCalls: {final_response.tool_calls}")
+
+                # If the model decides to call tools AGAIN (loop), we might need to handle it.
+                # For now, let's assume a simple 1-turn tool use. 
+                # If content is empty but has tool_calls again, it means it wants to do more.
+                # But to avoid infinite loops in this simple implementation, let's force a response or return what we have.
+                
+                answer_content = final_response.content
+                if not answer_content and final_response.tool_calls:
+                     # It wants to call more tools. For now, let's just stop and tell user.
+                     # Or better, recursively call? No, let's keep it simple.
+                     # We can append a system message forcing a response.
+                     messages.append(final_response) # Add the new tool call request
+                     messages.append(SystemMessage(content="Please stop calling tools and summarize the results to the user now."))
+                     final_response_forced = await self.llm_text.ainvoke(messages) # Use raw llm to avoid tools
+                     answer_content = final_response_forced.content
+
                 return {
-                    "answer": final_response.content,
+                    "answer": answer_content,
                     "thoughts": thoughts
                 }
             
