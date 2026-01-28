@@ -15,6 +15,8 @@ import { useUserStore } from '../../store/useUserStore';
 import { getProfile } from '../../api/profile';
 import { getUserStats, UserStats, updateProfile } from '../../api/users';
 import { uploadFile } from '../../api/upload';
+import Toast from './Toast';
+import ConfirmModal from './ConfirmModal';
 
 type ProfilePageNavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -34,7 +36,12 @@ const ProfilePage = () => {
   const [editNickname, setEditNickname] = useState('');
   const [editBio, setEditBio] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'info' as 'success' | 'error' | 'info' });
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToast({ visible: true, message, type });
+  };
   const fetchUserData = async () => {
     try {
       const userData = await getMe();
@@ -127,24 +134,51 @@ const ProfilePage = () => {
     }
   };
 
-  const handleLogout = async () => {
-    Alert.alert(t('auth.logout'), t('auth.logoutConfirm'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { 
-        text: t('common.confirm'), 
-        style: 'destructive',
-        onPress: async () => {
-          await signOut();
-          // AppNavigator will handle the reset
-        }
+  const handleLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleLogoutConfirm = async () => {
+    setShowLogoutConfirm(false);
+    
+    // Show feedback immediately
+    showToast(t('auth.logout') + '...', 'info');
+    
+    // Use a small timeout to let the toast appear before the state change potentially unmounts components
+    setTimeout(async () => {
+      try {
+        await signOut();
+      } catch (e) {
+        console.error("Sign out failed", e);
+        showToast(t('common.error'), 'error');
       }
-    ]);
+    }, 500);
   };
 
   const statsList = [
-    { label: t('profile.statsPost'), value: stats.recipes_count.toString() },
-    { label: t('profile.statsFollowers'), value: stats.followers_count.toString() },
-    { label: t('profile.statsFollowing'), value: stats.following_count.toString() },
+    { 
+      label: t('profile.statsPost'), 
+      value: stats.recipes_count.toString(),
+      onPress: () => {} 
+    },
+    { 
+      label: t('profile.statsFollowers'), 
+      value: stats.followers_count.toString(),
+      onPress: () => {
+        if (user?.id) {
+          navigation.navigate('UserList', { userId: user.id, type: 'followers', title: '我的粉丝' });
+        }
+      }
+    },
+    { 
+      label: t('profile.statsFollowing'), 
+      value: stats.following_count.toString(),
+      onPress: () => {
+        if (user?.id) {
+          navigation.navigate('UserList', { userId: user.id, type: 'following', title: '我的关注' });
+        }
+      }
+    },
   ];
 
   const menuGroups = [
@@ -367,6 +401,23 @@ const ProfilePage = () => {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+      
+      <Toast 
+        visible={toast.visible} 
+        message={toast.message} 
+        type={toast.type}
+        onDismiss={() => setToast(prev => ({ ...prev, visible: false }))}
+      />
+      
+      <ConfirmModal
+        visible={showLogoutConfirm}
+        title={t('auth.logout')}
+        message={t('auth.logoutConfirm')}
+        onConfirm={handleLogoutConfirm}
+        onCancel={() => setShowLogoutConfirm(false)}
+        confirmText={t('common.confirm')}
+        cancelText={t('common.cancel')}
+      />
     </View>
   );
 };

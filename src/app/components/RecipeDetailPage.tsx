@@ -54,6 +54,22 @@ const RecipeDetailPage = () => {
     }
   };
 
+  const handleFollow = async () => {
+    if (!recipe?.author?.id) return;
+    try {
+      if (isFollowing) {
+        await unfollowUser(recipe.author.id);
+        setIsFollowing(false);
+      } else {
+        await followUser(recipe.author.id);
+        setIsFollowing(true);
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('操作失败');
+    }
+  };
+
   const handleCommentSuccess = (newComment: Comment) => {
     fetchComments(newComment);
   };
@@ -163,10 +179,6 @@ const RecipeDetailPage = () => {
             <Image key={index} source={{ uri: img }} style={styles.heroImage} resizeMode="cover" />
           ))}
         </ScrollView>
-        <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.6)']}
-          style={styles.gradient}
-        />
         
         {/* Pagination Dots */}
         {displayImages.length > 1 && (
@@ -200,18 +212,15 @@ const RecipeDetailPage = () => {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.headerContent}>
-          <Text style={styles.title}>{recipe?.title}</Text>
-          
-          <View style={styles.authorRow}>
-            <Image source={{ uri: recipe?.author.avatar || 'https://via.placeholder.com/150' }} style={styles.avatar} />
-            <Text style={styles.authorName}>{recipe?.author.username}</Text>
-          </View>
-        </View>
       </View>
     );
   };
-
+  const renderRecipeInfo = () => (
+    <View style={styles.headerContent}>
+      <Text style={styles.title}>{recipe?.title}</Text>
+      <Text style={styles.description}>{recipe?.description}</Text>
+    </View>
+  );
   const renderTags = () => (
     <View style={styles.tagsSection}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagsScroll}>
@@ -358,6 +367,41 @@ const RecipeDetailPage = () => {
 
   return (
     <View style={styles.container}>
+      {/* Fixed Top Bar */}
+      <View style={[styles.topBar, { paddingTop: insets.top + 10 }]}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="chevron-back" size={28} color="#333" />
+        </TouchableOpacity>
+        
+        <View style={styles.topBarAuthor}>
+          <Image 
+            source={{ uri: recipe?.author.avatar || 'https://via.placeholder.com/150' }} 
+            style={styles.topBarAvatar} 
+          />
+          <Text style={styles.topBarAuthorName} numberOfLines={1}>
+            {recipe?.author.username}
+          </Text>
+        </View>
+
+        <View style={styles.topBarActions}>
+          <TouchableOpacity 
+            style={[styles.followButton, isFollowing && styles.followingButton]} 
+            onPress={handleFollow}
+          >
+            <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
+              {isFollowing ? '已关注' : '关注'}
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.shareButton}>
+            <Ionicons name="share-outline" size={24} color="#333" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <ScrollView 
         style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent} 
@@ -365,7 +409,7 @@ const RecipeDetailPage = () => {
       >
         {renderHeader()}
         <View style={styles.content}>
-          <Text style={styles.description}>{recipe?.description}</Text>
+          {renderRecipeInfo()}
           {renderTags()}
           {renderNutrition()}
           {renderIngredients()}
@@ -411,7 +455,7 @@ const styles = StyleSheet.create({
     height: 400,
     width: '100%',
     position: 'relative',
-    marginTop: 60, // Adjust for top bar height
+    marginTop: 0, 
   },
   heroImage: {
     width: width,
@@ -425,27 +469,24 @@ const styles = StyleSheet.create({
     height: 240,
   },
   topBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingBottom: 12,
-    zIndex: 20,
-    backgroundColor: '#FFF', // Make it sticky white header
+    backgroundColor: '#FFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
+    zIndex: 100,
   },
   backButton: {
     padding: 4,
+    marginRight: 4,
   },
   topBarAuthor: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 12,
+    marginLeft: 8,
   },
   topBarAvatar: {
     width: 32,
@@ -453,12 +494,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginRight: 8,
     backgroundColor: '#EEE',
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   topBarAuthorName: {
     fontSize: 15,
     fontWeight: '600',
     color: '#333',
-    maxWidth: 150,
+    maxWidth: 140,
   },
   topBarActions: {
     flexDirection: 'row',
@@ -466,44 +509,38 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   followButton: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 18,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#FF6B6B',
     justifyContent: 'center',
     alignItems: 'center',
   },
   followingButton: {
-    backgroundColor: '#F0F0F0',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    backgroundColor: '#F5F5F5',
+    borderColor: '#DDD',
   },
   followButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#FF6B6B',
   },
   followingButtonText: {
-    color: '#666',
+    color: '#999',
   },
   shareButton: {
     padding: 4,
   },
   headerContent: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 24,
     paddingBottom: 30,
   },
   title: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#FFF',
+    color: '#1A1A1A',
     marginBottom: 12,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 8,
     lineHeight: 34,
   },
@@ -554,10 +591,8 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 24,
-    marginTop: -32,
+    marginTop: -30,
     backgroundColor: '#F9F9F9',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
   },
   description: {
     fontSize: 16,
