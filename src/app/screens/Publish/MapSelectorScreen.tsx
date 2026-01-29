@@ -6,10 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../../styles/theme';
 import { regeocodeLocation, searchLocation, LocationPOI } from '../../../api/maps';
-
-// Need to replace with a valid JS API Key if the service key doesn't work for JS loader
-// For now we use the one provided, hoping it has JS permissions or we fallback to just tiles
-const AMAP_JS_KEY = 'a270e2390de355b91768d7946a0d3e9d'; 
+import { CONFIG } from '../../../config';
 
 type ParamList = {
   MapSelector: {
@@ -68,10 +65,10 @@ const MapSelectorScreen = () => {
       </style>
       <script type="text/javascript">
         window._AMapSecurityConfig = {
-          securityJsCode: '', // If you have security code
+          securityJsCode: '${CONFIG.AMAP_SECURITY_CODE}', 
         };
       </script>
-      <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=${AMAP_JS_KEY}"></script>
+      <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=${CONFIG.AMAP_JS_KEY}"></script>
     </head>
     <body>
       <div id="container"></div>

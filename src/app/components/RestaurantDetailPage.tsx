@@ -12,9 +12,7 @@ import { getRestaurant, getComments, toggleCollection, Restaurant, Comment, togg
 import { getMe } from '../../api/auth';
 import CommentsSection from './CommentsSection';
 import DetailBottomBar from './DetailBottomBar';
-
-// Need to replace with a valid JS API Key if the service key doesn't work for JS loader
-const AMAP_JS_KEY = 'a270e2390de355b91768d7946a0d3e9d'; 
+import { CONFIG } from '../../config';
 
 type RestaurantDetailRouteProp = RouteProp<RootStackParamList, 'RestaurantDetail'>;
 
@@ -142,11 +140,14 @@ const RestaurantDetailPage = () => {
 
   const handleOpenMap = () => {
     if (restaurant.latitude && restaurant.longitude) {
-      const scheme = Platform.OS === 'ios' ? 'maps:' : 'geo:';
-      const url = Platform.OS === 'ios' 
-        ? `${scheme}?q=${restaurant.name}&ll=${restaurant.latitude},${restaurant.longitude}`
-        : `${scheme}${restaurant.latitude},${restaurant.longitude}?q=${restaurant.name}`;
-      Linking.openURL(url);
+      navigation.navigate('RoutePlan', {
+        destination: {
+          latitude: restaurant.latitude,
+          longitude: restaurant.longitude,
+          name: restaurant.name || restaurant.title,
+          address: restaurant.address || ''
+        }
+      } as any);
     } else {
       // Fallback to address search if no coordinates
        const url = Platform.OS === 'ios' 
@@ -179,9 +180,9 @@ const RestaurantDetailPage = () => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <style>body,html,#container{height:100%;width:100%;margin:0;padding:0;}</style>
         <script type="text/javascript">
-          window._AMapSecurityConfig = { securityJsCode: '' };
+          window._AMapSecurityConfig = { securityJsCode: '${CONFIG.AMAP_SECURITY_CODE}' };
         </script>
-        <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=${AMAP_JS_KEY}"></script>
+        <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=${CONFIG.AMAP_JS_KEY}"></script>
       </head>
       <body>
         <div id="container"></div>

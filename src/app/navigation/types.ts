@@ -49,6 +49,16 @@ export type RootStackParamList = {
     };
     onSelect: (location: any) => void;
   };
+  
+  // Map Route
+  RoutePlan: {
+    destination: {
+      latitude: number;
+      longitude: number;
+      name: string;
+      address: string;
+    };
+  };
 };
 
 export type MainTabParamList = {
