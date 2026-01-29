@@ -26,6 +26,8 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = 'utf-8'
         extra = "ignore"
+        # Environment variables take precedence over .env file
+        case_sensitive = True
     
     @property
     def TORTOISE_ORM(self) -> Dict[str, Any]:

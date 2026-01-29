@@ -30,6 +30,7 @@ jobs:
           echo "TENCENT_COS_SECRET_KEY=${{ secrets.TENCENT_COS_SECRET_KEY }}" >> .env
           echo "TENCENT_COS_REGION=${{ secrets.TENCENT_COS_REGION }}" >> .env
           echo "TENCENT_COS_BUCKET=${{ secrets.TENCENT_COS_BUCKET }}" >> .env
+          echo "AMAP_API_KEY=${{ secrets.AMAP_API_KEY }}" >> .env
 
       - name: Compress backend files
         run: |
