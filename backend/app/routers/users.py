@@ -146,3 +146,42 @@ async def get_user_comments(
             "replies": [] # Nested replies not loaded here
         })
     return result
+   
+@router.get("/{user_id}/recipes")
+async def get_user_recipes(
+    user_id: int,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_current_user)
+):
+    from app.models.recipes import Recipe, Like, Collection
+    
+    recipes = await Recipe.filter(author_id=user_id).order_by("-created_at").offset((page - 1) * page_size).limit(page_size).prefetch_related("author").all()
+    
+    # Check liked/collected status for current user
+    results = []
+    for recipe in recipes:
+        is_liked = False
+        is_collected = False
+        if current_user:
+            is_liked = await Like.filter(user=current_user, target_id=recipe.id, target_type="recipe").exists()
+            is_collected = await Collection.filter(user=current_user, target_id=recipe.id, target_type="recipe").exists()
+        
+        # Convert model to dict to make it serializable and editable
+        # Tortoise models are not directly dict-compatible with custom fields
+        recipe_dict = {
+            "id": recipe.id,
+            "title": recipe.title,
+            "cover_image": recipe.cover_image,
+            "description": recipe.description,
+            "author": recipe.author,
+            "likes_count": recipe.likes_count,
+            "views_count": recipe.views_count,
+            "created_at": recipe.created_at,
+            "type": "recipe",
+            "is_liked": is_liked,
+            "is_collected": is_collected
+        }
+        results.append(recipe_dict)
+        
+    return results

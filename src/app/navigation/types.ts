@@ -32,6 +32,7 @@ export type RootStackParamList = {
   Settings: undefined;
   FlavorProfile: undefined;
   UserList: { userId: number; type: 'followers' | 'following'; title: string };
+  UserRecipes: { userId: number; title: string };
   
   // Core Components
   MyKitchen: undefined;

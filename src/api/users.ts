@@ -64,6 +64,11 @@ export const getUserComments = async (userId: number, page: number = 1): Promise
   return response.data;
 };
 
+export const getUserRecipes = async (userId: number, page: number = 1) => {
+  const response = await client.get(`/users/${userId}/recipes`, { params: { page } });
+  return response.data;
+};
+
 export interface WhatToEatPreset {
   id: number;
   name: string;

@@ -159,7 +159,11 @@ const ProfilePage = () => {
     { 
       label: t('profile.statsPost'), 
       value: stats.recipes_count.toString(),
-      onPress: () => {} 
+      onPress: () => {
+        if (user?.id) {
+          navigation.navigate('UserRecipes', { userId: user.id, title: '我的发布' });
+        }
+      } 
     },
     { 
       label: t('profile.statsFollowers'), 
