@@ -42,6 +42,13 @@ export type RootStackParamList = {
   // Publish
   PublishRecipe: undefined;
   PublishStore: undefined;
+  MapSelector: {
+    initialLocation?: {
+      latitude: number;
+      longitude: number;
+    };
+    onSelect: (location: any) => void;
+  };
 };
 
 export type MainTabParamList = {

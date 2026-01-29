@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, Linking, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Linking, Alert, ActivityIndicator, Platform } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { WebView } from 'react-native-webview';
 import { theme } from '../styles/theme';
 import { RootStackParamList } from '../navigation/types';
 import { getRestaurant, getComments, toggleCollection, Restaurant, Comment, toggleLike, recordView } from '../../api/content';
 import { getMe } from '../../api/auth';
 import CommentsSection from './CommentsSection';
 import DetailBottomBar from './DetailBottomBar';
+
+// Need to replace with a valid JS API Key if the service key doesn't work for JS loader
+const AMAP_JS_KEY = 'a270e2390de355b91768d7946a0d3e9d'; 
 
 type RestaurantDetailRouteProp = RouteProp<RootStackParamList, 'RestaurantDetail'>;
 
@@ -29,6 +34,7 @@ const RestaurantDetailPage = () => {
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const handleLike = async () => {
     try {
@@ -134,6 +140,22 @@ const RestaurantDetailPage = () => {
     }
   };
 
+  const handleOpenMap = () => {
+    if (restaurant.latitude && restaurant.longitude) {
+      const scheme = Platform.OS === 'ios' ? 'maps:' : 'geo:';
+      const url = Platform.OS === 'ios' 
+        ? `${scheme}?q=${restaurant.name}&ll=${restaurant.latitude},${restaurant.longitude}`
+        : `${scheme}${restaurant.latitude},${restaurant.longitude}?q=${restaurant.name}`;
+      Linking.openURL(url);
+    } else {
+      // Fallback to address search if no coordinates
+       const url = Platform.OS === 'ios' 
+        ? `maps:?q=${restaurant.address}`
+        : `geo:0,0?q=${restaurant.address}`;
+       Linking.openURL(url);
+    }
+  };
+
   const handleCollection = async () => {
     try {
       await toggleCollection(restaurant.id, 'restaurant');
@@ -144,9 +166,101 @@ const RestaurantDetailPage = () => {
     }
   };
 
+  const renderMapPreview = () => {
+    if (!restaurant.latitude || !restaurant.longitude) return null;
+    
+    // Static map using WebView (since we have the JS API setup)
+    // Or just a placeholder map view that opens the real map app on press
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <style>body,html,#container{height:100%;width:100%;margin:0;padding:0;}</style>
+        <script type="text/javascript">
+          window._AMapSecurityConfig = { securityJsCode: '' };
+        </script>
+        <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=${AMAP_JS_KEY}"></script>
+      </head>
+      <body>
+        <div id="container"></div>
+        <script>
+          var map = new AMap.Map('container', {
+            zoom: 15,
+            center: [${restaurant.longitude}, ${restaurant.latitude}],
+            resizeEnable: true,
+            zoomEnable: false,
+            dragEnable: false
+          });
+          var marker = new AMap.Marker({
+            position: new AMap.LngLat(${restaurant.longitude}, ${restaurant.latitude})
+          });
+          map.add(marker);
+        </script>
+      </body>
+      </html>
+    `;
+
+    return (
+      <View style={styles.mapContainer}>
+        <WebView
+          source={{ html: htmlContent }}
+          style={styles.webview}
+          scrollEnabled={false}
+          javaScriptEnabled={true}
+        />
+        {/* Overlay to intercept touches */}
+        <TouchableOpacity style={styles.mapOverlay} onPress={handleOpenMap} />
+      </View>
+    );
+  };
+
   const renderHeader = () => (
     <View style={styles.imageContainer}>
-      <Image source={{ uri: restaurant.images[0] || 'https://via.placeholder.com/400x300' }} style={styles.heroImage} resizeMode="cover" />
+      <ScrollView 
+        horizontal 
+        pagingEnabled 
+        showsHorizontalScrollIndicator={false}
+        onScroll={(e) => {
+          const slide = Math.ceil(e.nativeEvent.contentOffset.x / e.nativeEvent.layoutMeasurement.width);
+          if (slide !== activeImageIndex) setActiveImageIndex(slide);
+        }}
+        scrollEventThrottle={16}
+      >
+        {restaurant.images.length > 0 ? (
+          restaurant.images.map((img, index) => (
+            <Image 
+              key={index}
+              source={{ uri: img }} 
+              style={{ width: width, height: 400 }} 
+              contentFit="cover" 
+            />
+          ))
+        ) : (
+          <Image 
+            source={{ uri: 'https://via.placeholder.com/400x300' }} 
+            style={{ width: width, height: 400 }} 
+            contentFit="cover" 
+          />
+        )}
+      </ScrollView>
+      
+      {/* Pagination Dots */}
+      {restaurant.images.length > 1 && (
+        <View style={styles.pagination}>
+          {restaurant.images.map((_, index) => (
+            <View 
+              key={index} 
+              style={[
+                styles.paginationDot, 
+                activeImageIndex === index && styles.paginationDotActive
+              ]} 
+            />
+          ))}
+        </View>
+      )}
+
       <LinearGradient
         colors={['transparent', 'rgba(0,0,0,0.8)']}
         style={styles.gradient}
@@ -194,13 +308,18 @@ const RestaurantDetailPage = () => {
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>INFORMATION</Text>
       <View style={styles.infoCard}>
-        <View style={styles.infoRow}>
+        <TouchableOpacity style={styles.infoRow} onPress={handleOpenMap}>
           <View style={styles.iconBox}>
             <Ionicons name="location" size={18} color="#1A1A1A" />
           </View>
           <Text style={styles.infoText}>{restaurant.address || 'No address provided'}</Text>
-        </View>
+          <View style={styles.actionIcon}>
+             <Ionicons name="map-outline" size={14} color="#FFF" />
+          </View>
+        </TouchableOpacity>
         
+        {renderMapPreview()}
+
         <View style={styles.divider} />
         
         <View style={styles.infoRow}>
@@ -245,7 +364,7 @@ const RestaurantDetailPage = () => {
       >
         {renderHeader()}
         <View style={styles.content}>
-          <Text style={styles.description}>{restaurant.description}</Text>
+          <Text style={styles.description}>{restaurant.content}</Text>
           {renderInfo()}
           {renderComments()}
         </View>
@@ -289,16 +408,32 @@ const styles = StyleSheet.create({
     width: '100%',
     position: 'relative',
   },
-  heroImage: {
-    width: '100%',
-    height: '100%',
-  },
   gradient: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
     height: 240,
+  },
+  pagination: {
+    position: 'absolute',
+    bottom: 150, // Above gradient
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    zIndex: 5,
+  },
+  paginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+  },
+  paginationDotActive: {
+    backgroundColor: '#FFF',
+    width: 24,
   },
   topBar: {
     position: 'absolute',
@@ -319,7 +454,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
-    // backdropFilter: 'blur(10px)',
   },
   headerContent: {
     position: 'absolute',
@@ -461,6 +595,27 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#F0F0F0',
     marginLeft: 56,
+  },
+  mapContainer: {
+    height: 150,
+    width: '100%',
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginTop: 8,
+    marginBottom: 16,
+    position: 'relative',
+  },
+  webview: {
+    flex: 1,
+  },
+  mapOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
+    zIndex: 2,
   },
 });
 

@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     TENCENT_COS_SECRET_KEY: str = ""
     TENCENT_COS_REGION: str = ""
     TENCENT_COS_BUCKET: str = ""
+    
+    # Amap Configuration
+    AMAP_API_KEY: str = ""
 
     class Config:
         env_file = ".env"
