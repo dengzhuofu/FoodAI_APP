@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, RefreshControl, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -161,7 +161,7 @@ const ProfilePage = () => {
       value: stats.recipes_count.toString(),
       onPress: () => {
         if (user?.id) {
-          navigation.navigate('UserRecipes', { userId: user.id, title: '我的发布' });
+          navigation.navigate('UserPosts', { userId: user.id, title: '我的发布', initialTab: 'recipe' });
         }
       } 
     },

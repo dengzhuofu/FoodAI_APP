@@ -61,16 +61,41 @@ async def delete_preset(
 async def get_user_stats(current_user: User = Depends(get_current_user)):
     # Import here to avoid circular imports if any
     from app.models.recipes import Recipe
+    from app.models.restaurants import Restaurant
     
     recipes_count = await Recipe.filter(author=current_user).count()
+    restaurants_count = await Restaurant.filter(author=current_user).count()
     followers_count = await Follow.filter(following=current_user).count()
     following_count = await Follow.filter(follower=current_user).count()
     
     return {
         "recipes_count": recipes_count,
+        "restaurants_count": restaurants_count,
         "followers_count": followers_count,
         "following_count": following_count
     }
+
+@router.get("/{user_id}/posts")
+async def get_user_posts(
+    user_id: int,
+    type: str = Query(..., regex="^(recipe|restaurant)$"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100)
+):
+    from app.models.recipes import Recipe
+    from app.models.restaurants import Restaurant
+    
+    # Check if user exists
+    user = await User.get_or_none(id=user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if type == 'recipe':
+        items = await Recipe.filter(author_id=user_id).order_by("-created_at").offset((page - 1) * page_size).limit(page_size).prefetch_related("author").all()
+    else:
+        items = await Restaurant.filter(author_id=user_id).order_by("-created_at").offset((page - 1) * page_size).limit(page_size).prefetch_related("author").all()
+        
+    return items
 
 @router.post("/{user_id}/follow")
 async def follow_user(
@@ -146,42 +171,3 @@ async def get_user_comments(
             "replies": [] # Nested replies not loaded here
         })
     return result
-   
-@router.get("/{user_id}/recipes")
-async def get_user_recipes(
-    user_id: int,
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-    current_user: User = Depends(get_current_user)
-):
-    from app.models.recipes import Recipe, Like, Collection
-    
-    recipes = await Recipe.filter(author_id=user_id).order_by("-created_at").offset((page - 1) * page_size).limit(page_size).prefetch_related("author").all()
-    
-    # Check liked/collected status for current user
-    results = []
-    for recipe in recipes:
-        is_liked = False
-        is_collected = False
-        if current_user:
-            is_liked = await Like.filter(user=current_user, target_id=recipe.id, target_type="recipe").exists()
-            is_collected = await Collection.filter(user=current_user, target_id=recipe.id, target_type="recipe").exists()
-        
-        # Convert model to dict to make it serializable and editable
-        # Tortoise models are not directly dict-compatible with custom fields
-        recipe_dict = {
-            "id": recipe.id,
-            "title": recipe.title,
-            "cover_image": recipe.cover_image,
-            "description": recipe.description,
-            "author": recipe.author,
-            "likes_count": recipe.likes_count,
-            "views_count": recipe.views_count,
-            "created_at": recipe.created_at,
-            "type": "recipe",
-            "is_liked": is_liked,
-            "is_collected": is_collected
-        }
-        results.append(recipe_dict)
-        
-    return results

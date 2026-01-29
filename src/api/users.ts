@@ -6,12 +6,18 @@ export type { User };
 
 export interface UserStats {
   recipes_count: number;
+  restaurants_count: number;
   followers_count: number;
   following_count: number;
 }
 
 export const getUserStats = async (): Promise<UserStats> => {
   const response = await client.get('/users/me/stats');
+  return response.data;
+};
+
+export const getUserPosts = async (userId: number, type: 'recipe' | 'restaurant', page = 1) => {
+  const response = await client.get(`/users/${userId}/posts`, { params: { type, page } });
   return response.data;
 };
 
@@ -61,11 +67,6 @@ export const addToShoppingList = async (items: { name: string; amount?: string }
 
 export const getUserComments = async (userId: number, page: number = 1): Promise<Comment[]> => {
   const response = await client.get(`/users/${userId}/comments`, { params: { page } });
-  return response.data;
-};
-
-export const getUserRecipes = async (userId: number, page: number = 1) => {
-  const response = await client.get(`/users/${userId}/recipes`, { params: { page } });
   return response.data;
 };
 
