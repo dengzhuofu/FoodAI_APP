@@ -114,11 +114,12 @@ const RoutePlanScreen = () => {
           {currentLocation && (
             <Marker 
               position={currentLocation} 
-              icon={require('../../../assets/marker_user.png')} // Make sure this asset exists or remove icon prop
+              icon={require('../../../../assets/icon.png')} 
             />
           )}
           <Marker 
             position={{ latitude: destination.latitude, longitude: destination.longitude }} 
+            color='red'
           />
           
           {routeCoordinates.length > 0 && (

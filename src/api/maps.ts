@@ -25,7 +25,12 @@ export interface RegeocodeResponse {
         street: string;
         number: string;
       }
-    export interface RouteResult {
+    };
+    pois?: LocationPOI[];
+  };
+}
+
+export interface RouteResult {
   distance: string;
   duration: string;
   path: { latitude: number; longitude: number }[];
@@ -49,9 +54,6 @@ export const searchRoute = async (
     return null;
   }
 };
-    pois?: LocationPOI[];
-  };
-}
 
 export const searchLocation = async (keywords: string, city?: string): Promise<LocationPOI[]> => {
   try {

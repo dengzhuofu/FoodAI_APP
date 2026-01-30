@@ -44,13 +44,13 @@
         }
       ],
       [
-        "react-native-amap3d",
+        "./plugins/withAmap",
         {
           "android": {
-            "apiKey": "f248037d2f9760777e382572a7226f72"
+            "apiKey": "5b354d5dbc31fc4188c46b3b924ba241"
           },
           "ios": {
-            "apiKey": "f248037d2f9760777e382572a7226f72"
+            "apiKey": "8d02f37620279316fdd3b62f3bec7ae0"
           }
         }
       ],

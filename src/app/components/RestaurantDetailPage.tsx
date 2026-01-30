@@ -188,7 +188,7 @@ const RestaurantDetailPage = () => {
         >
           <Marker 
             position={{ latitude: restaurant.latitude, longitude: restaurant.longitude }}
-            icon={require('../../assets/marker_red.png')} // Need asset
+            color='red'
           />
         </MapView>
         
