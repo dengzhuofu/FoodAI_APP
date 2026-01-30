@@ -14,6 +14,7 @@ from app.models.restaurants import Restaurant
 from app.models.users import User
 from app.core.deps import get_current_user
 from app.services.ai_service import analyze_nutrition
+from app.services.maps_service import geocode_address
 
 router = APIRouter()
 
@@ -147,6 +148,18 @@ async def get_restaurant_detail(
     if not restaurant:
         raise HTTPException(status_code=404, detail="Restaurant not found")
         
+    # Standardize Geographic Data: Check if lat/long is missing but address exists
+    if (not restaurant.latitude or not restaurant.longitude) and restaurant.address:
+        geo_data = await geocode_address(restaurant.address)
+        if geo_data and "location" in geo_data:
+            try:
+                lng, lat = map(float, geo_data["location"].split(","))
+                restaurant.latitude = lat
+                restaurant.longitude = lng
+                await restaurant.save()
+            except Exception as e:
+                print(f"Failed to update coordinates for restaurant {restaurant_id}: {e}")
+
     is_liked = await Like.filter(
         user=current_user, target_id=restaurant_id, target_type='restaurant'
     ).exists()

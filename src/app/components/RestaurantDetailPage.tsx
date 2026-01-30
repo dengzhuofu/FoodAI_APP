@@ -170,32 +170,43 @@ const RestaurantDetailPage = () => {
   const renderMapPreview = () => {
     if (!restaurant.latitude || !restaurant.longitude) return null;
     
-    // Static map using WebView (since we have the JS API setup)
-    // Or just a placeholder map view that opens the real map app on press
+    // Interactive Map
     const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-        <style>body,html,#container{height:100%;width:100%;margin:0;padding:0;}</style>
+        <style>
+          body, html, #container { height: 100%; width: 100%; margin: 0; padding: 0; }
+          .amap-logo, .amap-copyright { display: none !important; }
+        </style>
         <script type="text/javascript">
           window._AMapSecurityConfig = { securityJsCode: '${CONFIG.AMAP_SECURITY_CODE}' };
         </script>
-        <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=${CONFIG.AMAP_JS_KEY}"></script>
+        <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=${CONFIG.AMAP_JS_KEY}&plugin=AMap.ToolBar"></script>
       </head>
       <body>
         <div id="container"></div>
         <script>
           var map = new AMap.Map('container', {
-            zoom: 15,
+            zoom: 16,
             center: [${restaurant.longitude}, ${restaurant.latitude}],
             resizeEnable: true,
-            zoomEnable: false,
-            dragEnable: false
+            zoomEnable: true,
+            dragEnable: true
           });
+          
+          // Add ToolBar plugin (Zoom buttons)
+          map.addControl(new AMap.ToolBar({
+            position: 'RB', // Right Bottom
+            offset: new AMap.Pixel(10, 10)
+          }));
+
           var marker = new AMap.Marker({
-            position: new AMap.LngLat(${restaurant.longitude}, ${restaurant.latitude})
+            position: new AMap.LngLat(${restaurant.longitude}, ${restaurant.latitude}),
+            icon: '//a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-red.png',
+            offset: new AMap.Pixel(-13, -30)
           });
           map.add(marker);
         </script>
@@ -208,11 +219,11 @@ const RestaurantDetailPage = () => {
         <WebView
           source={{ html: htmlContent }}
           style={styles.webview}
-          scrollEnabled={false}
+          scrollEnabled={false} // Disable ScrollView scrolling when touching map
           javaScriptEnabled={true}
+          // Remove the overlay to allow interaction
         />
-        {/* Overlay to intercept touches */}
-        <TouchableOpacity style={styles.mapOverlay} onPress={handleOpenMap} />
+        {/* Transparent overlay only for top area if needed, or rely on "Go to Route" button/text */}
       </View>
     );
   };
@@ -608,15 +619,6 @@ const styles = StyleSheet.create({
   },
   webview: {
     flex: 1,
-  },
-  mapOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'transparent',
-    zIndex: 2,
   },
 });
 

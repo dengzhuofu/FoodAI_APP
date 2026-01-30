@@ -6,6 +6,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
+import * as Updates from 'expo-updates';
 import { useTranslation } from 'react-i18next';
 import { RootStackParamList } from '../navigation/types';
 import { theme } from '../styles/theme';
@@ -38,6 +39,9 @@ const ProfilePage = () => {
   const [savingProfile, setSavingProfile] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'info' as 'success' | 'error' | 'info' });
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  // Updates Info
+  const { updateId, channel, currentlyRunning } = Updates;
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setToast({ visible: true, message, type });
@@ -343,6 +347,11 @@ const ProfilePage = () => {
           
           <View style={styles.versionInfo}>
             <Text style={styles.versionText}>FoodAI v1.0.0</Text>
+            {updateId && (
+              <Text style={[styles.versionText, { fontSize: 10, marginTop: 4 }]}>
+                Update: {updateId.slice(0, 8)} | Ch: {channel || 'dev'}
+              </Text>
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>

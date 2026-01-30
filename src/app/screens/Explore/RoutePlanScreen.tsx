@@ -8,6 +8,7 @@ import * as Location from 'expo-location';
 import { theme } from '../../styles/theme';
 import { CONFIG } from '../../../config';
 import { RootStackParamList } from '../../navigation/types';
+import { wgs84ToGcj02 } from '../../../utils/coords';
 
 type RoutePlanScreenRouteProp = RouteProp<RootStackParamList, 'RoutePlan'>;
 
@@ -38,10 +39,16 @@ const RoutePlanScreen = () => {
         return;
       }
 
-      let location = await Location.getCurrentPositionAsync({});
+      let location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High
+      });
+      
+      // Convert WGS-84 (GPS) to GCJ-02 (Amap)
+      const gcjLoc = wgs84ToGcj02(location.coords.longitude, location.coords.latitude);
+      
       setCurrentLocation({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude
+        latitude: gcjLoc.latitude,
+        longitude: gcjLoc.longitude
       });
     })();
   }, []);
@@ -55,6 +62,7 @@ const RoutePlanScreen = () => {
   const updateRoute = (type: string) => {
     if (!currentLocation) return;
     
+    // Native WebView Logic
     const script = `
       planRoute('${type}', 
         [${currentLocation.longitude}, ${currentLocation.latitude}], 
@@ -66,7 +74,7 @@ const RoutePlanScreen = () => {
   };
 
   const htmlContent = `
-    <!DOCTYPE html>
+    <!DOCTYPE html> 
     <html>
     <head>
       <meta charset="utf-8">
@@ -79,20 +87,45 @@ const RoutePlanScreen = () => {
         window._AMapSecurityConfig = {
           securityJsCode: '${CONFIG.AMAP_SECURITY_CODE}', 
         };
+        // Add error handler for script loading
+        window.onerror = function(msg, url, line) {
+           console.log("Error in iframe: " + msg);
+           // Try to notify parent
+           window.parent.postMessage(JSON.stringify({type: 'error', message: msg}), '*');
+        };
       </script>
       <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=${CONFIG.AMAP_JS_KEY}&plugin=AMap.Driving,AMap.Walking,AMap.Transfer,AMap.Riding"></script>
     </head>
     <body>
       <div id="container"></div>
       <script>
-        var map = new AMap.Map('container', {
-          zoom: 14,
-          resizeEnable: true
-        });
+        console.log("Map initialized in iframe");
+        try {
+          var map = new AMap.Map('container', {
+            zoom: 14,
+            resizeEnable: true
+          });
+          console.log("Map instance created");
+        } catch (e) {
+          console.error("Map init failed", e);
+        }
 
         var currentRoute = null;
+        
+        // Listen for messages from Web Parent
+        window.addEventListener('message', function(e) {
+          try {
+            var data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+            if (data.type === 'planRoute') {
+              planRoute(data.mode, data.start, data.end);
+            }
+          } catch(err) {
+            console.error(err);
+          }
+        });
 
         function planRoute(type, start, end) {
+          // ... (same as before)
           if (currentRoute) {
             currentRoute.clear();
           }
@@ -101,8 +134,8 @@ const RoutePlanScreen = () => {
           // Add Start/End Markers
           new AMap.Marker({
             position: new AMap.LngLat(start[0], start[1]),
-            content: '<div style="background-color:#05C46B;width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,0.3);"></div>',
-            offset: new AMap.Pixel(-6, -6),
+            content: '<div style="background-color:#1890FF;width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,0.3);"></div>',
+            offset: new AMap.Pixel(-7, -7),
             map: map
           });
 
@@ -113,11 +146,33 @@ const RoutePlanScreen = () => {
             map: map
           });
 
+          // Set map center and zoom to include both points
+          var bounds = new AMap.Bounds(
+            new AMap.LngLat(Math.min(start[0], end[0]), Math.min(start[1], end[1])),
+            new AMap.LngLat(Math.max(start[0], end[0]), Math.max(start[1], end[1]))
+          );
+          map.setBounds(bounds, null, [50, 50, 50, 50]);
+
           var callback = function(status, result) {
             if (status === 'complete') {
-              var route = result.routes[0];
-              var distance = route.distance;
-              var time = route.time;
+              var route;
+              if (result.routes && result.routes.length > 0) {
+                route = result.routes[0];
+              } else if (result.plans && result.plans.length > 0) {
+                // For Transfer (Transit)
+                route = result.plans[0];
+              }
+              
+              if (!route) {
+                 window.ReactNativeWebView.postMessage(JSON.stringify({
+                  type: 'error',
+                  message: '未找到路线'
+                }));
+                return;
+              }
+
+              var distance = route.distance || 0;
+              var time = route.time || 0;
               
               if (distance > 1000) {
                 distance = (distance / 1000).toFixed(1) + '公里';
@@ -154,7 +209,7 @@ const RoutePlanScreen = () => {
           } else if (type === 'transit') {
             currentRoute = new AMap.Transfer({ 
               map: map, 
-              city: '深圳市', // Should be dynamic, but defaulting for now
+              city: '深圳市', // Should be dynamic
               policy: AMap.TransferPolicy.LEAST_TIME,
               hideMarkers: true
             });
@@ -171,7 +226,11 @@ const RoutePlanScreen = () => {
 
   const handleMessage = (event: any) => {
     try {
-      const data = JSON.parse(event.nativeEvent.data);
+      // Handle both native and web message formats
+      const data = typeof event.nativeEvent.data === 'string' 
+        ? JSON.parse(event.nativeEvent.data) 
+        : event.nativeEvent.data;
+
       if (data.type === 'routeInfo') {
         setRouteInfo({
           distance: data.distance,
@@ -198,6 +257,10 @@ const RoutePlanScreen = () => {
     { key: 'riding', label: '骑行', icon: 'bicycle-outline' },
     { key: 'walking', label: '步行', icon: 'walk-outline' },
   ];
+
+  useEffect(() => {
+    // Web specific message listener removed, as we now handle updates directly
+  }, [activeTab]);
 
   return (
     <SafeAreaView style={styles.container}>

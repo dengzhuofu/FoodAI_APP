@@ -42,12 +42,19 @@
             "newArchEnabled": true
           }
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "eas": {
         "projectId": "208d0248-1ba1-4af5-a985-177755819ad5"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/208d0248-1ba1-4af5-a985-177755819ad5"
     }
   }
 }
