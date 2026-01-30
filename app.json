@@ -43,6 +43,17 @@
           }
         }
       ],
+      [
+        "react-native-amap3d",
+        {
+          "android": {
+            "apiKey": "f248037d2f9760777e382572a7226f72"
+          },
+          "ios": {
+            "apiKey": "f248037d2f9760777e382572a7226f72"
+          }
+        }
+      ],
       "expo-font"
     ],
     "extra": {

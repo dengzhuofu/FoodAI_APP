@@ -1,12 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, ActivityIndicator, Alert, TextInput, FlatList, Keyboard } from 'react-native';
-import { WebView } from 'react-native-webview';
+import { MapView, MapType, CameraPosition } from 'react-native-amap3d';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../../styles/theme';
 import { regeocodeLocation, searchLocation, LocationPOI } from '../../../api/maps';
-import { CONFIG } from '../../../config';
 
 type ParamList = {
   MapSelector: {
@@ -22,7 +21,18 @@ const MapSelectorScreen = () => {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<ParamList, 'MapSelector'>>();
   const { initialLocation, onSelect } = route.params;
-  const webViewRef = useRef<WebView>(null);
+  
+  // Default to Beijing or initial location
+  const initLat = initialLocation?.latitude || 39.9042;
+  const initLng = initialLocation?.longitude || 116.4074;
+
+  const [cameraPosition, setCameraPosition] = useState<CameraPosition>({
+    target: {
+      latitude: initLat,
+      longitude: initLng,
+    },
+    zoom: 16,
+  });
 
   const [currentLocation, setCurrentLocation] = useState<{
     latitude: number;
@@ -39,124 +49,42 @@ const MapSelectorScreen = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
 
-  // Default to Beijing or initial location
-  const initLat = initialLocation?.latitude || 39.9042;
-  const initLng = initialLocation?.longitude || 116.4074;
+  // Initial load
+  useEffect(() => {
+    fetchAddress(initLat, initLng);
+  }, []);
 
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-      <style>
-        body, html, #container { height: 100%; width: 100%; margin: 0; padding: 0; }
-        .center-marker {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 32px;
-          height: 32px;
-          margin-top: -32px;
-          margin-left: -16px;
-          z-index: 999;
-          pointer-events: none;
-        }
-      </style>
-      <script type="text/javascript">
-        window._AMapSecurityConfig = {
-          securityJsCode: '${CONFIG.AMAP_SECURITY_CODE}', 
-        };
-      </script>
-      <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=${CONFIG.AMAP_JS_KEY}"></script>
-    </head>
-    <body>
-      <div id="container"></div>
-      <img src="https://a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-default.png" class="center-marker" />
-      <script>
-        var map = new AMap.Map('container', {
-          zoom: 16,
-          center: [${initLng}, ${initLat}],
-          resizeEnable: true
-        });
-
-        // Send initial load message
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type: 'init',
-          lng: ${initLng},
-          lat: ${initLat}
-        }));
-
-        map.on('moveend', function() {
-          var center = map.getCenter();
-          window.ReactNativeWebView.postMessage(JSON.stringify({
-            type: 'moveend',
-            lng: center.getLng(),
-            lat: center.getLat()
-          }));
-        });
-        
-        // Listen for messages from RN to set center
-        document.addEventListener('message', function(e) {
-          try {
-            var data = JSON.parse(e.data);
-            if (data.type === 'setCenter') {
-              map.setCenter([data.lng, data.lat]);
-            }
-          } catch(err) {
-            // ignore
-          }
-        });
-        
-        // Also support window.postMessage for some environments
-        window.addEventListener('message', function(e) {
-           try {
-            var data = JSON.parse(e.data);
-            if (data.type === 'setCenter') {
-              map.setCenter([data.lng, data.lat]);
-            }
-          } catch(err) {
-            // ignore
-          }
-        });
-      </script>
-    </body>
-    </html>
-  `;
-
-  const handleMessage = async (event: any) => {
+  const fetchAddress = async (lat: number, lng: number) => {
+    setIsLoading(true);
     try {
-      const data = JSON.parse(event.nativeEvent.data);
-      if (data.type === 'moveend' || data.type === 'init') {
-        const { lng, lat } = data;
-        
-        // Call backend to get address
-        setIsLoading(true);
-        const result = await regeocodeLocation(`${lng},${lat}`);
-        setIsLoading(false);
-
-        if (result && result.regeocode) {
-          const address = result.regeocode.formatted_address;
-          // Try to get a POI name if available, otherwise use street
-          let name = address;
-          if (result.regeocode.pois && result.regeocode.pois.length > 0) {
-            name = result.regeocode.pois[0].name;
-          } else if (result.regeocode.addressComponent.streetNumber.street) {
-             name = result.regeocode.addressComponent.streetNumber.street + result.regeocode.addressComponent.streetNumber.number;
-          }
-
-          setCurrentLocation({
-            latitude: lat,
-            longitude: lng,
-            address,
-            name
-          });
+      const result = await regeocodeLocation(`${lng},${lat}`);
+      if (result && result.regeocode) {
+        const address = result.regeocode.formatted_address;
+        let name = address;
+        if (result.regeocode.pois && result.regeocode.pois.length > 0) {
+          name = result.regeocode.pois[0].name;
+        } else if (result.regeocode.addressComponent.streetNumber.street) {
+           name = result.regeocode.addressComponent.streetNumber.street + result.regeocode.addressComponent.streetNumber.number;
         }
+
+        setCurrentLocation({
+          latitude: lat,
+          longitude: lng,
+          address,
+          name
+        });
       }
     } catch (e) {
       console.error(e);
+    } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleCameraIdle = (event: any) => {
+    // When camera stops moving, fetch address for center
+    const { target } = event.nativeEvent;
+    fetchAddress(target.latitude, target.longitude);
   };
 
   const handleConfirm = () => {
@@ -192,26 +120,21 @@ const MapSelectorScreen = () => {
 
   const selectSearchResult = (item: LocationPOI) => {
     setShowSearchResults(false);
-    setSearchKeyword(''); // Optional: clear or keep keyword
+    setSearchKeyword(''); 
     
     // Parse location string "lng,lat"
     const [lng, lat] = item.location.split(',').map(Number);
     
-    // Move map
-    const script = `
-      map.setCenter([${lng}, ${lat}]);
-      true;
-    `;
-    webViewRef.current?.injectJavaScript(script);
-    
-    // Manually set current location (optional, map moveend will also trigger)
-    // But setting it directly is faster for UI
-    setCurrentLocation({
-      latitude: lat,
-      longitude: lng,
-      name: item.name,
-      address: item.address
+    setCameraPosition({
+      target: {
+        latitude: lat,
+        longitude: lng,
+      },
+      zoom: 16,
     });
+    
+    // Also fetch address immediately
+    fetchAddress(lat, lng);
   };
 
   return (
@@ -243,14 +166,17 @@ const MapSelectorScreen = () => {
       </View>
 
       <View style={styles.contentContainer}>
-        <WebView
-          ref={webViewRef}
-          source={{ html: htmlContent }}
-          style={styles.webview}
-          onMessage={handleMessage}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
+        <MapView
+          style={styles.webview} // reusing style name for simplicity
+          mapType={MapType.Standard}
+          cameraPosition={cameraPosition}
+          onCameraIdle={handleCameraIdle}
         />
+        
+        {/* Center Marker Overlay */}
+        <View style={styles.centerMarkerContainer} pointerEvents="none">
+          <Ionicons name="location" size={36} color={theme.colors.primary} />
+        </View>
 
         {showSearchResults && (
           <View style={styles.searchResultsOverlay}>
@@ -352,6 +278,17 @@ const styles = StyleSheet.create({
   },
   webview: {
     flex: 1,
+  },
+  centerMarkerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 5,
+    marginTop: -18, // Adjust for icon center (half of icon size 36)
   },
   searchResultsOverlay: {
     position: 'absolute',

@@ -25,7 +25,30 @@ export interface RegeocodeResponse {
         street: string;
         number: string;
       }
-    };
+    export interface RouteResult {
+  distance: string;
+  duration: string;
+  path: { latitude: number; longitude: number }[];
+}
+
+export const searchRoute = async (
+  type: 'driving' | 'walking' | 'transit' | 'riding',
+  origin: string, // "lng,lat"
+  destination: string // "lng,lat"
+): Promise<RouteResult | null> => {
+  try {
+    const response = await client.get('/maps/route', {
+      params: { type, origin, destination }
+    });
+    if (response.data.status === '1') {
+      return response.data.result;
+    }
+    return null;
+  } catch (error) {
+    console.error('Route search error:', error);
+    return null;
+  }
+};
     pois?: LocationPOI[];
   };
 }

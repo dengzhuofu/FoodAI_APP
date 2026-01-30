@@ -1,22 +1,21 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, ActivityIndicator, Alert, Platform, Linking } from 'react-native';
-import { WebView } from 'react-native-webview';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text, Alert, Platform, Linking } from 'react-native';
+import { MapView, Marker, Polyline } from 'react-native-amap3d';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { theme } from '../../styles/theme';
-import { CONFIG } from '../../../config';
 import { RootStackParamList } from '../../navigation/types';
 import { wgs84ToGcj02 } from '../../../utils/coords';
+import { searchRoute } from '../../../api/maps';
 
 type RoutePlanScreenRouteProp = RouteProp<RootStackParamList, 'RoutePlan'>;
 
 const RoutePlanScreen = () => {
   const navigation = useNavigation();
   const route = useRoute<RoutePlanScreenRouteProp>();
-  const { destination } = route.params; // { latitude, longitude, name, address }
-  const webViewRef = useRef<WebView>(null);
+  const { destination } = route.params; 
 
   const [currentLocation, setCurrentLocation] = useState<{
     latitude: number;
@@ -29,7 +28,9 @@ const RoutePlanScreen = () => {
     type: 'driving' | 'walking' | 'transit' | 'riding';
   }>({ distance: '', duration: '', type: 'walking' });
 
+  const [routeCoordinates, setRouteCoordinates] = useState<{latitude: number, longitude: number}[]>([]);
   const [activeTab, setActiveTab] = useState<'driving' | 'transit' | 'walking' | 'riding'>('walking');
+  const [destinationAddress, setDestinationAddress] = useState(destination.address || destination.name);
 
   useEffect(() => {
     (async () => {
@@ -43,7 +44,6 @@ const RoutePlanScreen = () => {
         accuracy: Location.Accuracy.High
       });
       
-      // Convert WGS-84 (GPS) to GCJ-02 (Amap)
       const gcjLoc = wgs84ToGcj02(location.coords.longitude, location.coords.latitude);
       
       setCurrentLocation({
@@ -54,190 +54,30 @@ const RoutePlanScreen = () => {
   }, []);
 
   useEffect(() => {
-    if (currentLocation && webViewRef.current) {
-      updateRoute(activeTab);
+    if (currentLocation) {
+      fetchRoute();
     }
   }, [currentLocation, activeTab]);
 
-  const updateRoute = (type: string) => {
+  const fetchRoute = async () => {
     if (!currentLocation) return;
     
-    // Native WebView Logic
-    const script = `
-      planRoute('${type}', 
-        [${currentLocation.longitude}, ${currentLocation.latitude}], 
-        [${destination.longitude}, ${destination.latitude}]
-      );
-      true;
-    `;
-    webViewRef.current?.injectJavaScript(script);
-  };
-
-  const htmlContent = `
-    <!DOCTYPE html> 
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-      <style>
-        body, html, #container { height: 100%; width: 100%; margin: 0; padding: 0; }
-        .amap-logo, .amap-copyright { display: none !important; }
-      </style>
-      <script type="text/javascript">
-        window._AMapSecurityConfig = {
-          securityJsCode: '${CONFIG.AMAP_SECURITY_CODE}', 
-        };
-        // Add error handler for script loading
-        window.onerror = function(msg, url, line) {
-           console.log("Error in iframe: " + msg);
-           // Try to notify parent
-           window.parent.postMessage(JSON.stringify({type: 'error', message: msg}), '*');
-        };
-      </script>
-      <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=${CONFIG.AMAP_JS_KEY}&plugin=AMap.Driving,AMap.Walking,AMap.Transfer,AMap.Riding"></script>
-    </head>
-    <body>
-      <div id="container"></div>
-      <script>
-        console.log("Map initialized in iframe");
-        try {
-          var map = new AMap.Map('container', {
-            zoom: 14,
-            resizeEnable: true
-          });
-          console.log("Map instance created");
-        } catch (e) {
-          console.error("Map init failed", e);
-        }
-
-        var currentRoute = null;
-        
-        // Listen for messages from Web Parent
-        window.addEventListener('message', function(e) {
-          try {
-            var data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-            if (data.type === 'planRoute') {
-              planRoute(data.mode, data.start, data.end);
-            }
-          } catch(err) {
-            console.error(err);
-          }
-        });
-
-        function planRoute(type, start, end) {
-          // ... (same as before)
-          if (currentRoute) {
-            currentRoute.clear();
-          }
-          map.clearMap();
-
-          // Add Start/End Markers
-          new AMap.Marker({
-            position: new AMap.LngLat(start[0], start[1]),
-            content: '<div style="background-color:#1890FF;width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,0.3);"></div>',
-            offset: new AMap.Pixel(-7, -7),
-            map: map
-          });
-
-          new AMap.Marker({
-            position: new AMap.LngLat(end[0], end[1]),
-            content: '<div style="background-color:#FF3F34;width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,0.3);"></div>',
-            offset: new AMap.Pixel(-6, -6),
-            map: map
-          });
-
-          // Set map center and zoom to include both points
-          var bounds = new AMap.Bounds(
-            new AMap.LngLat(Math.min(start[0], end[0]), Math.min(start[1], end[1])),
-            new AMap.LngLat(Math.max(start[0], end[0]), Math.max(start[1], end[1]))
-          );
-          map.setBounds(bounds, null, [50, 50, 50, 50]);
-
-          var callback = function(status, result) {
-            if (status === 'complete') {
-              var route;
-              if (result.routes && result.routes.length > 0) {
-                route = result.routes[0];
-              } else if (result.plans && result.plans.length > 0) {
-                // For Transfer (Transit)
-                route = result.plans[0];
-              }
-              
-              if (!route) {
-                 window.ReactNativeWebView.postMessage(JSON.stringify({
-                  type: 'error',
-                  message: '未找到路线'
-                }));
-                return;
-              }
-
-              var distance = route.distance || 0;
-              var time = route.time || 0;
-              
-              if (distance > 1000) {
-                distance = (distance / 1000).toFixed(1) + '公里';
-              } else {
-                distance = distance + '米';
-              }
-
-              var duration = '';
-              if (time > 3600) {
-                duration = Math.floor(time / 3600) + '小时' + Math.floor((time % 3600) / 60) + '分';
-              } else {
-                duration = Math.ceil(time / 60) + '分钟';
-              }
-
-              window.ReactNativeWebView.postMessage(JSON.stringify({
-                type: 'routeInfo',
-                distance: distance,
-                duration: duration
-              }));
-            } else {
-              window.ReactNativeWebView.postMessage(JSON.stringify({
-                type: 'error',
-                message: '规划失败: ' + result
-              }));
-            }
-          };
-
-          if (type === 'driving') {
-            currentRoute = new AMap.Driving({ map: map, hideMarkers: true });
-            currentRoute.search(start, end, callback);
-          } else if (type === 'walking') {
-            currentRoute = new AMap.Walking({ map: map, hideMarkers: true });
-            currentRoute.search(start, end, callback);
-          } else if (type === 'transit') {
-            currentRoute = new AMap.Transfer({ 
-              map: map, 
-              city: '深圳市', // Should be dynamic
-              policy: AMap.TransferPolicy.LEAST_TIME,
-              hideMarkers: true
-            });
-            currentRoute.search(start, end, callback);
-          } else if (type === 'riding') {
-            currentRoute = new AMap.Riding({ map: map, hideMarkers: true });
-            currentRoute.search(start, end, callback);
-          }
-        }
-      </script>
-    </body>
-    </html>
-  `;
-
-  const handleMessage = (event: any) => {
     try {
-      // Handle both native and web message formats
-      const data = typeof event.nativeEvent.data === 'string' 
-        ? JSON.parse(event.nativeEvent.data) 
-        : event.nativeEvent.data;
-
-      if (data.type === 'routeInfo') {
-        setRouteInfo({
-          distance: data.distance,
-          duration: data.duration,
-          type: activeTab
-        });
-      }
+       // Call backend API to calculate route
+       const result = await searchRoute(
+         activeTab, 
+         `${currentLocation.longitude},${currentLocation.latitude}`,
+         `${destination.longitude},${destination.latitude}`
+       );
+       
+       if (result) {
+         setRouteInfo({
+           distance: result.distance,
+           duration: result.duration,
+           type: activeTab
+         });
+         setRouteCoordinates(result.path);
+       }
     } catch (e) {
       console.error(e);
     }
@@ -258,30 +98,43 @@ const RoutePlanScreen = () => {
     { key: 'walking', label: '步行', icon: 'walk-outline' },
   ];
 
-  useEffect(() => {
-    // Web specific message listener removed, as we now handle updates directly
-  }, [activeTab]);
-
   return (
     <SafeAreaView style={styles.container}>
-      {/* Map View */}
       <View style={styles.mapContainer}>
-        <WebView
-          ref={webViewRef}
-          source={{ html: htmlContent }}
+        <MapView
           style={styles.webview}
-          onMessage={handleMessage}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-        />
+          cameraPosition={{
+             target: {
+               latitude: destination.latitude,
+               longitude: destination.longitude
+             },
+             zoom: 14
+          }}
+        >
+          {currentLocation && (
+            <Marker 
+              position={currentLocation} 
+              icon={require('../../../assets/marker_user.png')} // Make sure this asset exists or remove icon prop
+            />
+          )}
+          <Marker 
+            position={{ latitude: destination.latitude, longitude: destination.longitude }} 
+          />
+          
+          {routeCoordinates.length > 0 && (
+             <Polyline 
+               points={routeCoordinates} 
+               color={theme.colors.primary} 
+               width={6} 
+             />
+          )}
+        </MapView>
         
-        {/* Back Button Overlay */}
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
       </View>
 
-      {/* Bottom Panel */}
       <View style={styles.bottomPanel}>
         {/* Location Info */}
         <View style={styles.locationInfo}>
@@ -292,7 +145,7 @@ const RoutePlanScreen = () => {
           <View style={styles.dashedLine} />
           <View style={styles.locationRow}>
             <View style={[styles.dot, { backgroundColor: theme.colors.error }]} />
-            <Text style={styles.locationText} numberOfLines={1}>{destination.name}</Text>
+            <Text style={styles.locationText} numberOfLines={2}>{destinationAddress}</Text>
           </View>
         </View>
 

@@ -5,7 +5,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { WebView } from 'react-native-webview';
+import { MapView, Marker } from 'react-native-amap3d';
 import { theme } from '../styles/theme';
 import { RootStackParamList } from '../navigation/types';
 import { getRestaurant, getComments, toggleCollection, Restaurant, Comment, toggleLike, recordView } from '../../api/content';
@@ -170,60 +170,34 @@ const RestaurantDetailPage = () => {
   const renderMapPreview = () => {
     if (!restaurant.latitude || !restaurant.longitude) return null;
     
-    // Interactive Map
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-        <style>
-          body, html, #container { height: 100%; width: 100%; margin: 0; padding: 0; }
-          .amap-logo, .amap-copyright { display: none !important; }
-        </style>
-        <script type="text/javascript">
-          window._AMapSecurityConfig = { securityJsCode: '${CONFIG.AMAP_SECURITY_CODE}' };
-        </script>
-        <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=${CONFIG.AMAP_JS_KEY}&plugin=AMap.ToolBar"></script>
-      </head>
-      <body>
-        <div id="container"></div>
-        <script>
-          var map = new AMap.Map('container', {
-            zoom: 16,
-            center: [${restaurant.longitude}, ${restaurant.latitude}],
-            resizeEnable: true,
-            zoomEnable: true,
-            dragEnable: true
-          });
-          
-          // Add ToolBar plugin (Zoom buttons)
-          map.addControl(new AMap.ToolBar({
-            position: 'RB', // Right Bottom
-            offset: new AMap.Pixel(10, 10)
-          }));
-
-          var marker = new AMap.Marker({
-            position: new AMap.LngLat(${restaurant.longitude}, ${restaurant.latitude}),
-            icon: '//a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-red.png',
-            offset: new AMap.Pixel(-13, -30)
-          });
-          map.add(marker);
-        </script>
-      </body>
-      </html>
-    `;
-
     return (
       <View style={styles.mapContainer}>
-        <WebView
-          source={{ html: htmlContent }}
+        <MapView
           style={styles.webview}
-          scrollEnabled={false} // Disable ScrollView scrolling when touching map
-          javaScriptEnabled={true}
-          // Remove the overlay to allow interaction
+          cameraPosition={{
+            target: {
+              latitude: restaurant.latitude,
+              longitude: restaurant.longitude
+            },
+            zoom: 16
+          }}
+          scrollEnabled={false}
+          zoomEnabled={false}
+          rotateEnabled={false}
+          tiltEnabled={false}
+        >
+          <Marker 
+            position={{ latitude: restaurant.latitude, longitude: restaurant.longitude }}
+            icon={require('../../assets/marker_red.png')} // Need asset
+          />
+        </MapView>
+        
+        {/* Transparent overlay to intercept touches and navigate */}
+        <TouchableOpacity 
+          style={StyleSheet.absoluteFill} 
+          onPress={handleOpenMap}
+          activeOpacity={0.1}
         />
-        {/* Transparent overlay only for top area if needed, or rely on "Go to Route" button/text */}
       </View>
     );
   };
