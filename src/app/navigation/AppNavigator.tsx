@@ -44,8 +44,9 @@ import FlavorProfilePage from '../screens/Profile/FlavorProfilePage';
 
 import PublishRecipeScreen from '../screens/Publish/PublishRecipeScreen';
 import PublishStoreScreen from '../screens/Publish/PublishStoreScreen';
-import MapSelectorScreen from '../screens/Publish/MapSelectorScreen';
-import RoutePlanScreen from '../screens/Explore/RoutePlanScreen';
+
+import MapSelectorScreen from '../screens/Map/MapSelectorScreen';
+import RoutePlanScreen from '../screens/Map/RoutePlanScreen';
 
 // Search Screen
 import SearchScreen from '../screens/Search/SearchScreen';
@@ -245,7 +246,8 @@ const AppNavigator = () => {
             
             <Stack.Screen name="PublishRecipe" component={PublishRecipeScreen} options={{ title: '发布菜谱', headerShown: false }} />
             <Stack.Screen name="PublishStore" component={PublishStoreScreen} options={{ title: '发布探店', headerShown: false }} />
-            <Stack.Screen name="MapSelector" component={MapSelectorScreen} options={{ title: '选择位置', headerShown: false }} />
+
+            <Stack.Screen name="MapSelector" component={MapSelectorScreen} options={{ headerShown: false }} />
             <Stack.Screen name="RoutePlan" component={RoutePlanScreen} options={{ headerShown: false }} />
             
             {/* Modals */}

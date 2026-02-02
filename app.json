@@ -16,7 +16,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.foodai.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "需要使用您的位置信息用于显示位置与规划路线",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "需要使用您的位置信息用于显示位置与规划路线"
       }
     },
     "android": {
@@ -26,7 +28,11 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.foodai.app"
+      "package": "com.foodai.app",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -37,17 +43,6 @@
         {
           "android": {
             "usesCleartextTraffic": true
-          }
-        }
-      ],
-      [
-        "./plugins/withAmap",
-        {
-          "android": {
-            "apiKey": "5b354d5dbc31fc4188c46b3b924ba241"
-          },
-          "ios": {
-            "apiKey": "8d02f37620279316fdd3b62f3bec7ae0"
           }
         }
       ],

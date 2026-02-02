@@ -1,18 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Linking, Alert, ActivityIndicator, Platform } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Linking, Alert, ActivityIndicator, Platform, PermissionsAndroid } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MapView, Marker } from 'react-native-amap3d';
 import { theme } from '../styles/theme';
 import { RootStackParamList } from '../navigation/types';
 import { getRestaurant, getComments, toggleCollection, Restaurant, Comment, toggleLike, recordView } from '../../api/content';
 import { getMe } from '../../api/auth';
 import CommentsSection from './CommentsSection';
 import DetailBottomBar from './DetailBottomBar';
-import { CONFIG } from '../../config';
+import { reverseGeocode } from '../../api/maps';
 
 type RestaurantDetailRouteProp = RouteProp<RootStackParamList, 'RestaurantDetail'>;
 
@@ -33,6 +32,9 @@ const RestaurantDetailPage = () => {
   const [likesCount, setLikesCount] = useState(0);
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
+  const mapRef = useRef<any>(null);
 
   const handleLike = async () => {
     try {
@@ -138,23 +140,19 @@ const RestaurantDetailPage = () => {
     }
   };
 
-  const handleOpenMap = () => {
-    if (restaurant.latitude && restaurant.longitude) {
-      navigation.navigate('RoutePlan', {
-        destination: {
-          latitude: restaurant.latitude,
-          longitude: restaurant.longitude,
-          name: restaurant.name || restaurant.title,
-          address: restaurant.address || ''
-        }
-      } as any);
-    } else {
-      // Fallback to address search if no coordinates
-       const url = Platform.OS === 'ios' 
-        ? `maps:?q=${restaurant.address}`
-        : `geo:0,0?q=${restaurant.address}`;
-       Linking.openURL(url);
+  const handleNavigate = () => {
+    if (!restaurant.latitude || !restaurant.longitude) {
+      Alert.alert('提示', '该餐厅暂无坐标信息，无法导航');
+      return;
     }
+    (navigation as any).navigate('RoutePlan', {
+      destination: {
+        latitude: restaurant.latitude,
+        longitude: restaurant.longitude,
+        name: '',
+        address: resolvedAddress || restaurant.address || '',
+      },
+    });
   };
 
   const handleCollection = async () => {
@@ -167,37 +165,86 @@ const RestaurantDetailPage = () => {
     }
   };
 
+  useEffect(() => {
+    const run = async () => {
+      if (!restaurant.latitude || !restaurant.longitude) return;
+      try {
+        const formatted = await reverseGeocode({ location: `${restaurant.longitude},${restaurant.latitude}` });
+        setResolvedAddress(formatted);
+      } catch (e) {
+        setResolvedAddress(null);
+      }
+    };
+    run();
+  }, [restaurant.latitude, restaurant.longitude]);
+
+  useEffect(() => {
+    const requestLocationPermission = async () => {
+      if (Platform.OS !== 'android') return;
+      try {
+        await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        ]);
+      } catch (e) {
+        // ignore
+      }
+    };
+    requestLocationPermission();
+  }, []);
+
   const renderMapPreview = () => {
+    if (Platform.OS === 'web') return null;
     if (!restaurant.latitude || !restaurant.longitude) return null;
-    
+
+    const { MapView, Marker } = require('react-native-amap3d');
+    const destination = { latitude: restaurant.latitude, longitude: restaurant.longitude };
+
+    const initialCameraPosition = userLocation
+      ? {
+          target: {
+            latitude: (userLocation.latitude + destination.latitude) / 2,
+            longitude: (userLocation.longitude + destination.longitude) / 2,
+          },
+          zoom: 14,
+        }
+      : {
+          target: destination,
+          zoom: 15,
+        };
+
     return (
       <View style={styles.mapContainer}>
         <MapView
-          style={styles.webview}
-          cameraPosition={{
-            target: {
-              latitude: restaurant.latitude,
-              longitude: restaurant.longitude
-            },
-            zoom: 16
+          ref={mapRef}
+          myLocationEnabled
+          scrollGesturesEnabled={false}
+          zoomGesturesEnabled={false}
+          rotateGesturesEnabled={false}
+          tiltGesturesEnabled={false}
+          compassEnabled={false}
+          scaleControlsEnabled={false}
+          initialCameraPosition={initialCameraPosition}
+          onLocation={({ nativeEvent }: any) => {
+            if (!nativeEvent?.coords) return;
+            const next = {
+              latitude: nativeEvent.coords.latitude,
+              longitude: nativeEvent.coords.longitude,
+            };
+            setUserLocation((prev) => prev || next);
           }}
-          scrollEnabled={false}
-          zoomEnabled={false}
-          rotateEnabled={false}
-          tiltEnabled={false}
         >
-          <Marker 
-            position={{ latitude: restaurant.latitude, longitude: restaurant.longitude }}
-            color='red'
-          />
+          <Marker position={destination}>
+            <View style={styles.destinationMarker} />
+          </Marker>
+          {userLocation && (
+            <Marker position={userLocation}>
+              <View style={styles.userMarkerOuter}>
+                <View style={styles.userMarkerInner} />
+              </View>
+            </Marker>
+          )}
         </MapView>
-        
-        {/* Transparent overlay to intercept touches and navigate */}
-        <TouchableOpacity 
-          style={StyleSheet.absoluteFill} 
-          onPress={handleOpenMap}
-          activeOpacity={0.1}
-        />
       </View>
     );
   };
@@ -294,15 +341,15 @@ const RestaurantDetailPage = () => {
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>INFORMATION</Text>
       <View style={styles.infoCard}>
-        <TouchableOpacity style={styles.infoRow} onPress={handleOpenMap}>
+        <View style={styles.infoRow}>
           <View style={styles.iconBox}>
             <Ionicons name="location" size={18} color="#1A1A1A" />
           </View>
-          <Text style={styles.infoText}>{restaurant.address || 'No address provided'}</Text>
-          <View style={styles.actionIcon}>
-             <Ionicons name="map-outline" size={14} color="#FFF" />
-          </View>
-        </TouchableOpacity>
+          <Text style={styles.infoText}>{resolvedAddress || restaurant.address || '暂无地址信息'}</Text>
+          <TouchableOpacity style={styles.navButton} onPress={handleNavigate} activeOpacity={0.8}>
+            <Text style={styles.navButtonText}>导航</Text>
+          </TouchableOpacity>
+        </View>
         
         {renderMapPreview()}
 
@@ -577,6 +624,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     transform: [{ rotate: '-45deg' }],
   },
+  navButton: {
+    paddingHorizontal: 12,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#1A1A1A',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  navButtonText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
   divider: {
     height: 1,
     backgroundColor: '#F0F0F0',
@@ -590,6 +651,30 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 16,
     position: 'relative',
+  },
+  destinationMarker: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#FF3B30',
+    borderWidth: 2,
+    borderColor: '#FFF',
+  },
+  userMarkerOuter: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: 'rgba(0,122,255,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userMarkerInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#007AFF',
+    borderWidth: 2,
+    borderColor: '#FFF',
   },
   webview: {
     flex: 1,
