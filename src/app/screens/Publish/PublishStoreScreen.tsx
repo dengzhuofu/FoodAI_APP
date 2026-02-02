@@ -14,7 +14,7 @@ import { uploadFile } from '../../../api/upload';
 import { LocationPOI } from '../../../api/maps';
 
 const PublishStoreScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   
   // Form State
   const [title, setTitle] = useState('');
@@ -68,7 +68,7 @@ const PublishStoreScreen = () => {
       initialLocation,
       onSelect: (selectedLocation: LocationPOI) => {
         setLocation(selectedLocation);
-        setAddress(selectedLocation.name);
+        setAddress(selectedLocation.address || selectedLocation.name);
       }
     } as any);
   };

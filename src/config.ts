@@ -10,4 +10,7 @@ export const CONFIG = {
   
   // Security Code for Amap JS API (if configured in console)
   AMAP_SECURITY_CODE: '', 
+
+  AMAP_NATIVE_KEY_ANDROID: '5b354d5dbc31fc4188c46b3b924ba241',
+  AMAP_NATIVE_KEY_IOS: '8d02f37620279316fdd3b62f3bec7ae0',
 };
