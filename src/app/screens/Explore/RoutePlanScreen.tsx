@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, Alert, Platform, Linking } from 'react-native';
-import { MapView, Marker, Polyline } from 'react-native-amap3d';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { theme } from '../../styles/theme';
 import { RootStackParamList } from '../../navigation/types';
-import { wgs84ToGcj02 } from '../../../utils/coords';
+// import { wgs84ToGcj02 } from '../../../utils/coords'; // No longer needed for standard maps
 import { searchRoute } from '../../../api/maps';
 
 type RoutePlanScreenRouteProp = RouteProp<RootStackParamList, 'RoutePlan'>;
@@ -44,11 +44,10 @@ const RoutePlanScreen = () => {
         accuracy: Location.Accuracy.High
       });
       
-      const gcjLoc = wgs84ToGcj02(location.coords.longitude, location.coords.latitude);
-      
+      // Use WGS84 directly for react-native-maps
       setCurrentLocation({
-        latitude: gcjLoc.latitude,
-        longitude: gcjLoc.longitude
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude
       });
     })();
   }, []);
@@ -63,7 +62,7 @@ const RoutePlanScreen = () => {
     if (!currentLocation) return;
     
     try {
-       // Call backend API to calculate route
+       // Call API to calculate route (now returns straight line)
        const result = await searchRoute(
          activeTab, 
          `${currentLocation.longitude},${currentLocation.latitude}`,
@@ -103,30 +102,30 @@ const RoutePlanScreen = () => {
       <View style={styles.mapContainer}>
         <MapView
           style={styles.webview}
-          cameraPosition={{
-             target: {
-               latitude: destination.latitude,
-               longitude: destination.longitude
-             },
-             zoom: 14
+          region={{
+             latitude: destination.latitude,
+             longitude: destination.longitude,
+             latitudeDelta: 0.05,
+             longitudeDelta: 0.05
           }}
         >
           {currentLocation && (
             <Marker 
-              position={currentLocation} 
-              icon={require('../../../../assets/icon.png')} 
+              coordinate={currentLocation} 
+              title="我的位置"
             />
           )}
           <Marker 
-            position={{ latitude: destination.latitude, longitude: destination.longitude }} 
-            color='red'
+            coordinate={{ latitude: destination.latitude, longitude: destination.longitude }} 
+            pinColor='red'
+            title={destination.name}
           />
           
           {routeCoordinates.length > 0 && (
              <Polyline 
-               points={routeCoordinates} 
-               color={theme.colors.primary} 
-               width={6} 
+               coordinates={routeCoordinates} 
+               strokeColor={theme.colors.primary} 
+               strokeWidth={4} 
              />
           )}
         </MapView>
@@ -162,7 +161,7 @@ const RoutePlanScreen = () => {
                 {tab.label}
               </Text>
               {activeTab === tab.key && (
-                <Text style={styles.tabDuration}>{routeInfo.duration || '--'}</Text>
+                <Text style={styles.tabDuration}>详情</Text>
               )}
             </TouchableOpacity>
           ))}
@@ -172,10 +171,10 @@ const RoutePlanScreen = () => {
         <View style={styles.routeSummary}>
           <View>
             <Text style={styles.summaryTime}>
-              {routeInfo.duration || '计算中...'}
+               查看路线
             </Text>
             <Text style={styles.summaryDistance}>
-              {routeInfo.distance ? `${routeInfo.distance}` : ''}
+               跳转至地图应用导航
             </Text>
           </View>
           

@@ -5,7 +5,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MapView, Marker } from 'react-native-amap3d';
+import MapView, { Marker } from 'react-native-maps';
 import { theme } from '../styles/theme';
 import { RootStackParamList } from '../navigation/types';
 import { getRestaurant, getComments, toggleCollection, Restaurant, Comment, toggleLike, recordView } from '../../api/content';
@@ -174,21 +174,20 @@ const RestaurantDetailPage = () => {
       <View style={styles.mapContainer}>
         <MapView
           style={styles.webview}
-          cameraPosition={{
-            target: {
-              latitude: restaurant.latitude,
-              longitude: restaurant.longitude
-            },
-            zoom: 16
+          initialRegion={{
+            latitude: restaurant.latitude,
+            longitude: restaurant.longitude,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01
           }}
           scrollEnabled={false}
           zoomEnabled={false}
           rotateEnabled={false}
-          tiltEnabled={false}
+          pitchEnabled={false}
         >
           <Marker 
-            position={{ latitude: restaurant.latitude, longitude: restaurant.longitude }}
-            color='red'
+            coordinate={{ latitude: restaurant.latitude, longitude: restaurant.longitude }}
+            pinColor='red'
           />
         </MapView>
         

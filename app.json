@@ -43,17 +43,6 @@
           }
         }
       ],
-      [
-        "./plugins/withAmap",
-        {
-          "android": {
-            "apiKey": "5b354d5dbc31fc4188c46b3b924ba241"
-          },
-          "ios": {
-            "apiKey": "8d02f37620279316fdd3b62f3bec7ae0"
-          }
-        }
-      ],
       "expo-font"
     ],
     "extra": {
