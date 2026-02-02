@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from tortoise.contrib.fastapi import register_tortoise
-from app.routers import auth, users, profile, inventory, content, explore, ai, upload, notifications, search, shopping, maps
+from app.routers import auth, users, profile, inventory, content, explore, ai, upload, notifications, search, shopping, maps, chats
 import os
 import time
 import json
@@ -117,6 +117,7 @@ app.include_router(search.router, prefix="/api/v1/search", tags=["search"])
 app.include_router(ai.router, prefix="/api/v1/ai", tags=["ai"])
 app.include_router(upload.router, prefix="/api/v1", tags=["upload"])
 app.include_router(notifications.router, prefix="/api/v1", tags=["notifications"])
+app.include_router(chats.router, prefix="/api/v1", tags=["chats"])
 app.include_router(shopping.router, prefix="/api/v1/shopping-list", tags=["shopping"])
 app.include_router(maps.router, prefix="/api/v1/maps", tags=["maps"])
 
@@ -131,3 +132,23 @@ register_tortoise(
     generate_schemas=True,
     add_exception_handlers=True,
     )
+
+
+@app.on_event("startup")
+async def seed_system_notifications():
+    from app.models.users import User
+    from app.models.notifications import Notification
+
+    users = await User.all().limit(200)
+    for u in users:
+        exists = await Notification.filter(user=u, type="system").exists()
+        if exists:
+            continue
+        await Notification.create(
+            user=u,
+            type="system",
+            title="系统消息",
+            content="欢迎使用 Food Illustration App！这里会展示系统通知与聊天消息。",
+            is_read=False,
+            sender=None,
+        )

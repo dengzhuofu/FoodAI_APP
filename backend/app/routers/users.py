@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from app.schemas.users import UserOut, UserUpdate, WhatToEatPresetCreate, WhatToEatPresetOut
+from app.schemas.users import UserOut, UserUpdate, WhatToEatPresetCreate, WhatToEatPresetOut, UserPublicProfileOut
 from app.schemas.content import CommentOut
 from app.models.users import User, Follow, WhatToEatPreset
 from app.models.recipes import Comment
@@ -74,6 +74,42 @@ async def get_user_stats(current_user: User = Depends(get_current_user)):
         "followers_count": followers_count,
         "following_count": following_count
     }
+
+
+@router.get("/{user_id}/profile", response_model=UserPublicProfileOut)
+async def get_user_profile(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+):
+    from app.models.recipes import Recipe
+    from app.models.restaurants import Restaurant
+
+    user = await User.get_or_none(id=user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    recipes_count = await Recipe.filter(author_id=user_id).count()
+    restaurants_count = await Restaurant.filter(author_id=user_id).count()
+    followers_count = await Follow.filter(following_id=user_id).count()
+    following_count = await Follow.filter(follower_id=user_id).count()
+    is_following = False
+    if current_user.id != user_id:
+        is_following = await Follow.filter(follower=current_user, following=user).exists()
+
+    return UserPublicProfileOut(
+        id=user.id,
+        uid=user.id,
+        username=user.username,
+        nickname=user.nickname,
+        avatar=user.avatar,
+        bio=user.bio,
+        gender=None,
+        followers_count=followers_count,
+        following_count=following_count,
+        recipes_count=recipes_count,
+        restaurants_count=restaurants_count,
+        is_following=is_following,
+    )
 
 @router.get("/{user_id}/posts")
 async def get_user_posts(

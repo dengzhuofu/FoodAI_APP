@@ -11,8 +11,28 @@ export interface UserStats {
   following_count: number;
 }
 
+export interface UserPublicProfile {
+  id: number;
+  uid: number;
+  username: string;
+  nickname: string;
+  avatar?: string | null;
+  bio?: string | null;
+  gender?: string | null;
+  followers_count: number;
+  following_count: number;
+  recipes_count: number;
+  restaurants_count: number;
+  is_following: boolean;
+}
+
 export const getUserStats = async (): Promise<UserStats> => {
   const response = await client.get('/users/me/stats');
+  return response.data;
+};
+
+export const getUserPublicProfile = async (userId: number): Promise<UserPublicProfile> => {
+  const response = await client.get(`/users/${userId}/profile`);
   return response.data;
 };
 

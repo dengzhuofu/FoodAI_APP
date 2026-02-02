@@ -8,11 +8,12 @@ import { FeedItem } from '../../api/explore';
 interface FeedCardProps {
   item: FeedItem;
   onPress: () => void;
+  onPressAuthor?: () => void;
   height?: number;
   style?: ViewStyle;
 }
 
-const FeedCard: React.FC<FeedCardProps> = ({ item, onPress, height = 200, style }) => {
+const FeedCard: React.FC<FeedCardProps> = ({ item, onPress, onPressAuthor, height = 200, style }) => {
   const isRestaurant = item.type === 'restaurant';
 
   const displayImage = item.image || (item.images && item.images.length > 0 ? item.images[0] : null) || 'https://via.placeholder.com/300';
@@ -62,13 +63,13 @@ const FeedCard: React.FC<FeedCardProps> = ({ item, onPress, height = 200, style 
       
       <View style={styles.content}>
         <View style={styles.footer}>
-          <View style={styles.authorInfo}>
-            <Image 
-              source={{ uri: 'https://via.placeholder.com/150' }} 
-              style={styles.avatar} 
+          <TouchableOpacity style={styles.authorInfo} activeOpacity={0.85} onPress={onPressAuthor}>
+            <Image
+              source={{ uri: item.author_avatar || 'https://via.placeholder.com/150' }}
+              style={styles.avatar}
             />
             <Text style={styles.authorName} numberOfLines={1}>{item.author}</Text>
-          </View>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.likeBtn} onPress={(e) => { e.preventDefault(); /* TODO: Implement direct like on card */ }}>
             <Ionicons name="heart-outline" size={16} color="#1A1A1A" />
             <Text style={styles.likeCount}>{item.likes}</Text>

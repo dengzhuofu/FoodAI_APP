@@ -38,6 +38,8 @@ export type RootStackParamList = {
   MyKitchen: undefined;
   Publish: undefined;
   Messages: undefined;
+  UserDetail: { userId: number };
+  Chat: { peerUserId: number; conversationId?: number; peerNickname?: string; peerAvatar?: string };
   
   // Publish
   PublishRecipe: undefined;

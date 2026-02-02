@@ -34,8 +34,11 @@ const SearchResultScreen = () => {
             id: r.id,
             type: 'recipe',
             title: r.title,
-            image: r.image || '',
-            author: r.author?.nickname || 'User',
+            image: r.cover_image || r.images?.[0] || '',
+            author: r.author?.nickname || r.author?.username || '用户',
+            author_id: r.author?.id,
+            author_avatar: r.author?.avatar,
+            author_username: r.author?.username,
             likes: r.likes_count || 0,
             created_at: r.created_at,
           }));
@@ -47,7 +50,10 @@ const SearchResultScreen = () => {
             type: 'restaurant',
             title: r.name,
             image: r.images?.[0] || '',
-            author: 'Restaurant',
+            author: r.author?.nickname || r.author?.username || '用户',
+            author_id: r.author?.id,
+            author_avatar: r.author?.avatar,
+            author_username: r.author?.username,
             likes: r.rating ? Math.floor(r.rating * 10) : 0,
             created_at: r.created_at,
           }));
@@ -165,11 +171,23 @@ const styles = StyleSheet.create({
   listContent: {
     paddingVertical: theme.spacing.md,
   },
+  scrollContent: {
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.screenHorizontal,
+  },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingTop: 100,
+  },
+  masonryContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  column: {
+    width: (Dimensions.get('window').width - theme.spacing.screenHorizontal * 2 - 12) / 2,
+    gap: 12,
   },
   emptyText: {
     color: theme.colors.textSecondary,

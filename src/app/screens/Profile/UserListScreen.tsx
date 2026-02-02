@@ -40,17 +40,23 @@ const UserListScreen = () => {
   }, [userId, type]);
 
   const renderItem = ({ item }: { item: any }) => (
-    <View style={styles.userItem}>
+    <TouchableOpacity
+      style={styles.userItem}
+      activeOpacity={0.85}
+      onPress={() => {
+        // @ts-ignore
+        navigation.navigate('UserDetail', { userId: item.id });
+      }}
+    >
       <Image source={{ uri: item.avatar || 'https://via.placeholder.com/100' }} style={styles.avatar} />
       <View style={styles.userInfo}>
         <Text style={styles.username}>{item.nickname || item.username}</Text>
         <Text style={styles.bio} numberOfLines={1}>{item.bio || 'No bio'}</Text>
       </View>
-      {/* Follow button logic would go here if we had 'is_following' status for each item */}
-      <TouchableOpacity style={styles.actionButton}>
+      <View style={styles.actionButton}>
         <Text style={styles.actionText}>查看</Text>
-      </TouchableOpacity>
-    </View>
+      </View>
+    </TouchableOpacity>
   );
 
   return (

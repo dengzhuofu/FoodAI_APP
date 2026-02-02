@@ -1,13 +1,16 @@
 import client from './client';
 import { Platform } from 'react-native';
 
-export const uploadFile = async (uri: string): Promise<string> => {
+export const uploadFile = async (
+  uri: string,
+  options?: { filename?: string; mimeType?: string }
+): Promise<string> => {
   const formData = new FormData();
   
   // Need to convert URI to blob/file object for React Native
-  const filename = uri.split('/').pop() || 'image.jpg';
+  const filename = options?.filename || uri.split('/').pop() || 'file';
   const match = /\.(\w+)$/.exec(filename);
-  const type = match ? `image/${match[1]}` : 'image/jpeg';
+  const type = options?.mimeType || (match ? `image/${match[1]}` : 'application/octet-stream');
 
   if (Platform.OS === 'web') {
     // For Web, we need to fetch the blob from the blob: URI

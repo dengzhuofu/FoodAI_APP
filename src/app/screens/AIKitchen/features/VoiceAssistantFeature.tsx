@@ -61,6 +61,7 @@ const ThinkingBubble = ({ thoughts }: { thoughts: any[] }) => {
 
 const VoiceAssistantFeature = () => {
   const navigation = useNavigation();
+  const GiftedChatAny = GiftedChat as any;
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   
@@ -623,9 +624,9 @@ const VoiceAssistantFeature = () => {
         </View>
 
         <View style={styles.content}>
-          <GiftedChat
+          <GiftedChatAny
             messages={messages}
-            onSend={(messages) => onSend(messages)}
+            onSend={(messages: IMessage[]) => onSend(messages)}
             user={{
               _id: 1,
             }}
@@ -633,7 +634,6 @@ const VoiceAssistantFeature = () => {
             renderMessageText={renderMessageText}
             renderSend={renderSend}
             renderAvatar={() => null}
-            showAvatarForEveryMessage={true}
             isTyping={isTyping}
             placeholder={isRecording ? "正在录音..." : "输入消息..."}
             timeTextStyle={{ left: { color: '#999', fontSize: 10 }, right: { color: '#ccc', fontSize: 10 } }}

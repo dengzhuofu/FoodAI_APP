@@ -226,7 +226,7 @@ const GeneratedRecipeResult = () => {
 
   const renderIngredients = () => (
     <View style={styles.listContainer}>
-      {recipe.ingredients.map((item, index) => (
+      {(recipe.ingredients as any[]).map((item: any, index: number) => (
         <View key={index} style={styles.ingredientItem}>
           <Text style={styles.ingredientText}>{item}</Text>
         </View>
@@ -236,7 +236,7 @@ const GeneratedRecipeResult = () => {
 
   const renderSteps = () => (
     <View style={styles.listContainer}>
-      {recipe.steps.map((step, index) => (
+      {(recipe.steps as any[]).map((step: any, index: number) => (
         <View key={index} style={styles.stepItem}>
           <View style={styles.stepNumberContainer}>
             <Text style={styles.stepNumber}>{index + 1}</Text>
@@ -251,7 +251,7 @@ const GeneratedRecipeResult = () => {
 
   const handleHistoryPress = (item: AILog) => {
     if (item.feature === 'text-to-recipe' || item.feature === 'image-to-recipe' || item.feature === 'fridge-to-recipe') {
-      navigation.push('GeneratedRecipeResult', { recipe: item.output_result });
+      (navigation as any).navigate('GeneratedRecipeResult', { recipe: item.output_result });
     } else {
       // For image generation or others, we might just show an alert or handle differently
       Alert.alert('History Item', 'This is an image generation record.');

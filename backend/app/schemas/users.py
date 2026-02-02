@@ -42,3 +42,18 @@ class WhatToEatPresetOut(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+class UserPublicProfileOut(BaseModel):
+    id: int
+    uid: int
+    username: str
+    nickname: str
+    avatar: Optional[str] = None
+    bio: Optional[str] = None
+    gender: Optional[str] = None
+    followers_count: int
+    following_count: int
+    recipes_count: int
+    restaurants_count: int
+    is_following: bool

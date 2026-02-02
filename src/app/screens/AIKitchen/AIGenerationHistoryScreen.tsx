@@ -7,7 +7,7 @@ import { theme } from '../../styles/theme';
 import { getHistory, AILog } from '../../../api/ai';
 
 const AIGenerationHistoryScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const [history, setHistory] = useState<AILog[]>([]);
   const [loading, setLoading] = useState(true);
 

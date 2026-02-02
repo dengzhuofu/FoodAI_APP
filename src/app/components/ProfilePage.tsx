@@ -28,7 +28,7 @@ const ProfilePage = () => {
   const user = useUserStore(state => state.user);
   const setUser = useUserStore(state => state.setUser);
   const [profile, setProfile] = useState<any>(null);
-  const [stats, setStats] = useState<UserStats>({ recipes_count: 0, followers_count: 0, following_count: 0 });
+  const [stats, setStats] = useState<UserStats>({ recipes_count: 0, restaurants_count: 0, followers_count: 0, following_count: 0 });
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -41,7 +41,7 @@ const ProfilePage = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Updates Info
-  const { updateId, channel, currentlyRunning } = Updates;
+  const { updateId, channel } = Updates;
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setToast({ visible: true, message, type });

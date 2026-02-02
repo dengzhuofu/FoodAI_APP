@@ -6,8 +6,10 @@ import { Platform } from 'react-native';
 export interface User {
   id: number;
   username: string;
-  email: string;
+  email?: string;
+  nickname?: string;
   avatar?: string;
+  bio?: string;
 }
 
 export interface Comment {

@@ -5,6 +5,7 @@ import { theme } from '../styles/theme';
 import { Comment } from '../../api/content';
 import { BASE_URL } from '../../api/client';
 import { formatDate } from '../../utils/date';
+import { useNavigation } from '@react-navigation/native';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -20,6 +21,7 @@ interface CommentsSectionProps {
 }
 
 const CommentsSection: React.FC<CommentsSectionProps> = ({ comments, targetId, targetType, onRefresh, currentUserId, onReply }) => {
+  const navigation = useNavigation<any>();
   
   const ReplyItem = ({ item, allReplies }: { item: Comment, allReplies: Comment[] }) => {
     let parentUser = null;
@@ -30,10 +32,18 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ comments, targetId, t
 
     return (
       <View style={styles.replyRow}>
-        <Image 
-          source={{ uri: item.user.avatar || 'https://via.placeholder.com/150' }} 
-          style={styles.replyAvatar} 
-        />
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => {
+            // @ts-ignore
+            navigation.navigate('UserDetail', { userId: item.user.id });
+          }}
+        >
+          <Image 
+            source={{ uri: item.user.avatar || 'https://via.placeholder.com/150' }} 
+            style={styles.replyAvatar} 
+          />
+        </TouchableOpacity>
         <View style={styles.contentColumn}>
            <View style={styles.usernameRow}>
              <Text style={styles.replyUsername}>{item.user.username}</Text>
@@ -87,10 +97,18 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ comments, targetId, t
 
     return (
       <View style={styles.commentRow}>
-        <Image 
-          source={{ uri: item.user.avatar || 'https://via.placeholder.com/150' }} 
-          style={styles.avatar} 
-        />
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => {
+            // @ts-ignore
+            navigation.navigate('UserDetail', { userId: item.user.id });
+          }}
+        >
+          <Image 
+            source={{ uri: item.user.avatar || 'https://via.placeholder.com/150' }} 
+            style={styles.avatar} 
+          />
+        </TouchableOpacity>
         <View style={styles.contentColumn}>
           <Text style={styles.username}>{item.user.username}</Text>
           <Text style={styles.commentText}>{item.content}</Text>

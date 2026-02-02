@@ -44,7 +44,8 @@ class Settings(BaseSettings):
                         "app.models.ai_logs",
                         "app.models.notifications",
                         "app.models.search",
-                        "app.models.chat"
+                        "app.models.chat",
+                        "app.models.direct_chat"
                     ],
                     "default_connection": "default",
                 },

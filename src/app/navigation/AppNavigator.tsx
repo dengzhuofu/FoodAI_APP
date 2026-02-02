@@ -145,7 +145,7 @@ const MainTabs = () => {
         listeners={({ navigation }) => ({
           tabPress: (e) => {
             e.preventDefault();
-            navigation.navigate('Publish');
+            (navigation as any).navigate('Publish');
           },
         })}
       />
@@ -167,6 +167,8 @@ import { useAuth } from '../../context/AuthContext';
 import { ActivityIndicator } from 'react-native';
 import UserListScreen from '../screens/Profile/UserListScreen';
 import UserPostsScreen from '../screens/Profile/UserPostsScreen';
+import ChatScreen from '../screens/Chat/ChatScreen';
+import UserDetailScreen from '../screens/User/UserDetailScreen';
 
 const AppNavigator = () => {
   const { isLoading, userToken } = useAuth();
@@ -184,8 +186,6 @@ const AppNavigator = () => {
       <Stack.Navigator 
         screenOptions={{ 
           headerShown: false, 
-          headerBackTitleVisible: false,
-          animationEnabled: Platform.OS !== 'web',
           cardStyleInterpolator: Platform.OS === 'web' ? CardStyleInterpolators.forNoAnimation : undefined,
         }}
       >
@@ -214,7 +214,7 @@ const AppNavigator = () => {
             
             {/* Explore */}
             <Stack.Screen name="WhatToEat" component={WhatToEatScreen} options={{ title: '今天吃什么' }} />
-            <Stack.Screen name="Search" component={SearchScreen} options={{ headerShown: false, animationEnabled: false }} />
+            <Stack.Screen name="Search" component={SearchScreen} options={{ headerShown: false }} />
             <Stack.Screen name="SearchResult" component={SearchResultScreen} options={{ headerShown: false }} />
             
             {/* Details */}
@@ -243,6 +243,8 @@ const AppNavigator = () => {
             {/* Other */}
             <Stack.Screen name="MyKitchen" component={MyKitchenPage} options={{ title: '我的冰箱' }} />
             <Stack.Screen name="Messages" component={MessagesPage} options={{ title: '消息' }} />
+            <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="UserDetail" component={UserDetailScreen} options={{ headerShown: false }} />
             
             <Stack.Screen name="PublishRecipe" component={PublishRecipeScreen} options={{ title: '发布菜谱', headerShown: false }} />
             <Stack.Screen name="PublishStore" component={PublishStoreScreen} options={{ title: '发布探店', headerShown: false }} />

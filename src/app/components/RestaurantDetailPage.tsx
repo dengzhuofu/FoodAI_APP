@@ -109,6 +109,34 @@ const RestaurantDetailPage = () => {
     fetchData();
   }, [id]);
 
+  useEffect(() => {
+    const run = async () => {
+      if (!restaurant?.latitude || !restaurant?.longitude) return;
+      try {
+        const formatted = await reverseGeocode({ location: `${restaurant.longitude},${restaurant.latitude}` });
+        setResolvedAddress(formatted);
+      } catch (e) {
+        setResolvedAddress(null);
+      }
+    };
+    run();
+  }, [restaurant?.latitude, restaurant?.longitude]);
+
+  useEffect(() => {
+    const requestLocationPermission = async () => {
+      if (Platform.OS !== 'android') return;
+      try {
+        await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        ]);
+      } catch (e) {
+        // ignore
+      }
+    };
+    requestLocationPermission();
+  }, []);
+
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent]}>
@@ -164,34 +192,6 @@ const RestaurantDetailPage = () => {
       Alert.alert('错误', '操作失败');
     }
   };
-
-  useEffect(() => {
-    const run = async () => {
-      if (!restaurant.latitude || !restaurant.longitude) return;
-      try {
-        const formatted = await reverseGeocode({ location: `${restaurant.longitude},${restaurant.latitude}` });
-        setResolvedAddress(formatted);
-      } catch (e) {
-        setResolvedAddress(null);
-      }
-    };
-    run();
-  }, [restaurant.latitude, restaurant.longitude]);
-
-  useEffect(() => {
-    const requestLocationPermission = async () => {
-      if (Platform.OS !== 'android') return;
-      try {
-        await PermissionsAndroid.requestMultiple([
-          PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        ]);
-      } catch (e) {
-        // ignore
-      }
-    };
-    requestLocationPermission();
-  }, []);
 
   const renderMapPreview = () => {
     if (Platform.OS === 'web') return null;
@@ -329,10 +329,18 @@ const RestaurantDetailPage = () => {
         
         <Text style={styles.title}>{restaurant.title}</Text>
         
-        <View style={styles.authorRow}>
+        <TouchableOpacity
+          style={styles.authorRow}
+          activeOpacity={0.85}
+          onPress={() => {
+            if (!restaurant?.author?.id) return;
+            // @ts-ignore
+            navigation.navigate('UserDetail', { userId: restaurant.author.id });
+          }}
+        >
           <Image source={{ uri: restaurant.author.avatar || 'https://via.placeholder.com/150' }} style={styles.avatar} />
           <Text style={styles.authorName}>{restaurant.author.username}</Text>
-        </View>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -427,6 +435,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9F9F9',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    backgroundColor: theme.colors.white,
+    ...theme.shadows.sm,
+  },
+  backButton: {
+    padding: theme.spacing.sm,
   },
   scrollContent: {
     paddingBottom: 120,

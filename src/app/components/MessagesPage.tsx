@@ -1,32 +1,75 @@
-import React, { useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { theme } from '../styles/theme';
-import { getNotifications, Notification } from '../../api/notifications';
+import { getNotifications, markAsRead, Notification } from '../../api/notifications';
+import { listConversations, DirectConversation } from '../../api/chats';
+import { connectChatSocket } from '../../utils/chatSocket';
+import { useUserStore } from '../../store/useUserStore';
 
 const MessagesPage = () => {
   const navigation = useNavigation();
-  const [activeTab, setActiveTab] = useState<'notifications' | 'interactions'>('notifications');
+  const me = useUserStore(s => s.user);
+  const meId = me?.id || 0;
+  const [activeTab, setActiveTab] = useState<'notifications' | 'chats'>('notifications');
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [interactions, setInteractions] = useState<Notification[]>([]);
+  const [conversations, setConversations] = useState<DirectConversation[]>([]);
+  const wsRef = useRef<WebSocket | null>(null);
 
   const fetchData = async () => {
     try {
       const data = await getNotifications();
       setNotifications(data.filter(n => n.type === 'system'));
-      setInteractions(data.filter(n => n.type !== 'system'));
     } catch (error) {
       console.error("Failed to fetch notifications", error);
+    }
+  };
+
+  const fetchChats = async () => {
+    try {
+      const data = await listConversations();
+      setConversations(data);
+    } catch (error) {
+      console.error("Failed to fetch conversations", error);
     }
   };
 
   useFocusEffect(
     useCallback(() => {
       fetchData();
+      fetchChats();
     }, [])
   );
+
+  useEffect(() => {
+    let disposed = false;
+    (async () => {
+      if (!meId) return;
+      const ws = await connectChatSocket({
+        onEvent: (event) => {
+          if (disposed) return;
+          if (event?.type === 'new_message' || event?.type === 'read') {
+            fetchChats();
+          }
+        },
+      });
+      wsRef.current = ws;
+    })();
+
+    return () => {
+      disposed = true;
+      try {
+        wsRef.current?.close();
+      } catch {
+        return;
+      }
+    };
+  }, [meId]);
+
+  const hasUnreadSystem = useMemo(() => notifications.some(n => !n.is_read), [notifications]);
+  const hasUnreadChat = useMemo(() => conversations.some(c => c.unread_count > 0), [conversations]);
 
   const renderTabs = () => (
     <View style={styles.tabContainer}>
@@ -35,16 +78,54 @@ const MessagesPage = () => {
         onPress={() => setActiveTab('notifications')}
       >
         <Text style={[styles.tabText, activeTab === 'notifications' && styles.activeTabText]}>通知</Text>
-        {notifications.some(n => !n.read) && <View style={styles.badge} />}
+        {hasUnreadSystem && <View style={styles.badge} />}
       </TouchableOpacity>
       <TouchableOpacity 
-        style={[styles.tab, activeTab === 'interactions' && styles.activeTab]}
-        onPress={() => setActiveTab('interactions')}
+        style={[styles.tab, activeTab === 'chats' && styles.activeTab]}
+        onPress={() => setActiveTab('chats')}
       >
-        <Text style={[styles.tabText, activeTab === 'interactions' && styles.activeTabText]}>互动</Text>
+        <Text style={[styles.tabText, activeTab === 'chats' && styles.activeTabText]}>聊天</Text>
+        {hasUnreadChat && <View style={styles.badge} />}
       </TouchableOpacity>
     </View>
   );
+
+  const openSystemNotification = async (item: Notification) => {
+    try {
+      if (!item.is_read) {
+        await markAsRead(item.id);
+        setNotifications(prev => prev.map(n => (n.id === item.id ? { ...n, is_read: true } : n)));
+      }
+    } catch {
+      return;
+    }
+  };
+
+  const openChat = async (conv: DirectConversation) => {
+    try {
+      if (conv.unread_count > 0) {
+        setConversations(prev => prev.map(c => (c.id === conv.id ? { ...c, unread_count: 0 } : c)));
+      }
+      // @ts-ignore
+      navigation.navigate('Chat', {
+        peerUserId: conv.peer.id,
+        conversationId: conv.id,
+        peerNickname: conv.peer.nickname,
+        peerAvatar: conv.peer.avatar,
+      });
+    } catch {
+      return;
+    }
+  };
+
+  const formatLastChatText = (conv: DirectConversation) => {
+    const m = conv.last_message;
+    if (!m) return '开始聊天吧';
+    if (m.message_type === 'image') return '[图片]';
+    if (m.message_type === 'voice') return '[语音]';
+    if (m.message_type === 'sticker') return '[表情包]';
+    return m.text || '';
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -62,7 +143,12 @@ const MessagesPage = () => {
         {activeTab === 'notifications' ? (
           <View>
             {notifications.map((item) => (
-              <TouchableOpacity key={item.id} style={[styles.notificationCard, !item.is_read && styles.unreadCard]}>
+              <TouchableOpacity
+                key={item.id}
+                style={[styles.notificationCard, !item.is_read && styles.unreadCard]}
+                activeOpacity={0.85}
+                onPress={() => openSystemNotification(item)}
+              >
                 <View style={[styles.iconContainer, { backgroundColor: theme.colors.primary + '20' }]}>
                   <Ionicons name="notifications" size={24} color={theme.colors.primary} />
                 </View>
@@ -78,19 +164,23 @@ const MessagesPage = () => {
           </View>
         ) : (
           <View>
-            {interactions.map((item) => (
-              <TouchableOpacity key={item.id} style={styles.interactionCard}>
-                <Image source={{ uri: item.sender?.avatar || 'https://via.placeholder.com/150' }} style={styles.avatar} />
+            {conversations.map((conv) => (
+              <TouchableOpacity key={conv.id} style={styles.interactionCard} activeOpacity={0.85} onPress={() => openChat(conv)}>
+                <Image source={{ uri: conv.peer.avatar || 'https://via.placeholder.com/150' }} style={styles.avatar} />
                 <View style={styles.interactionContent}>
                   <View style={styles.interactionHeader}>
-                    <Text style={styles.userName}>{item.sender?.username}</Text>
-                    <Text style={styles.timeText}>{new Date(item.created_at).toLocaleDateString()}</Text>
+                    <Text style={styles.userName} numberOfLines={1}>{conv.peer.nickname}</Text>
+                    <Text style={styles.timeText}>
+                      {conv.last_message?.created_at ? new Date(conv.last_message.created_at).toLocaleDateString() : ''}
+                    </Text>
                   </View>
-                  <Text style={styles.actionText}>
-                    {item.title}
-                  </Text>
-                  <Text style={styles.notificationText} numberOfLines={1}>{item.content}</Text>
+                  <Text style={styles.notificationText} numberOfLines={1}>{formatLastChatText(conv)}</Text>
                 </View>
+                {conv.unread_count > 0 ? (
+                  <View style={styles.chatBadge}>
+                    <Text style={styles.chatBadgeText}>{conv.unread_count > 99 ? '99+' : conv.unread_count}</Text>
+                  </View>
+                ) : null}
               </TouchableOpacity>
             ))}
           </View>
@@ -203,6 +293,21 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.md,
     marginBottom: theme.spacing.sm,
     ...theme.shadows.sm,
+  },
+  chatBadge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    paddingHorizontal: 6,
+    backgroundColor: theme.colors.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: theme.spacing.sm,
+  },
+  chatBadgeText: {
+    fontSize: 11,
+    color: '#FFF',
+    fontWeight: '800',
   },
   avatar: {
     width: 48,

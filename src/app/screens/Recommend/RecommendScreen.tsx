@@ -110,7 +110,7 @@ const RecommendScreen = () => {
         </View>
         <TouchableOpacity 
           style={styles.avatarContainer} 
-          onPress={() => navigation.navigate('Profile')}
+          onPress={() => (navigation as any).navigate('Profile')}
           activeOpacity={0.8}
         >
           <Image 
@@ -217,6 +217,10 @@ const RecommendScreen = () => {
         item={item}
         height={randomHeight}
         onPress={() => navigation.navigate(isRestaurant ? 'RestaurantDetail' : 'RecipeDetail', { id: item.id.toString() })}
+        onPressAuthor={() => {
+          if (!item.author_id) return;
+          navigation.navigate('UserDetail', { userId: item.author_id });
+        }}
       />
     );
   };

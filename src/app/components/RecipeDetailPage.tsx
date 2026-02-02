@@ -376,15 +376,23 @@ const RecipeDetailPage = () => {
           <Ionicons name="chevron-back" size={28} color="#333" />
         </TouchableOpacity>
         
-        <View style={styles.topBarAuthor}>
-          <Image 
-            source={{ uri: recipe?.author.avatar || 'https://via.placeholder.com/150' }} 
-            style={styles.topBarAvatar} 
+        <TouchableOpacity
+          style={styles.topBarAuthor}
+          activeOpacity={0.85}
+          onPress={() => {
+            if (!recipe?.author?.id) return;
+            // @ts-ignore
+            navigation.navigate('UserDetail', { userId: recipe.author.id });
+          }}
+        >
+          <Image
+            source={{ uri: recipe?.author.avatar || 'https://via.placeholder.com/150' }}
+            style={styles.topBarAvatar}
           />
           <Text style={styles.topBarAuthorName} numberOfLines={1}>
             {recipe?.author.username}
           </Text>
-        </View>
+        </TouchableOpacity>
 
         <View style={styles.topBarActions}>
           <TouchableOpacity 
@@ -456,6 +464,36 @@ const styles = StyleSheet.create({
     width: '100%',
     position: 'relative',
     marginTop: 0, 
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+  },
+  paginationContainer: {
+    position: 'absolute',
+    bottom: 14,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  paginationDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+  },
+  paginationDotActive: {
+    backgroundColor: '#FFF',
+  },
+  paginationDotInactive: {
+    backgroundColor: 'rgba(255,255,255,0.45)',
   },
   heroImage: {
     width: width,

@@ -7,7 +7,7 @@ import { theme } from '../styles/theme';
 import { BlurView } from 'expo-blur';
 
 const PublishPage = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
 
   const handlePostRecipe = () => {
     navigation.navigate('PublishRecipe');

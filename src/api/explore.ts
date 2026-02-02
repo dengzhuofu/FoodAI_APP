@@ -31,6 +31,9 @@ export interface FeedItem {
   image: string;
   images?: string[]; // Added to support fallback
   author: string;
+  author_id?: number | null;
+  author_avatar?: string | null;
+  author_username?: string | null;
   likes: number;
   views?: number;
   category?: string;
