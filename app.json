@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -35,11 +36,18 @@
         "expo-build-properties",
         {
           "android": {
-            "newArchEnabled": true,
             "usesCleartextTraffic": true
+          }
+        }
+      ],
+      [
+        "./plugins/withAmap",
+        {
+          "android": {
+            "apiKey": "5b354d5dbc31fc4188c46b3b924ba241"
           },
           "ios": {
-            "newArchEnabled": true
+            "apiKey": "8d02f37620279316fdd3b62f3bec7ae0"
           }
         }
       ],

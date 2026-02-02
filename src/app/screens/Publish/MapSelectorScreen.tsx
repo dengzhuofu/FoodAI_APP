@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, ActivityIndicator, TextInput, FlatList, Keyboard } from 'react-native';
-import MapView, { Region } from 'react-native-maps';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text, ActivityIndicator, Alert, TextInput, FlatList, Keyboard } from 'react-native';
+import { MapView, MapType, CameraPosition } from 'react-native-amap3d';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,11 +26,12 @@ const MapSelectorScreen = () => {
   const initLat = initialLocation?.latitude || 39.9042;
   const initLng = initialLocation?.longitude || 116.4074;
 
-  const [region, setRegion] = useState<Region>({
-    latitude: initLat,
-    longitude: initLng,
-    latitudeDelta: 0.005,
-    longitudeDelta: 0.005,
+  const [cameraPosition, setCameraPosition] = useState<CameraPosition>({
+    target: {
+      latitude: initLat,
+      longitude: initLng,
+    },
+    zoom: 16,
   });
 
   const [currentLocation, setCurrentLocation] = useState<{
@@ -60,12 +61,9 @@ const MapSelectorScreen = () => {
       if (result && result.regeocode) {
         const address = result.regeocode.formatted_address;
         let name = address;
-        // expo-location doesn't return POIs in regeocode, so we default to address
-        // If needed, we could try to parse more details, but address is fine for now.
-        
-        // Simulating the old logic where name might be different if POI exists
-        // Since we don't have POIs, we use address or street info
-        if (result.regeocode.addressComponent.streetNumber.street) {
+        if (result.regeocode.pois && result.regeocode.pois.length > 0) {
+          name = result.regeocode.pois[0].name;
+        } else if (result.regeocode.addressComponent.streetNumber.street) {
            name = result.regeocode.addressComponent.streetNumber.street + result.regeocode.addressComponent.streetNumber.number;
         }
 
@@ -83,11 +81,10 @@ const MapSelectorScreen = () => {
     }
   };
 
-  const handleRegionChangeComplete = (newRegion: Region) => {
-    // When map stops moving, fetch address for center
-    // We update the region state to keep it in sync
-    setRegion(newRegion);
-    fetchAddress(newRegion.latitude, newRegion.longitude);
+  const handleCameraIdle = (event: any) => {
+    // When camera stops moving, fetch address for center
+    const { target } = event.nativeEvent;
+    fetchAddress(target.latitude, target.longitude);
   };
 
   const handleConfirm = () => {
@@ -128,11 +125,12 @@ const MapSelectorScreen = () => {
     // Parse location string "lng,lat"
     const [lng, lat] = item.location.split(',').map(Number);
     
-    setRegion({
-      latitude: lat,
-      longitude: lng,
-      latitudeDelta: 0.005,
-      longitudeDelta: 0.005,
+    setCameraPosition({
+      target: {
+        latitude: lat,
+        longitude: lng,
+      },
+      zoom: 16,
     });
     
     // Also fetch address immediately
@@ -169,9 +167,10 @@ const MapSelectorScreen = () => {
 
       <View style={styles.contentContainer}>
         <MapView
-          style={styles.webview}
-          region={region}
-          onRegionChangeComplete={handleRegionChangeComplete}
+          style={styles.webview} // reusing style name for simplicity
+          mapType={MapType.Standard}
+          cameraPosition={cameraPosition}
+          onCameraIdle={handleCameraIdle}
         />
         
         {/* Center Marker Overlay */}

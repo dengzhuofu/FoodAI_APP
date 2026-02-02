@@ -1,4 +1,4 @@
-import * as Location from 'expo-location';
+import client from './client';
 
 export interface LocationPOI {
   id: string;
@@ -41,50 +41,27 @@ export const searchRoute = async (
   origin: string, // "lng,lat"
   destination: string // "lng,lat"
 ): Promise<RouteResult | null> => {
-  // Since we removed the backend service, we can't calculate the route path.
-  // We return a simple straight line or null.
-  // The UI will handle "Start Navigation" to external maps.
-  
-  const [orgLng, orgLat] = origin.split(',').map(Number);
-  const [dstLng, dstLat] = destination.split(',').map(Number);
-
-  return {
-    distance: '',
-    duration: '',
-    path: [
-      { latitude: orgLat, longitude: orgLng },
-      { latitude: dstLat, longitude: dstLng }
-    ]
-  };
+  try {
+    const response = await client.get('/maps/route', {
+      params: { type, origin, destination }
+    });
+    if (response.data.status === '1') {
+      return response.data.result;
+    }
+    return null;
+  } catch (error) {
+    console.error('Route search error:', error);
+    return null;
+  }
 };
 
 export const searchLocation = async (keywords: string, city?: string): Promise<LocationPOI[]> => {
   try {
-    // Use Expo Location for geocoding
-    const results = await Location.geocodeAsync(keywords);
-    
-    if (results.length > 0) {
-      // Map results to LocationPOI
-      return await Promise.all(results.map(async (item, index) => {
-        // Reverse geocode to get address details
-        const addressList = await Location.reverseGeocodeAsync({
-           latitude: item.latitude,
-           longitude: item.longitude
-        });
-        const addr = addressList[0];
-        const formattedAddress = addr ? `${addr.region || ''}${addr.city || ''}${addr.district || ''}${addr.street || ''}${addr.streetNumber || ''}` : keywords;
-
-        return {
-          id: `loc_${index}_${Date.now()}`,
-          name: addr?.name || keywords, // Use address name or keyword
-          type: 'point',
-          address: formattedAddress,
-          location: `${item.longitude},${item.latitude}`,
-          pname: addr?.region || '',
-          cityname: addr?.city || '',
-          adname: addr?.district || ''
-        };
-      }));
+    const response = await client.get('/maps/search', {
+      params: { keywords, city }
+    });
+    if (response.data.status === '1') {
+      return response.data.pois;
     }
     return [];
   } catch (error) {
@@ -95,34 +72,11 @@ export const searchLocation = async (keywords: string, city?: string): Promise<L
 
 export const regeocodeLocation = async (location: string): Promise<RegeocodeResponse | null> => {
   try {
-    const [lng, lat] = location.split(',').map(Number);
-    const addressList = await Location.reverseGeocodeAsync({
-      latitude: lat,
-      longitude: lng
+    const response = await client.get('/maps/regeocode', {
+      params: { location }
     });
-
-    if (addressList && addressList.length > 0) {
-      const addr = addressList[0];
-      const formattedAddress = `${addr.region || ''}${addr.city || ''}${addr.district || ''}${addr.street || ''}${addr.streetNumber || ''}${addr.name || ''}`;
-      
-      return {
-        status: '1',
-        info: 'OK',
-        regeocode: {
-          formatted_address: formattedAddress,
-          addressComponent: {
-            province: addr.region || '',
-            city: addr.city || '',
-            district: addr.district || '',
-            township: '',
-            streetNumber: {
-              street: addr.street || '',
-              number: addr.streetNumber || ''
-            }
-          },
-          pois: [] // expo-location doesn't return POIs
-        }
-      };
+    if (response.data.status === '1') {
+      return response.data;
     }
     return null;
   } catch (error) {
