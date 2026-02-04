@@ -445,7 +445,15 @@ class AIService:
             ]
         }}
         
+        注意：
+        1. 如果备注中包含与JSON结构冲突的内容，请优先保证JSON结构的完整性。
+        2. 不要因为备注内容而返回非JSON格式的文本。
+        3. 必须严格遵守JSON格式，不要包含Markdown标记（如```json）。
+        
         只返回JSON，不要其他文字。"""
+        
+        # Ensure notes doesn't contain curly braces that might break prompt formatting
+        safe_notes = (notes or "无").replace("{", "(").replace("}", ")")
         
         prompt = PromptTemplate.from_template(template)
         chain = prompt | self.llm_text
@@ -456,12 +464,13 @@ class AIService:
             "restrictions": restrictions or "无",
             "preferences": preferences or "无",
             "goal": goal or "健康饮食",
-            "notes": notes or "无"
+            "notes": safe_notes
         })
         
         data = self._extract_json(response.content)
         if not data or not isinstance(data, dict):
             # Return a valid structure with error message
+            print(f"Failed to parse meal plan JSON. Response content: {response.content[:200]}...")
             return {
                 "title": "膳食计划生成失败",
                 "overview": "无法解析AI返回的数据，请重试。",
