@@ -41,7 +41,7 @@ class RecipeBase(BaseModel):
     calories: Optional[int] = None
     nutrition: Optional[Dict] = None
     ingredients: List[Dict[str, str]] = []  # List of {name: str, amount: str}
-    steps: List[Dict[str, str]] = []        # List of {description: str, image: Optional[str]}
+    steps: List[Dict[str, Optional[str]]] = []        # List of {description: str, image: Optional[str]}
 
 class RecipeCreate(RecipeBase):
     pass
