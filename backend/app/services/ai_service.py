@@ -144,9 +144,8 @@ class AIService:
         response = await self._post("/images/generations", payload)
         return response["images"][0]["url"] 
 
-    def _clean_recipe_response(self, content: str) -> Dict[str, Any]:
+    def _extract_json(self, content: str) -> Any:
         try:
-            # Clean markdown
             content = content.strip()
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0]
@@ -154,31 +153,16 @@ class AIService:
                 content = content.replace("```", "")
             
             content = content.strip("` \n")
-            
-            data = json.loads(content)
-            
-            # Fix steps
-            if "steps" in data:
-                steps = data["steps"]
-                import re
-                
-                # Case 1: String "1. xxx 2. xxx"
-                if isinstance(steps, str):
-                    # Split by "1. ", "2. " etc.
-                    parts = re.split(r'\d+\.\s*', steps)
-                    data["steps"] = [p.strip() for p in parts if p.strip()]
-                    
-                # Case 2: List ["1. xxx 2. xxx"]
-                elif isinstance(steps, list) and len(steps) == 1:
-                    s = steps[0]
-                    # Check if it actually has multiple steps
-                    if "2." in s:
-                        parts = re.split(r'\d+\.\s*', s)
-                        data["steps"] = [p.strip() for p in parts if p.strip()]
-            
-            return data
-        except json.JSONDecodeError:
-            print(f"JSON Decode Error for content: {content}")
+            return json.loads(content)
+        except Exception as e:
+            print(f"JSON Extraction Error: {e} for content: {content[:100]}...")
+            return None
+
+    def _clean_recipe_response(self, content: str) -> Dict[str, Any]:
+        data = self._extract_json(content)
+        
+        if not data or not isinstance(data, dict):
+            # Fallback logic specifically for recipes
             return {
                 "title": "Generated Recipe",
                 "description": content[:100] + "...",
@@ -188,9 +172,27 @@ class AIService:
                 "cooking_time": "N/A",
                 "difficulty": "Unknown"
             }
-        except Exception as e:
-            print(f"Error processing recipe: {e}")
-            return {}
+            
+        # Fix steps
+        if "steps" in data:
+            steps = data["steps"]
+            import re
+            
+            # Case 1: String "1. xxx 2. xxx"
+            if isinstance(steps, str):
+                # Split by "1. ", "2. " etc.
+                parts = re.split(r'\d+\.\s*', steps)
+                data["steps"] = [p.strip() for p in parts if p.strip()]
+                
+            # Case 2: List ["1. xxx 2. xxx"]
+            elif isinstance(steps, list) and len(steps) == 1:
+                s = steps[0]
+                # Check if it actually has multiple steps
+                if "2." in s:
+                    parts = re.split(r'\d+\.\s*', s)
+                    data["steps"] = [p.strip() for p in parts if p.strip()]
+        
+        return data
 
     async def generate_recipe_from_text(self, description: str, preferences: str = "") -> Dict[str, Any]:
         """Use LangChain to generate recipe from text"""
@@ -457,7 +459,16 @@ class AIService:
             "notes": notes or "无"
         })
         
-        return self._clean_recipe_response(response.content)
+        data = self._extract_json(response.content)
+        if not data or not isinstance(data, dict):
+            # Return a valid structure with error message
+            return {
+                "title": "膳食计划生成失败",
+                "overview": "无法解析AI返回的数据，请重试。",
+                "daily_plans": []
+            }
+            
+        return data
 
     async def kitchen_agent_chat(self, user_id: int, message: str, history: List[Dict[str, Any]], agent_id: str = "kitchen_agent", session_id: int = None) -> Dict[str, Any]:
         """

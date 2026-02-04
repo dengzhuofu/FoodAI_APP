@@ -20,6 +20,7 @@ async def upgrade_db():
         # Recipes table changes
         "ALTER TABLE recipes ADD COLUMN cuisine VARCHAR(50) NULL;",
         "ALTER TABLE recipes ADD COLUMN category VARCHAR(50) NULL;",
+        "ALTER TABLE recipes ADD COLUMN tags JSON NULL;",
         
         # Restaurants table changes
         "ALTER TABLE restaurants ADD COLUMN cuisine VARCHAR(50) NULL;",
