@@ -69,8 +69,20 @@ async def get_daily_recommendation(
         
         interest_tags = []
         for r in source_recipes:
-            if r.get('tags'):
-                interest_tags.extend(r['tags'])
+            # Ensure tags is a list
+            tags = r.get('tags')
+            if tags and isinstance(tags, list):
+                interest_tags.extend(tags)
+            elif tags and isinstance(tags, str):
+                 # Try to parse if string (though it should be list in DB)
+                 try:
+                     import json
+                     parsed = json.loads(tags)
+                     if isinstance(parsed, list):
+                         interest_tags.extend(parsed)
+                 except:
+                     pass
+            
             if r.get('cuisine'):
                 interest_tags.append(r['cuisine'])
             if r.get('category'):
@@ -106,7 +118,21 @@ async def get_daily_recommendation(
         popular = await Recipe.filter(id__not_in=existing_ids).order_by("-likes_count").limit(needed).prefetch_related("author").all()
         recommended_recipes.extend(popular)
         
-    return recommended_recipes[:limit]
+    # Ensure all recipes have valid fields for Pydantic
+    valid_recipes = []
+    for r in recommended_recipes[:limit]:
+        # Manually ensure JSON fields are lists, not None
+        if r.images is None:
+            r.images = []
+        if r.tags is None:
+            r.tags = []
+        if r.ingredients is None:
+            r.ingredients = []
+        if r.steps is None:
+            r.steps = []
+        valid_recipes.append(r)
+
+    return valid_recipes
 
 @router.get("/recipes", response_model=List[RecipeOut])
 async def get_recipes(
