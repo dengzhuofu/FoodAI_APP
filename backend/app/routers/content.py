@@ -126,10 +126,31 @@ async def get_daily_recommendation(
             r.images = []
         if r.tags is None:
             r.tags = []
+            
+        # Fix ingredients: convert list of strings to list of dicts if necessary
         if r.ingredients is None:
             r.ingredients = []
+        elif isinstance(r.ingredients, list):
+            new_ingredients = []
+            for item in r.ingredients:
+                if isinstance(item, str):
+                    new_ingredients.append({"name": item, "amount": ""})
+                else:
+                    new_ingredients.append(item)
+            r.ingredients = new_ingredients
+            
+        # Fix steps: convert list of strings to list of dicts if necessary
         if r.steps is None:
             r.steps = []
+        elif isinstance(r.steps, list):
+            new_steps = []
+            for item in r.steps:
+                if isinstance(item, str):
+                    new_steps.append({"description": item, "image": None})
+                else:
+                    new_steps.append(item)
+            r.steps = new_steps
+            
         valid_recipes.append(r)
 
     return valid_recipes
