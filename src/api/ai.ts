@@ -107,6 +107,7 @@ export interface AgentPresetUpdate {
 export interface MealPlanRequest {
   dietary_restrictions?: string;
   preferences?: string;
+  notes?: string;
   headcount?: number;
   duration_days?: number;
   goal?: string;

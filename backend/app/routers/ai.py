@@ -201,7 +201,8 @@ async def generate_meal_plan(
         request.preferences,
         request.headcount,
         request.duration_days,
-        request.goal
+        request.goal,
+        request.notes
     )
     
     # Log to DB

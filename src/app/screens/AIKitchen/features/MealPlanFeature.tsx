@@ -1,21 +1,42 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Modal } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { generateMealPlan, MealPlanResult } from '../../../../api/ai';
+import { generateMealPlan, MealPlanResult, getHistory, AILog } from '../../../../api/ai';
 
 const MealPlanFeature = () => {
   const navigation = useNavigation<any>();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<MealPlanResult | null>(null);
+  
+  // History State
+  const [history, setHistory] = useState<AILog[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Form State
   const [restrictions, setRestrictions] = useState('');
   const [preferences, setPreferences] = useState('');
+  const [notes, setNotes] = useState('');
   const [headcount, setHeadcount] = useState('1');
   const [days, setDays] = useState('7');
   const [goal, setGoal] = useState('健康饮食');
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const fetchHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const data = await getHistory(5, 0, 'meal-plan');
+      setHistory(data);
+    } catch (error) {
+      console.error('Failed to fetch history:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   const handleGenerate = async () => {
     if (!days || !headcount) {
@@ -28,16 +49,24 @@ const MealPlanFeature = () => {
       const data = await generateMealPlan({
         dietary_restrictions: restrictions,
         preferences: preferences,
+        notes: notes,
         headcount: parseInt(headcount),
         duration_days: parseInt(days),
         goal: goal
       });
       setResult(data);
+      fetchHistory(); // Refresh history
     } catch (error) {
       console.error(error);
       Alert.alert('生成失败', 'AI服务暂时无法响应，请稍后再试');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleHistoryPress = (item: AILog) => {
+    if (item.output_result) {
+      setResult(item.output_result);
     }
   };
 
@@ -73,7 +102,7 @@ const MealPlanFeature = () => {
           style={styles.closeBtn}
           onPress={() => setResult(null)}
         >
-          <Text style={styles.closeBtnText}>重新生成</Text>
+          <Text style={styles.closeBtnText}>返回继续生成</Text>
         </TouchableOpacity>
       </View>
     );
@@ -161,6 +190,15 @@ const MealPlanFeature = () => {
               ))}
             </View>
 
+            <Text style={styles.label}>额外备注 (可选)</Text>
+            <TextInput
+              style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
+              placeholder="例如：周三中午需要在公司吃便当，晚餐想吃鱼..."
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+            />
+
             <TouchableOpacity 
               style={[styles.generateButton, loading && styles.buttonDisabled]} 
               onPress={handleGenerate}
@@ -173,6 +211,41 @@ const MealPlanFeature = () => {
               )}
             </TouchableOpacity>
           </View>
+
+          {/* History Section */}
+          <View style={styles.historySection}>
+            <Text style={styles.historySectionTitle}>历史记录</Text>
+            {loadingHistory ? (
+              <ActivityIndicator color="#1A1A1A" style={{ marginTop: 20 }} />
+            ) : history.length > 0 ? (
+              <View style={styles.historyList}>
+                {history.map((item) => (
+                  <TouchableOpacity 
+                    key={item.id} 
+                    style={styles.historyItem}
+                    onPress={() => handleHistoryPress(item)}
+                  >
+                    <View style={styles.historyIcon}>
+                       <Ionicons name="calendar-outline" size={20} color="#666" />
+                    </View>
+                    <View style={styles.historyContent}>
+                      <Text style={styles.historyTitle} numberOfLines={1}>
+                        {item.output_result?.title || item.input_summary || '未命名计划'}
+                      </Text>
+                      <Text style={styles.historyDate}>
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color="#CCC" />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.emptyHistoryText}>暂无历史记录</Text>
+            )}
+          </View>
+          
+          <View style={{ height: 40 }} />
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -241,7 +314,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginTop: 8,
-    marginBottom: 24,
+    marginBottom: 0,
   },
   tag: {
     backgroundColor: '#F5F5F5',
@@ -271,7 +344,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 24,
   },
   buttonText: {
     color: 'white',
@@ -367,7 +440,62 @@ const styles = StyleSheet.create({
   closeBtnText: {
     color: '#1A1A1A',
     fontWeight: '600',
-  }
+  },
+  // History Styles
+  historySection: {
+    marginTop: 32,
+  },
+  historySectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  historyList: {
+    gap: 12,
+  },
+  historyItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  historyIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  historyContent: {
+    flex: 1,
+  },
+  historyTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 4,
+  },
+  historyDate: {
+    fontSize: 12,
+    color: '#999',
+  },
+  emptyHistoryText: {
+    textAlign: 'center',
+    color: '#999',
+    fontSize: 14,
+    marginTop: 10,
+    marginBottom: 20,
+  },
 });
 
 export default MealPlanFeature;
