@@ -1,0 +1,1982 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food & AI Social Admin System</title>
+    <!-- Tailwind CSS Config (Must be before Tailwind CDN) -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#eff6ff', // Blue-50
+                            100: '#dbeafe',
+                            500: '#3b82f6', // Blue-500
+                            600: '#2563eb', // Blue-600 (Lark Blue-ish)
+                            700: '#1d4ed8',
+                        },
+                        slate: {
+                            50: '#f5f6f7', // Lark background gray
+                            100: '#ebedf0',
+                            200: '#dee0e3', // Lark border
+                            300: '#cfd3d8',
+                            800: '#1f2329', // Lark text dark
+                            900: '#000000',
+                        }
+                    },
+                    boxShadow: {
+                        'sm': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                        'DEFAULT': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+                        'card': '0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02)', // Softer shadow
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #dfe1e5; 
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #c1c4cb; 
+        }
+        
+        body {
+            color: #1f2329;
+        }
+        
+        .lark-btn {
+            transition: all 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+        }
+        .lark-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        .sidebar-item-active {
+            background-color: #eff6ff !important;
+            color: #3370ff !important;
+            font-weight: 600;
+        }
+        
+        .sidebar-item-active i {
+            color: #3370ff !important;
+        }
+
+        .filter-bar {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #dee0e3;
+            margin-bottom: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .filter-input {
+            border: 1px solid #dee0e3;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 14px;
+            color: #1f2329;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .filter-input:focus {
+            border-color: #3370ff;
+            box-shadow: 0 0 0 2px rgba(51, 112, 255, 0.2);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.2s ease-out;
+        }
+        
+        .hide {
+            display: none !important;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .animate-scale-in {
+            animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Toast Animation */
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-enter {
+            animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased h-screen flex overflow-hidden">
+
+    <!-- Login Page -->
+    <div id="login-page" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-100">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-200">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 mb-4">
+                    <i class="fas fa-leaf text-3xl text-emerald-600"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-900">Food & AI Admin</h1>
+                <p class="text-slate-500 mt-2">企业级后台管理系统</p>
+            </div>
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">账号</label>
+                    <input type="email" value="admin@foodai.com" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition" placeholder="name@company.com">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">密码</label>
+                    <input type="password" value="password" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition" placeholder="••••••••">
+                </div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input type="checkbox" class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded">
+                        <label class="ml-2 block text-sm text-slate-600">记住我</label>
+                    </div>
+                    <a href="#" class="text-sm text-emerald-600 hover:text-emerald-500">忘记密码?</a>
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 focus:ring-4 focus:ring-emerald-200 transition font-medium">
+                    登 录
+                </button>
+            </form>
+            <div class="mt-6 text-center text-sm text-slate-500">
+                &copy; 2026 Food & AI Social Inc.
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application (Sidebar + Content) -->
+    <div id="main-app" class="flex w-full h-full hide">
+        
+        <!-- Sidebar -->
+        <aside class="w-60 bg-white border-r border-slate-200 flex flex-col transition-all duration-300 flex-shrink-0 z-20" id="sidebar">
+            <!-- Logo -->
+            <div class="h-14 flex items-center px-5 border-b border-slate-100">
+                <div class="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center mr-3 shadow-sm">
+                    <i class="fas fa-utensils text-white text-sm"></i>
+                </div>
+                <span class="text-slate-800 font-bold text-lg tracking-tight">FoodAdmin</span>
+            </div>
+
+            <!-- User Profile Snippet (Moved to bottom or kept simplified) -->
+            
+            <!-- Navigation -->
+            <nav class="flex-1 overflow-y-auto py-4 custom-scrollbar">
+                <ul class="space-y-0.5 px-3">
+                    <li class="nav-item">
+                        <a href="#" data-page="dashboard" class="flex items-center px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100 group transition-colors">
+                            <i class="fas fa-chart-line w-5 text-center mr-2.5 text-slate-400 group-hover:text-slate-600"></i>
+                            <span class="font-medium text-sm">工作台</span>
+                        </a>
+                    </li>
+                    
+                    <li class="px-3 pt-5 pb-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        内容中心
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" data-page="recipes" class="flex items-center px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100 group transition-colors">
+                            <i class="fas fa-book-open w-5 text-center mr-2.5 text-slate-400 group-hover:text-slate-600"></i>
+                            <span class="font-medium text-sm">菜谱管理</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" data-page="notes" class="flex items-center px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100 group transition-colors">
+                            <i class="fas fa-store w-5 text-center mr-2.5 text-slate-400 group-hover:text-slate-600"></i>
+                            <span class="font-medium text-sm">探店笔记</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" data-page="comments" class="flex items-center px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100 group transition-colors">
+                            <i class="fas fa-comments w-5 text-center mr-2.5 text-slate-400 group-hover:text-slate-600"></i>
+                            <span class="font-medium text-sm">评论互动</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" data-page="tags" class="flex items-center px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100 group transition-colors">
+                            <i class="fas fa-tags w-5 text-center mr-2.5 text-slate-400 group-hover:text-slate-600"></i>
+                            <span class="font-medium text-sm">标签库</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" data-page="moderation" class="flex items-center px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100 group transition-colors">
+                            <i class="fas fa-shield-alt w-5 text-center mr-2.5 text-slate-400 group-hover:text-slate-600"></i>
+                            <span class="font-medium text-sm">审核队列</span>
+                            <span class="ml-auto bg-rose-50 text-rose-600 text-xs px-2 py-0.5 rounded-full font-medium">12</span>
+                        </a>
+                    </li>
+
+                    <li class="px-3 pt-5 pb-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        AI 厨房
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" data-page="ai-monitor" class="flex items-center px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100 group transition-colors">
+                            <i class="fas fa-wave-square w-5 text-center mr-2.5 text-slate-400 group-hover:text-slate-600"></i>
+                            <span class="font-medium text-sm">模型监控</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" data-page="prompts" class="flex items-center px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100 group transition-colors">
+                            <i class="fas fa-terminal w-5 text-center mr-2.5 text-slate-400 group-hover:text-slate-600"></i>
+                            <span class="font-medium text-sm">Prompt 管理</span>
+                        </a>
+                    </li>
+
+                    <li class="px-3 pt-5 pb-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        系统管理
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" data-page="users" class="flex items-center px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100 group transition-colors">
+                            <i class="fas fa-users w-5 text-center mr-2.5 text-slate-400 group-hover:text-slate-600"></i>
+                            <span class="font-medium text-sm">用户列表</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" data-page="permissions" class="flex items-center px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100 group transition-colors">
+                            <i class="fas fa-user-shield w-5 text-center mr-2.5 text-slate-400 group-hover:text-slate-600"></i>
+                            <span class="font-medium text-sm">角色权限</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" data-page="reports" class="flex items-center px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100 group transition-colors">
+                            <i class="fas fa-flag w-5 text-center mr-2.5 text-slate-400 group-hover:text-slate-600"></i>
+                            <span class="font-medium text-sm">举报中心</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" data-page="logs" class="flex items-center px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100 group transition-colors">
+                            <i class="fas fa-history w-5 text-center mr-2.5 text-slate-400 group-hover:text-slate-600"></i>
+                            <span class="font-medium text-sm">操作日志</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" data-page="settings" class="flex items-center px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100 group transition-colors">
+                            <i class="fas fa-cog w-5 text-center mr-2.5 text-slate-400 group-hover:text-slate-600"></i>
+                            <span class="font-medium text-sm">系统设置</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- Footer -->
+            <div class="p-4 border-t border-slate-100 bg-slate-50/50">
+                <div class="flex items-center gap-3 mb-3">
+                    <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="User" class="w-8 h-8 rounded-full border border-slate-200">
+                    <div class="flex-1 min-w-0">
+                        <div class="text-slate-800 text-sm font-medium truncate">Alex Morgan</div>
+                        <div class="text-xs text-slate-500 truncate">Super Admin</div>
+                    </div>
+                </div>
+                <button id="logout-btn" class="flex items-center justify-center text-slate-500 hover:text-rose-600 w-full transition-colors text-xs py-1.5 hover:bg-rose-50 rounded">
+                    <i class="fas fa-sign-out-alt mr-2"></i>
+                    <span>退出登录</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col bg-slate-50 overflow-hidden relative">
+            <!-- Top Navbar -->
+            <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shadow-sm z-10">
+                <div class="flex items-center">
+                    <button id="toggle-sidebar" class="text-slate-500 hover:text-slate-700 mr-4 focus:outline-none">
+                        <i class="fas fa-bars text-lg"></i>
+                    </button>
+                    <h2 id="page-title" class="text-xl font-bold text-slate-800">工作台</h2>
+                </div>
+                <div class="flex items-center gap-4">
+                    <!-- Search -->
+                    <div class="relative hidden md:block">
+                        <input type="text" placeholder="搜索..." class="pl-10 pr-4 py-2 bg-slate-100 border-none rounded-full text-sm focus:ring-2 focus:ring-emerald-500 w-64">
+                        <i class="fas fa-search absolute left-3 top-2.5 text-slate-400"></i>
+                    </div>
+                    <!-- Notifications -->
+                    <button class="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                        <i class="far fa-bell text-lg"></i>
+                        <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white"></span>
+                    </button>
+                    <!-- Settings -->
+                    <button class="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                        <i class="far fa-question-circle text-lg"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Page Content Container -->
+            <div id="content-area" class="flex-1 overflow-auto p-6 relative">
+                
+                <!-- 1. Dashboard View -->
+                <div id="view-dashboard" class="page-view fade-in">
+                    <!-- KPI Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm font-medium text-slate-500">总用户数 (DAU)</p>
+                                    <h3 class="text-3xl font-bold text-slate-800 mt-2">124.5K</h3>
+                                    <div class="mt-2 flex items-center text-sm">
+                                        <span class="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded flex items-center">
+                                            <i class="fas fa-arrow-up mr-1 text-xs"></i> 12%
+                                        </span>
+                                        <span class="text-slate-400 ml-2">较昨日</span>
+                                    </div>
+                                </div>
+                                <div class="p-3 bg-indigo-50 rounded-lg text-indigo-600">
+                                    <i class="fas fa-users text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm font-medium text-slate-500">今日 AI 调用</p>
+                                    <h3 class="text-3xl font-bold text-slate-800 mt-2">45,231</h3>
+                                    <div class="mt-2 flex items-center text-sm">
+                                        <span class="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded flex items-center">
+                                            <i class="fas fa-arrow-up mr-1 text-xs"></i> 8.5%
+                                        </span>
+                                        <span class="text-slate-400 ml-2">成功率 99.8%</span>
+                                    </div>
+                                </div>
+                                <div class="p-3 bg-emerald-50 rounded-lg text-emerald-600">
+                                    <i class="fas fa-robot text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm font-medium text-slate-500">今日新增内容</p>
+                                    <h3 class="text-3xl font-bold text-slate-800 mt-2">1,893</h3>
+                                    <div class="mt-2 flex items-center text-sm">
+                                        <span class="text-rose-600 bg-rose-50 px-2 py-0.5 rounded flex items-center">
+                                            <i class="fas fa-arrow-down mr-1 text-xs"></i> 2.1%
+                                        </span>
+                                        <span class="text-slate-400 ml-2">待审核: 45</span>
+                                    </div>
+                                </div>
+                                <div class="p-3 bg-amber-50 rounded-lg text-amber-600">
+                                    <i class="fas fa-camera text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm font-medium text-slate-500">Token 预估成本</p>
+                                    <h3 class="text-3xl font-bold text-slate-800 mt-2">$342.50</h3>
+                                    <div class="mt-2 flex items-center text-sm">
+                                        <span class="text-slate-500">
+                                            平均 $0.007 / req
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="p-3 bg-slate-100 rounded-lg text-slate-600">
+                                    <i class="fas fa-coins text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Area -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                        <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                            <h3 class="text-lg font-bold text-slate-800 mb-4">用户增长与 AI 使用趋势</h3>
+                            <div class="h-80 w-full">
+                                <canvas id="mainChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                            <h3 class="text-lg font-bold text-slate-800 mb-4">热门菜系分布</h3>
+                            <div class="h-64 w-full flex justify-center">
+                                <canvas id="pieChart"></canvas>
+                            </div>
+                            <div class="mt-6 space-y-3">
+                                <div class="flex justify-between items-center text-sm">
+                                    <div class="flex items-center"><span class="w-3 h-3 rounded-full bg-emerald-500 mr-2"></span>川菜 (Sichuan)</div>
+                                    <span class="font-semibold">35%</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <div class="flex items-center"><span class="w-3 h-3 rounded-full bg-indigo-500 mr-2"></span>粤菜 (Cantonese)</div>
+                                    <span class="font-semibold">25%</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <div class="flex items-center"><span class="w-3 h-3 rounded-full bg-amber-500 mr-2"></span>西式 (Western)</div>
+                                    <span class="font-semibold">20%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                            <h3 class="text-lg font-bold text-slate-800">最新待办事项</h3>
+                            <button class="text-sm text-emerald-600 font-medium hover:underline">查看全部</button>
+                        </div>
+                        <div class="divide-y divide-slate-100">
+                            <div class="p-4 flex items-center hover:bg-slate-50 transition">
+                                <div class="w-2 h-2 rounded-full bg-rose-500 mr-4"></div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-slate-900">举报处理：用户 ID #9921 发布违规评论</p>
+                                    <p class="text-xs text-slate-500 mt-1">10 分钟前 • 待处理</p>
+                                </div>
+                                <button class="px-3 py-1 text-xs font-medium bg-white border border-slate-300 rounded hover:bg-slate-50 text-slate-700">去处理</button>
+                            </div>
+                            <div class="p-4 flex items-center hover:bg-slate-50 transition">
+                                <div class="w-2 h-2 rounded-full bg-amber-500 mr-4"></div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-slate-900">新菜谱审核：Spicy Mapo Tofu (by Chef John)</p>
+                                    <p class="text-xs text-slate-500 mt-1">32 分钟前 • AI 评分 8.5</p>
+                                </div>
+                                <button class="px-3 py-1 text-xs font-medium bg-white border border-slate-300 rounded hover:bg-slate-50 text-slate-700">审核</button>
+                            </div>
+                            <div class="p-4 flex items-center hover:bg-slate-50 transition">
+                                <div class="w-2 h-2 rounded-full bg-emerald-500 mr-4"></div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-slate-900">系统通知：GPT-4-Vision 模型响应延迟恢复</p>
+                                    <p class="text-xs text-slate-500 mt-1">1 小时前 • 已解决</p>
+                                </div>
+                                <span class="text-xs text-slate-400">已存档</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Recipe List View -->
+                <div id="view-recipes" class="page-view hidden fade-in">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-slate-800">菜谱管理</h3>
+                        <button class="px-3 py-1.5 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700 shadow-sm transition-all flex items-center">
+                            <i class="fas fa-plus mr-2"></i> 新建菜谱
+                        </button>
+                    </div>
+
+                    <!-- Filter Bar -->
+                    <div class="filter-bar">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                            <input type="text" placeholder="搜索菜谱名称/ID..." class="filter-input pl-8 w-64">
+                        </div>
+                        <select class="filter-input bg-white">
+                            <option value="">所有状态</option>
+                            <option value="published">已发布</option>
+                            <option value="draft">草稿</option>
+                            <option value="review">待审核</option>
+                        </select>
+                        <select class="filter-input bg-white">
+                            <option value="">所有菜系</option>
+                            <option value="sichuan">川菜</option>
+                            <option value="cantonese">粤菜</option>
+                            <option value="western">西式</option>
+                        </select>
+                        <select class="filter-input bg-white">
+                            <option value="">来源</option>
+                            <option value="ugc">用户上传</option>
+                            <option value="ai">AI 生成</option>
+                        </select>
+                        <button class="ml-auto px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-md text-sm transition-colors border border-transparent hover:border-slate-200">
+                            <i class="fas fa-redo-alt mr-1"></i> 重置
+                        </button>
+                        <button class="px-4 py-1.5 bg-primary-50 text-primary-600 border border-primary-200 rounded-md text-sm font-medium hover:bg-primary-100 transition-colors">
+                            查询
+                        </button>
+                    </div>
+
+                    <div class="bg-white border border-slate-200 rounded-lg shadow-card overflow-hidden">
+                        <table class="w-full text-left text-sm text-slate-600">
+                            <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500">
+                                <tr>
+                                    <th class="px-6 py-4">菜品信息</th>
+                                    <th class="px-6 py-4">作者</th>
+                                    <th class="px-6 py-4">状态</th>
+                                    <th class="px-6 py-4">热度/收藏</th>
+                                    <th class="px-6 py-4">更新时间</th>
+                                    <th class="px-6 py-4 text-right">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <!-- Row 1 -->
+                                <tr class="hover:bg-slate-50 transition">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <img src="https://images.unsplash.com/photo-1596797038530-2c107229654b?ixlib=rb-1.2.1&auto=format&fit=crop&w=120&q=80" class="w-12 h-12 rounded-lg object-cover shadow-sm" alt="Food">
+                                            <div>
+                                                <div class="font-semibold text-slate-900">Spicy Mapo Tofu</div>
+                                                <div class="text-xs text-slate-500">Sichuan Cuisine • Spicy</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=64&h=64&q=80" class="w-6 h-6 rounded-full" alt="Avatar">
+                                            <span>Jenny Wilson</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                            已发布
+                                        </span>
+                                        <span class="ml-1 text-[10px] border border-slate-200 px-1 rounded text-slate-400">AI 生成</span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <span class="flex items-center text-slate-600"><i class="fas fa-fire text-rose-500 mr-1"></i> 2.4k</span>
+                                            <span class="flex items-center text-slate-600"><i class="far fa-star text-amber-500 mr-1"></i> 856</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">2 hours ago</td>
+                                    <td class="px-6 py-4 text-right">
+                                        <button class="text-slate-400 hover:text-emerald-600 mx-1"><i class="fas fa-edit"></i></button>
+                                        <button class="text-slate-400 hover:text-rose-600 mx-1"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                                <!-- Row 2 -->
+                                <tr class="hover:bg-slate-50 transition">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <img src="https://images.unsplash.com/photo-1550547660-d9450f859349?ixlib=rb-1.2.1&auto=format&fit=crop&w=120&q=80" class="w-12 h-12 rounded-lg object-cover shadow-sm" alt="Food">
+                                            <div>
+                                                <div class="font-semibold text-slate-900">Classic Beef Wellington</div>
+                                                <div class="text-xs text-slate-500">Western • Gourmet</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <img src="https://images.unsplash.com/photo-1527980965255-d3b416303d12?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=64&h=64&q=80" class="w-6 h-6 rounded-full" alt="Avatar">
+                                            <span>Robert Fox</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                            待审核
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <span class="flex items-center text-slate-600"><i class="fas fa-fire text-slate-300 mr-1"></i> --</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">5 mins ago</td>
+                                    <td class="px-6 py-4 text-right">
+                                        <button class="text-slate-400 hover:text-emerald-600 mx-1"><i class="fas fa-eye"></i></button>
+                                    </td>
+                                </tr>
+                                <!-- Row 3 -->
+                                <tr class="hover:bg-slate-50 transition">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <img src="https://images.unsplash.com/photo-1588137372308-15f75323ca8d?ixlib=rb-1.2.1&auto=format&fit=crop&w=120&q=80" class="w-12 h-12 rounded-lg object-cover shadow-sm" alt="Food">
+                                            <div>
+                                                <div class="font-semibold text-slate-900">Avocado Toast</div>
+                                                <div class="text-xs text-slate-500">Breakfast • Healthy</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=64&h=64&q=80" class="w-6 h-6 rounded-full" alt="Avatar">
+                                            <span>Cody Fisher</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                            已发布
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <span class="flex items-center text-slate-600"><i class="fas fa-fire text-rose-500 mr-1"></i> 1.2k</span>
+                                            <span class="flex items-center text-slate-600"><i class="far fa-star text-amber-500 mr-1"></i> 320</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">1 day ago</td>
+                                    <td class="px-6 py-4 text-right">
+                                        <button class="text-slate-400 hover:text-emerald-600 mx-1"><i class="fas fa-edit"></i></button>
+                                        <button class="text-slate-400 hover:text-rose-600 mx-1"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="px-6 py-4 border-t border-slate-100 flex justify-between items-center bg-slate-50">
+                            <span class="text-xs text-slate-500">Showing 1 to 3 of 1,234 entries</span>
+                            <div class="flex gap-1">
+                                <button class="px-3 py-1 border border-slate-300 bg-white rounded text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50">Prev</button>
+                                <button class="px-3 py-1 border border-slate-300 bg-emerald-600 text-white rounded text-sm">1</button>
+                                <button class="px-3 py-1 border border-slate-300 bg-white rounded text-sm text-slate-600 hover:bg-slate-50">2</button>
+                                <button class="px-3 py-1 border border-slate-300 bg-white rounded text-sm text-slate-600 hover:bg-slate-50">Next</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Moderation Detail View -->
+                <div id="view-moderation" class="page-view hidden fade-in">
+                    <div class="flex items-start gap-6 h-[calc(100vh-8rem)]">
+                        <!-- Left: Content Preview -->
+                        <div class="w-2/3 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-full overflow-hidden">
+                            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                                <h3 class="font-bold text-slate-700">内容预览</h3>
+                                <span class="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded">待审核</span>
+                            </div>
+                            <div class="flex-1 overflow-y-auto p-6">
+                                <div class="max-w-2xl mx-auto">
+                                    <img src="https://images.unsplash.com/photo-1550547660-d9450f859349?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="w-full rounded-xl shadow-md mb-6" alt="Review Content">
+                                    
+                                    <h1 class="text-2xl font-bold text-slate-900 mb-2">Homemade Beef Wellington</h1>
+                                    <div class="flex items-center gap-3 mb-6">
+                                        <img src="https://images.unsplash.com/photo-1527980965255-d3b416303d12?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=64&h=64&q=80" class="w-8 h-8 rounded-full">
+                                        <span class="text-sm font-medium text-slate-700">Robert Fox</span>
+                                        <span class="text-xs text-slate-400">• 10 mins ago</span>
+                                    </div>
+                                    
+                                    <div class="prose prose-slate max-w-none">
+                                        <p class="text-slate-600 mb-4">
+                                            Tried making Beef Wellington for the first time! It was quite a challenge but the result was worth it. Used Gordon Ramsay's recipe as a base but added my own twist with the mushroom duxelles.
+                                        </p>
+                                        <h4 class="font-bold text-slate-800 mb-2">Ingredients:</h4>
+                                        <ul class="list-disc list-inside text-slate-600 space-y-1 mb-4">
+                                            <li>2 lbs beef tenderloin</li>
+                                            <li>Prosciutto di Parma</li>
+                                            <li>Puff pastry sheets</li>
+                                            <li>Chestnut mushrooms</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Moderation Tools -->
+                        <div class="w-1/3 flex flex-col gap-6 h-full">
+                            <!-- AI Analysis Card -->
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                                <h4 class="font-bold text-slate-800 mb-3 flex items-center">
+                                    <i class="fas fa-magic text-indigo-500 mr-2"></i> AI 预判分析
+                                </h4>
+                                <div class="space-y-3">
+                                    <div>
+                                        <div class="flex justify-between text-sm mb-1">
+                                            <span class="text-slate-600">图片质量 (Image Quality)</span>
+                                            <span class="text-emerald-600 font-bold">92%</span>
+                                        </div>
+                                        <div class="w-full bg-slate-100 rounded-full h-1.5">
+                                            <div class="bg-emerald-500 h-1.5 rounded-full" style="width: 92%"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-sm mb-1">
+                                            <span class="text-slate-600">违规概率 (NSFW/Spam)</span>
+                                            <span class="text-emerald-600 font-bold">0.1%</span>
+                                        </div>
+                                        <div class="w-full bg-slate-100 rounded-full h-1.5">
+                                            <div class="bg-emerald-500 h-1.5 rounded-full" style="width: 1%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-indigo-50 p-3 rounded-lg text-xs text-indigo-800 mt-2">
+                                        <strong>AI 标签:</strong> Food, Meat, Dish, Beef Wellington, Pastry
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Card -->
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex-1 flex flex-col">
+                                <h4 class="font-bold text-slate-800 mb-3">人工审核操作</h4>
+                                
+                                <div class="flex-1">
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">审核意见 (选填)</label>
+                                    <textarea class="w-full h-32 p-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none resize-none" placeholder="输入拒绝理由或备注..."></textarea>
+                                    
+                                    <div class="mt-4">
+                                        <label class="flex items-center space-x-2">
+                                            <input type="checkbox" class="rounded text-emerald-600 focus:ring-emerald-500">
+                                            <span class="text-sm text-slate-600">推荐至首页 (Featured)</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-100">
+                                    <button class="py-2.5 px-4 bg-rose-50 text-rose-600 font-medium rounded-lg hover:bg-rose-100 transition">
+                                        <i class="fas fa-times mr-2"></i> 拒绝
+                                    </button>
+                                    <button class="py-2.5 px-4 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition shadow-md shadow-emerald-200">
+                                        <i class="fas fa-check mr-2"></i> 通过发布
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. AI Monitor View -->
+                <div id="view-ai-monitor" class="page-view hidden fade-in">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-indigo-600 text-white p-6 rounded-xl shadow-lg relative overflow-hidden">
+                            <div class="relative z-10">
+                                <p class="text-indigo-200 text-sm font-medium">GPT-4-Vision 调用量</p>
+                                <h3 class="text-3xl font-bold mt-1">24,592</h3>
+                                <p class="text-xs text-indigo-200 mt-2">Today</p>
+                            </div>
+                            <div class="absolute right-0 bottom-0 opacity-20 transform translate-x-2 translate-y-2">
+                                <i class="fas fa-eye text-8xl"></i>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <p class="text-slate-500 text-sm font-medium">平均响应时间 (Latency)</p>
+                            <h3 class="text-3xl font-bold text-slate-800 mt-1">1.2s</h3>
+                            <div class="w-full bg-slate-100 rounded-full h-2 mt-4">
+                                <div class="bg-emerald-500 h-2 rounded-full" style="width: 35%"></div>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-2">Target: < 2.0s</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <p class="text-slate-500 text-sm font-medium">错误率 (Error Rate)</p>
+                            <h3 class="text-3xl font-bold text-slate-800 mt-1">0.12%</h3>
+                            <div class="w-full bg-slate-100 rounded-full h-2 mt-4">
+                                <div class="bg-emerald-500 h-2 rounded-full" style="width: 2%"></div>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-2">Status: Healthy</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-bold text-slate-800">实时调用监控 (Real-time Requests)</h3>
+                            <select class="text-sm border-slate-300 rounded-lg text-slate-600 bg-slate-50 border p-1">
+                                <option>Last 1 Hour</option>
+                                <option>Last 24 Hours</option>
+                            </select>
+                        </div>
+                        <div class="h-80 w-full">
+                            <canvas id="aiChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <h3 class="text-lg font-bold text-slate-800 mb-4">模型成本分布 (Cost Breakdown)</h3>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center mr-3"><i class="fas fa-image"></i></div>
+                                        <div>
+                                            <div class="text-sm font-medium text-slate-800">Image Analysis (GPT-4V)</div>
+                                            <div class="text-xs text-slate-500">12.5k requests</div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-sm font-bold text-slate-800">$145.20</div>
+                                        <div class="text-xs text-slate-500">45% of total</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 rounded bg-emerald-100 text-emerald-600 flex items-center justify-center mr-3"><i class="fas fa-carrot"></i></div>
+                                        <div>
+                                            <div class="text-sm font-medium text-slate-800">Recipe Generation (Claude-3)</div>
+                                            <div class="text-xs text-slate-500">8.2k requests</div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-sm font-bold text-slate-800">$98.50</div>
+                                        <div class="text-xs text-slate-500">30% of total</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 rounded bg-amber-100 text-amber-600 flex items-center justify-center mr-3"><i class="fas fa-comment"></i></div>
+                                        <div>
+                                            <div class="text-sm font-medium text-slate-800">Chat Bot (Custom)</div>
+                                            <div class="text-xs text-slate-500">35.1k requests</div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-sm font-bold text-slate-800">$42.10</div>
+                                        <div class="text-xs text-slate-500">15% of total</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <h3 class="text-lg font-bold text-slate-800 mb-4">失败案例日志 (Failure Logs)</h3>
+                            <div class="overflow-y-auto h-64 pr-2">
+                                <div class="border-l-2 border-rose-500 pl-4 py-2 mb-4">
+                                    <div class="text-xs text-slate-400 mb-1">10:42 AM • Image-to-Recipe</div>
+                                    <div class="text-sm text-slate-800 font-medium">Error: Image too blurry or unrecognizable</div>
+                                    <div class="mt-1 text-xs bg-slate-100 inline-block px-2 py-0.5 rounded text-slate-500">ID: req_882910</div>
+                                </div>
+                                <div class="border-l-2 border-amber-500 pl-4 py-2 mb-4">
+                                    <div class="text-xs text-slate-400 mb-1">10:15 AM • Calorie-Scan</div>
+                                    <div class="text-sm text-slate-800 font-medium">Warning: Low confidence score (45%)</div>
+                                    <div class="mt-1 text-xs bg-slate-100 inline-block px-2 py-0.5 rounded text-slate-500">ID: req_882855</div>
+                                </div>
+                                <div class="border-l-2 border-rose-500 pl-4 py-2 mb-4">
+                                    <div class="text-xs text-slate-400 mb-1">09:30 AM • System</div>
+                                    <div class="text-sm text-slate-800 font-medium">Timeout: API Gateway 504</div>
+                                    <div class="mt-1 text-xs bg-slate-100 inline-block px-2 py-0.5 rounded text-slate-500">ID: req_882112</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. User List View -->
+                <div id="view-users" class="page-view hidden fade-in">
+                    <div class="flex justify-between items-center mb-4">
+                         <h3 class="text-lg font-bold text-slate-800">用户列表</h3>
+                         <button class="text-sm text-primary-600 font-medium hover:underline">导出 CSV</button>
+                    </div>
+
+                    <!-- Filter Bar -->
+                    <div class="filter-bar">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                            <input type="text" placeholder="搜索用户名/邮箱..." class="filter-input pl-8 w-64">
+                        </div>
+                        <select class="filter-input bg-white">
+                            <option value="">用户角色</option>
+                            <option value="user">普通用户</option>
+                            <option value="creator">创作者</option>
+                            <option value="admin">管理员</option>
+                        </select>
+                        <select class="filter-input bg-white">
+                            <option value="">状态</option>
+                            <option value="active">正常</option>
+                            <option value="banned">封禁</option>
+                        </select>
+                        <button class="ml-auto px-4 py-1.5 bg-primary-50 text-primary-600 border border-primary-200 rounded-md text-sm font-medium hover:bg-primary-100 transition-colors">
+                            查询
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-card border border-slate-200 overflow-hidden">
+                        <table class="w-full text-left text-sm text-slate-600">
+                            <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500">
+                                <tr>
+                                    <th class="px-6 py-4">用户</th>
+                                    <th class="px-6 py-4">角色</th>
+                                    <th class="px-6 py-4">状态</th>
+                                    <th class="px-6 py-4">偏好标签</th>
+                                    <th class="px-6 py-4 text-right">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr class="hover:bg-slate-50">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=64&h=64&q=80" class="w-10 h-10 rounded-full">
+                                            <div>
+                                                <div class="font-medium text-slate-900">Jenny Wilson</div>
+                                                <div class="text-xs text-slate-400">jenny@example.com</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">Creator</td>
+                                    <td class="px-6 py-4"><span class="px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-medium">Active</span></td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex gap-1 flex-wrap">
+                                            <span class="px-2 py-0.5 bg-slate-100 rounded text-xs">Spicy</span>
+                                            <span class="px-2 py-0.5 bg-slate-100 rounded text-xs">Vegan</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-right"><button class="text-slate-400 hover:text-slate-600"><i class="fas fa-ellipsis-h"></i></button></td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <img src="https://images.unsplash.com/photo-1527980965255-d3b416303d12?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=64&h=64&q=80" class="w-10 h-10 rounded-full">
+                                            <div>
+                                                <div class="font-medium text-slate-900">Robert Fox</div>
+                                                <div class="text-xs text-slate-400">robert@example.com</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">User</td>
+                                    <td class="px-6 py-4"><span class="px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-medium">Active</span></td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex gap-1 flex-wrap">
+                                            <span class="px-2 py-0.5 bg-slate-100 rounded text-xs">Meat Lover</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-right"><button class="text-slate-400 hover:text-slate-600"><i class="fas fa-ellipsis-h"></i></button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                 <!-- 6. Restaurant Notes View -->
+                <div id="view-notes" class="page-view hidden fade-in">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-slate-800">探店笔记</h3>
+                        <button class="px-3 py-1.5 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700 shadow-sm transition-all flex items-center">
+                            <i class="fas fa-plus mr-2"></i> 新建笔记
+                        </button>
+                    </div>
+
+                    <!-- Filter Bar -->
+                    <div class="filter-bar">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                            <input type="text" placeholder="搜索店铺/内容..." class="filter-input pl-8 w-64">
+                        </div>
+                        <select class="filter-input bg-white">
+                            <option value="">审核状态</option>
+                            <option value="pending">待审核</option>
+                            <option value="approved">已通过</option>
+                            <option value="rejected">已拒绝</option>
+                        </select>
+                         <div class="relative">
+                             <input type="date" class="filter-input text-slate-500">
+                         </div>
+                        <button class="ml-auto px-4 py-1.5 bg-primary-50 text-primary-600 border border-primary-200 rounded-md text-sm font-medium hover:bg-primary-100 transition-colors">
+                            查询
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Note Card 1 -->
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition">
+                            <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="w-full h-48 object-cover">
+                            <div class="p-5">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="font-bold text-slate-800 text-lg">The French Laundry</h4>
+                                    <span class="bg-emerald-100 text-emerald-700 text-xs px-2 py-1 rounded font-medium">4.8</span>
+                                </div>
+                                <p class="text-sm text-slate-500 mb-4 line-clamp-2">An unforgettable dining experience in Yountville. The tasting menu was exquisite...</p>
+                                <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
+                                    <div class="flex items-center gap-2">
+                                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=64&h=64&q=80" class="w-6 h-6 rounded-full">
+                                        <span class="text-xs text-slate-600">Anna K.</span>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button class="text-slate-400 hover:text-emerald-600"><i class="fas fa-edit"></i></button>
+                                        <button class="text-slate-400 hover:text-rose-600"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Note Card 2 -->
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition">
+                            <img src="https://images.unsplash.com/photo-1552566626-52f8b828add9?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="w-full h-48 object-cover">
+                            <div class="p-5">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="font-bold text-slate-800 text-lg">Joe's Pizza</h4>
+                                    <span class="bg-emerald-100 text-emerald-700 text-xs px-2 py-1 rounded font-medium">4.5</span>
+                                </div>
+                                <p class="text-sm text-slate-500 mb-4 line-clamp-2">Best slice in New York! The crust is perfectly crispy and the sauce is tangy.</p>
+                                <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
+                                    <div class="flex items-center gap-2">
+                                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=64&h=64&q=80" class="w-6 h-6 rounded-full">
+                                        <span class="text-xs text-slate-600">Mike R.</span>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button class="text-slate-400 hover:text-emerald-600"><i class="fas fa-edit"></i></button>
+                                        <button class="text-slate-400 hover:text-rose-600"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. Comments View -->
+                 <div id="view-comments" class="page-view hidden fade-in">
+                     <h3 class="text-lg font-bold text-slate-800 mb-4">评论互动管理</h3>
+                     
+                     <!-- Filter Bar -->
+                    <div class="filter-bar">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                            <input type="text" placeholder="搜索评论内容/用户..." class="filter-input pl-8 w-64">
+                        </div>
+                        <select class="filter-input bg-white">
+                            <option value="">风险等级</option>
+                            <option value="high">高风险</option>
+                            <option value="medium">中风险</option>
+                            <option value="low">低风险</option>
+                        </select>
+                        <select class="filter-input bg-white">
+                            <option value="">时间范围</option>
+                            <option value="today">今天</option>
+                            <option value="week">本周</option>
+                        </select>
+                        <button class="ml-auto px-4 py-1.5 bg-primary-50 text-primary-600 border border-primary-200 rounded-md text-sm font-medium hover:bg-primary-100 transition-colors">
+                            查询
+                        </button>
+                    </div>
+
+                     <div class="bg-white rounded-lg shadow-card border border-slate-200 overflow-hidden">
+                        <div class="divide-y divide-slate-100">
+                            <!-- Comment 1 -->
+                            <div class="p-6 flex gap-4">
+                                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=64&h=64&q=80" class="w-10 h-10 rounded-full">
+                                <div class="flex-1">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <span class="font-bold text-slate-900 text-sm">Mark Wilson</span>
+                                            <span class="text-slate-500 text-xs ml-2">on "Spicy Mapo Tofu" • 2 mins ago</span>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button class="p-1 text-emerald-600 hover:bg-emerald-50 rounded"><i class="fas fa-check"></i></button>
+                                            <button class="p-1 text-rose-600 hover:bg-rose-50 rounded"><i class="fas fa-times"></i></button>
+                                        </div>
+                                    </div>
+                                    <p class="text-slate-700 text-sm mt-1">This recipe is amazing! I tried it yesterday and my family loved it. 🔥</p>
+                                </div>
+                            </div>
+                            <!-- Comment 2 (Flagged) -->
+                            <div class="p-6 flex gap-4 bg-rose-50/30">
+                                <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=64&h=64&q=80" class="w-10 h-10 rounded-full">
+                                <div class="flex-1">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <span class="font-bold text-slate-900 text-sm">Spam Bot</span>
+                                            <span class="text-slate-500 text-xs ml-2">on "Avocado Toast" • 15 mins ago</span>
+                                            <span class="ml-2 bg-rose-100 text-rose-700 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wide">High Risk</span>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button class="p-1 text-emerald-600 hover:bg-emerald-50 rounded"><i class="fas fa-check"></i></button>
+                                            <button class="p-1 text-rose-600 hover:bg-rose-50 rounded"><i class="fas fa-times"></i></button>
+                                        </div>
+                                    </div>
+                                    <p class="text-slate-700 text-sm mt-1">Click here to win a free iPhone! http://scam-link.com</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8. Tags View -->
+                <div id="view-tags" class="page-view hidden fade-in">
+                    <h3 class="text-xl font-bold text-slate-800 mb-6">标签库管理</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Category: Ingredients -->
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                            <h4 class="font-bold text-slate-700 mb-4 flex items-center"><i class="fas fa-carrot text-orange-500 mr-2"></i> 食材 (Ingredients)</h4>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <span class="px-3 py-1 bg-slate-100 rounded-full text-sm text-slate-700 flex items-center group cursor-pointer hover:bg-slate-200">
+                                    Tomato <i class="fas fa-times ml-2 text-slate-400 hover:text-rose-500 hidden group-hover:inline"></i>
+                                </span>
+                                <span class="px-3 py-1 bg-slate-100 rounded-full text-sm text-slate-700 flex items-center group cursor-pointer hover:bg-slate-200">
+                                    Beef <i class="fas fa-times ml-2 text-slate-400 hover:text-rose-500 hidden group-hover:inline"></i>
+                                </span>
+                                <span class="px-3 py-1 bg-slate-100 rounded-full text-sm text-slate-700 flex items-center group cursor-pointer hover:bg-slate-200">
+                                    Basil <i class="fas fa-times ml-2 text-slate-400 hover:text-rose-500 hidden group-hover:inline"></i>
+                                </span>
+                            </div>
+                            <div class="flex gap-2">
+                                <input type="text" placeholder="Add new..." class="flex-1 px-3 py-1.5 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                                <button class="px-3 py-1.5 bg-emerald-600 text-white rounded text-sm hover:bg-emerald-700">Add</button>
+                            </div>
+                        </div>
+                        <!-- Category: Cuisines -->
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                            <h4 class="font-bold text-slate-700 mb-4 flex items-center"><i class="fas fa-globe-asia text-indigo-500 mr-2"></i> 菜系 (Cuisines)</h4>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <span class="px-3 py-1 bg-slate-100 rounded-full text-sm text-slate-700">Italian</span>
+                                <span class="px-3 py-1 bg-slate-100 rounded-full text-sm text-slate-700">Japanese</span>
+                                <span class="px-3 py-1 bg-slate-100 rounded-full text-sm text-slate-700">Mexican</span>
+                                <span class="px-3 py-1 bg-slate-100 rounded-full text-sm text-slate-700">Sichuan</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <input type="text" placeholder="Add new..." class="flex-1 px-3 py-1.5 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                                <button class="px-3 py-1.5 bg-emerald-600 text-white rounded text-sm hover:bg-emerald-700">Add</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 9. Prompt Management View -->
+                <div id="view-prompts" class="page-view hidden fade-in">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-slate-800">Prompt 模板管理</h3>
+                        <button class="px-3 py-1.5 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700 shadow-sm transition-all flex items-center">
+                            <i class="fas fa-plus mr-2"></i> 新建模板
+                        </button>
+                    </div>
+
+                    <!-- Filter Bar -->
+                    <div class="filter-bar">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                            <input type="text" placeholder="搜索模板名称/版本..." class="filter-input pl-8 w-64">
+                        </div>
+                        <select class="filter-input bg-white">
+                            <option value="">所有模型</option>
+                            <option value="gpt4v">GPT-4-Vision</option>
+                            <option value="claude3">Claude 3</option>
+                        </select>
+                        <button class="ml-auto px-4 py-1.5 bg-primary-50 text-primary-600 border border-primary-200 rounded-md text-sm font-medium hover:bg-primary-100 transition-colors">
+                            查询
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-card border border-slate-200 overflow-hidden">
+                        <table class="w-full text-left text-sm text-slate-600">
+                            <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500">
+                                <tr>
+                                    <th class="px-6 py-4">模板名称</th>
+                                    <th class="px-6 py-4">模型</th>
+                                    <th class="px-6 py-4">版本</th>
+                                    <th class="px-6 py-4">更新时间</th>
+                                    <th class="px-6 py-4 text-right">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr class="hover:bg-slate-50">
+                                    <td class="px-6 py-4 font-medium text-slate-900">Image Analysis Core</td>
+                                    <td class="px-6 py-4"><span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs">GPT-4-Vision</span></td>
+                                    <td class="px-6 py-4">v2.4.1</td>
+                                    <td class="px-6 py-4">2 hours ago</td>
+                                    <td class="px-6 py-4 text-right">
+                                        <button class="text-emerald-600 hover:text-emerald-800 mr-2">Edit</button>
+                                        <button class="text-slate-400 hover:text-slate-600">History</button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="px-6 py-4 font-medium text-slate-900">Recipe Generator (Spicy)</td>
+                                    <td class="px-6 py-4"><span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-xs">Claude-3-Opus</span></td>
+                                    <td class="px-6 py-4">v1.0.5</td>
+                                    <td class="px-6 py-4">Yesterday</td>
+                                    <td class="px-6 py-4 text-right">
+                                        <button class="text-emerald-600 hover:text-emerald-800 mr-2">Edit</button>
+                                        <button class="text-slate-400 hover:text-slate-600">History</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 10. Reports Center View -->
+                <div id="view-reports" class="page-view hidden fade-in">
+                    <div class="flex justify-between items-center mb-4">
+                         <h3 class="text-lg font-bold text-slate-800">举报处理中心</h3>
+                    </div>
+
+                    <!-- Filter Bar -->
+                    <div class="filter-bar">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                            <input type="text" placeholder="搜索工单ID/内容..." class="filter-input pl-8 w-64">
+                        </div>
+                        <select class="filter-input bg-white">
+                            <option value="">举报类型</option>
+                            <option value="spam">垃圾广告</option>
+                            <option value="abuse">辱骂攻击</option>
+                            <option value="nsfw">色情低俗</option>
+                        </select>
+                        <select class="filter-input bg-white">
+                            <option value="">处理状态</option>
+                            <option value="pending">待处理</option>
+                            <option value="resolved">已解决</option>
+                            <option value="rejected">已忽略</option>
+                        </select>
+                        <button class="ml-auto px-4 py-1.5 bg-primary-50 text-primary-600 border border-primary-200 rounded-md text-sm font-medium hover:bg-primary-100 transition-colors">
+                            查询
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-card border border-slate-200 overflow-hidden">
+                        <table class="w-full text-left text-sm text-slate-600">
+                            <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500">
+                                <tr>
+                                    <th class="px-6 py-4">工单 ID</th>
+                                    <th class="px-6 py-4">被举报内容</th>
+                                    <th class="px-6 py-4">举报原因</th>
+                                    <th class="px-6 py-4">状态</th>
+                                    <th class="px-6 py-4 text-right">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr class="hover:bg-slate-50">
+                                    <td class="px-6 py-4 font-mono text-xs">#RPT-8821</td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-comment text-slate-400"></i>
+                                            <span class="truncate w-32">"You are stupid..."</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-rose-600">Hate Speech</td>
+                                    <td class="px-6 py-4"><span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-xs">Pending</span></td>
+                                    <td class="px-6 py-4 text-right"><button class="text-emerald-600 font-medium">Handle</button></td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="px-6 py-4 font-mono text-xs">#RPT-8819</td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-image text-slate-400"></i>
+                                            <span class="truncate w-32">User Avatar</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-rose-600">Inappropriate</td>
+                                    <td class="px-6 py-4"><span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-xs">Resolved</span></td>
+                                    <td class="px-6 py-4 text-right"><span class="text-slate-400">Archived</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 11. Audit Logs View -->
+                <div id="view-logs" class="page-view hidden fade-in">
+                    <div class="flex justify-between items-center mb-4">
+                         <h3 class="text-lg font-bold text-slate-800">系统操作日志</h3>
+                         <button class="text-sm text-primary-600 font-medium hover:underline">导出日志</button>
+                    </div>
+
+                    <!-- Filter Bar -->
+                    <div class="filter-bar">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                            <input type="text" placeholder="搜索操作人/IP..." class="filter-input pl-8 w-64">
+                        </div>
+                        <select class="filter-input bg-white">
+                            <option value="">操作类型</option>
+                            <option value="login">登录</option>
+                            <option value="create">新增</option>
+                            <option value="update">修改</option>
+                            <option value="delete">删除</option>
+                        </select>
+                        <div class="relative">
+                             <input type="date" class="filter-input text-slate-500">
+                        </div>
+                        <button class="ml-auto px-4 py-1.5 bg-primary-50 text-primary-600 border border-primary-200 rounded-md text-sm font-medium hover:bg-primary-100 transition-colors">
+                            查询
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-card border border-slate-200 p-6">
+                        <div class="border-l-2 border-slate-200 ml-3 space-y-8">
+                            <!-- Log Item -->
+                            <div class="relative pl-6">
+                                <div class="absolute -left-[9px] top-1 w-4 h-4 bg-emerald-500 rounded-full border-4 border-white shadow-sm"></div>
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="text-sm font-bold text-slate-800">Admin Login</p>
+                                        <p class="text-xs text-slate-500">Alex Morgan (IP: 192.168.1.1)</p>
+                                    </div>
+                                    <span class="text-xs text-slate-400">Just now</span>
+                                </div>
+                            </div>
+                            <!-- Log Item -->
+                            <div class="relative pl-6">
+                                <div class="absolute -left-[9px] top-1 w-4 h-4 bg-indigo-500 rounded-full border-4 border-white shadow-sm"></div>
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="text-sm font-bold text-slate-800">Updated Prompt Template</p>
+                                        <p class="text-xs text-slate-500">Changed 'Recipe Generator' temperature to 0.8</p>
+                                    </div>
+                                    <span class="text-xs text-slate-400">2 hours ago</span>
+                                </div>
+                            </div>
+                            <!-- Log Item -->
+                            <div class="relative pl-6">
+                                <div class="absolute -left-[9px] top-1 w-4 h-4 bg-amber-500 rounded-full border-4 border-white shadow-sm"></div>
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="text-sm font-bold text-slate-800">Banned User</p>
+                                        <p class="text-xs text-slate-500">Banned user ID #9921 for 7 days</p>
+                                    </div>
+                                    <span class="text-xs text-slate-400">5 hours ago</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 12. Permissions View (New) -->
+                <div id="view-permissions" class="page-view hidden fade-in h-full flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-800">角色权限</h3>
+                            <p class="text-xs text-slate-500 mt-1">配置系统角色与权限策略</p>
+                        </div>
+                        <button id="btn-add-role" class="px-3 py-1.5 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700 shadow-sm transition-all flex items-center">
+                            <i class="fas fa-plus mr-2"></i> 新增角色
+                        </button>
+                    </div>
+
+                    <div class="flex gap-6 flex-1 min-h-0">
+                        <!-- Left: Role List -->
+                        <div class="w-64 flex flex-col gap-3">
+                            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">角色列表</h4>
+                            <div id="role-list" class="space-y-3 overflow-y-auto pr-2">
+                                <!-- Roles will be rendered here by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Right: Permission Matrix -->
+                        <div class="flex-1 bg-white rounded-lg border border-slate-200 shadow-card flex flex-col overflow-hidden">
+                            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                <div id="permission-header">
+                                    <h4 class="font-bold text-slate-800">正在加载...</h4>
+                                </div>
+                                <button id="btn-save-permissions" class="px-4 py-1.5 bg-primary-600 text-white rounded text-sm hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm" disabled>保存配置</button>
+                            </div>
+                            
+                            <div id="permission-matrix" class="p-6 overflow-y-auto flex-1 space-y-8">
+                                <!-- Matrix will be rendered here by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                 <!-- 6. Settings View -->
+                <div id="view-settings" class="page-view hidden fade-in">
+                    <div class="max-w-4xl">
+                        <h2 class="text-2xl font-bold text-slate-800 mb-6">系统设置</h2>
+                        
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+                            <div class="p-6 border-b border-slate-100">
+                                <h3 class="font-bold text-slate-700 mb-1">通用设置</h3>
+                                <p class="text-sm text-slate-500">管理系统的基础配置信息</p>
+                            </div>
+                            <div class="p-6 space-y-6">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="font-medium text-slate-800">系统维护模式</div>
+                                        <div class="text-sm text-slate-500">开启后，用户将无法访问前端 App</div>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" value="" class="sr-only peer">
+                                        <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                    </label>
+                                </div>
+                                <hr class="border-slate-100">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">App 强制更新版本</label>
+                                    <div class="flex gap-2">
+                                        <input type="text" value="1.2.0" class="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                                        <button class="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900">保存</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div class="p-6 border-b border-slate-100">
+                                <h3 class="font-bold text-slate-700 mb-1">AI 模型参数</h3>
+                                <p class="text-sm text-slate-500">配置 AI 生成服务的默认参数</p>
+                            </div>
+                            <div class="p-6 space-y-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">默认图片生成模型</label>
+                                    <select class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                                        <option>DALL-E 3 (High Quality)</option>
+                                        <option>Midjourney v6 (via API)</option>
+                                        <option>Stable Diffusion XL (Self-hosted)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between mb-2">
+                                        <label class="block text-sm font-medium text-slate-700">内容创造力 (Temperature)</label>
+                                        <span class="text-sm text-emerald-600 font-bold">0.7</span>
+                                    </div>
+                                    <input type="range" min="0" max="1" step="0.1" value="0.7" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                                    <div class="flex justify-between text-xs text-slate-400 mt-1">
+                                        <span>Precise</span>
+                                        <span>Creative</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                                <button class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">保存更改</button>
+                            </div>
+                        </div>
+                    </div>
+                 </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Recipe Modal -->
+    <div id="modal-recipe" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 hidden backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10">
+                <h3 class="text-xl font-bold text-slate-800">新建菜谱</h3>
+                <button class="close-modal text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- Image Upload -->
+                <div class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:bg-slate-50 transition cursor-pointer group">
+                    <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition">
+                        <i class="fas fa-cloud-upload-alt text-2xl"></i>
+                    </div>
+                    <p class="text-slate-600 font-medium">点击上传菜品图片</p>
+                    <p class="text-xs text-slate-400 mt-1">支持 JPG, PNG (Max 5MB)</p>
+                </div>
+
+                <!-- Form Fields -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">菜品名称</label>
+                        <input type="text" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Spicy Mapo Tofu">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">菜系分类</label>
+                        <select class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <option>Sichuan Cuisine</option>
+                            <option>Cantonese Cuisine</option>
+                            <option>Western</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">描述 & 故事</label>
+                    <textarea class="w-full h-24 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none resize-none" placeholder="讲述这道菜背后的故事..."></textarea>
+                </div>
+
+                <!-- AI Options -->
+                <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-bold text-indigo-800 flex items-center"><i class="fas fa-magic mr-2"></i> AI 辅助生成</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked class="sr-only peer">
+                            <div class="w-9 h-5 bg-indigo-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>
+                    <p class="text-xs text-indigo-600">启用后，AI 将自动分析图片并生成食材列表和烹饪步骤。</p>
+                </div>
+            </div>
+            <div class="p-6 border-t border-slate-100 flex justify-end gap-3 sticky bottom-0 bg-white">
+                <button class="close-modal px-4 py-2 border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-50 font-medium">取消</button>
+                <button class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium shadow-lg shadow-emerald-200">发布菜谱</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Role Modal -->
+    <div id="modal-role" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 hidden backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <h3 class="text-lg font-bold text-slate-800">新增角色</h3>
+                <button class="close-modal text-slate-400 hover:text-slate-600 transition-colors"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="add-role-form" class="p-6 space-y-5">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">角色名称 <span class="text-rose-500">*</span></label>
+                    <input type="text" name="roleName" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all text-sm" placeholder="例如：运营专员">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">角色描述</label>
+                    <textarea name="roleDesc" rows="3" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all text-sm resize-none" placeholder="简要描述该角色的职责范围..."></textarea>
+                </div>
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-primary-600 text-white py-2.5 rounded-lg hover:bg-primary-700 font-medium shadow-lg shadow-primary-500/30 transition-all active:scale-[0.98]">创建角色</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-container" class="fixed top-6 right-6 z-[60] flex flex-col gap-3 pointer-events-none"></div>
+
+    <!-- Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Login Logic
+            const loginForm = document.getElementById('login-form');
+            const loginPage = document.getElementById('login-page');
+            const mainApp = document.getElementById('main-app');
+            const sidebar = document.getElementById('sidebar');
+            const toggleSidebar = document.getElementById('toggle-sidebar');
+            const navLinks = document.querySelectorAll('[data-page]');
+            const views = document.querySelectorAll('.page-view');
+            const pageTitle = document.getElementById('page-title');
+            const logoutBtn = document.getElementById('logout-btn');
+
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                // Simulate login delay
+                const btn = loginForm.querySelector('button');
+                const originalText = btn.innerText;
+                btn.innerText = '登录中...';
+                btn.disabled = true;
+                
+                setTimeout(() => {
+                    loginPage.classList.add('hide');
+                    mainApp.classList.remove('hide');
+                    initCharts(); // Initialize charts after visible
+                }, 800);
+            });
+
+            // Sidebar Toggle
+            toggleSidebar.addEventListener('click', () => {
+                if (window.innerWidth >= 768) {
+                    sidebar.classList.toggle('w-60'); // Updated width
+                    sidebar.classList.toggle('w-20');
+                    // Hide text in mini mode logic
+                    const spans = sidebar.querySelectorAll('span');
+                    const links = sidebar.querySelectorAll('a');
+                    
+                    if (sidebar.classList.contains('w-20')) {
+                        spans.forEach(s => s.classList.add('hidden'));
+                        links.forEach(l => l.classList.add('justify-center', 'px-0'));
+                        // Hide section titles
+                        const titles = sidebar.querySelectorAll('.uppercase');
+                        titles.forEach(t => t.classList.add('hidden'));
+                    } else {
+                        spans.forEach(s => s.classList.remove('hidden'));
+                        links.forEach(l => l.classList.remove('justify-center', 'px-0'));
+                        const titles = sidebar.querySelectorAll('.uppercase');
+                        titles.forEach(t => t.classList.remove('hidden'));
+                    }
+                } else {
+                    // Mobile logic: slide in/out
+                    sidebar.classList.toggle('-translate-x-full');
+                }
+            });
+
+            // Navigation Logic
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    
+                    // Update Active State
+                    navLinks.forEach(l => {
+                        l.classList.remove('sidebar-item-active'); 
+                        l.classList.add('text-slate-600', 'hover:bg-slate-100');
+                        // Reset icons
+                        const i = l.querySelector('i');
+                        if(i) i.classList.add('text-slate-400');
+                    });
+                    
+                    link.classList.remove('text-slate-600', 'hover:bg-slate-100');
+                    link.classList.add('sidebar-item-active'); 
+                    
+                    // Show View
+                    const targetId = 'view-' + link.getAttribute('data-page');
+                    views.forEach(view => {
+                        if (view.id === targetId) {
+                            view.classList.remove('hidden');
+                        } else {
+                            view.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+
+            // Set default active
+            try {
+                const defaultLink = document.querySelector('[data-page="dashboard"]');
+                if(defaultLink) {
+                     defaultLink.click();
+                }
+            } catch (err) {
+                console.error("Error setting default link:", err);
+            }
+
+            // Logout
+            logoutBtn.addEventListener('click', () => {
+                mainApp.classList.add('hide');
+                loginPage.classList.remove('hide');
+                loginForm.querySelector('button').innerText = '登 录';
+                loginForm.querySelector('button').disabled = false;
+            });
+
+            // Initialize Charts
+            let chartsInitialized = false;
+            function initCharts() {
+                if (chartsInitialized) return;
+                
+                if (typeof Chart === 'undefined') {
+                    console.error('Chart.js not loaded');
+                    return;
+                }
+
+                try {
+                    // Dashboard Main Chart (Line)
+                    const mainChartEl = document.getElementById('mainChart');
+                    if (mainChartEl) {
+                        const ctxMain = mainChartEl.getContext('2d');
+                        new Chart(ctxMain, {
+                            type: 'line',
+                            data: {
+                                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                                datasets: [{
+                                    label: 'AI Calls',
+                                    data: [12000, 19000, 15000, 25000, 22000, 30000, 45000],
+                                    borderColor: '#2563eb', // Primary 600
+                                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                                    tension: 0.4,
+                                    fill: true
+                                }, {
+                                    label: 'New Users',
+                                    data: [500, 800, 600, 1200, 1000, 1500, 2000],
+                                    borderColor: '#64748b', // Slate 500
+                                    backgroundColor: 'transparent',
+                                    tension: 0.4,
+                                    borderDash: [5, 5]
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { position: 'top' }
+                                },
+                                scales: {
+                                    y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                                    x: { grid: { display: false } }
+                                }
+                            }
+                        });
+                    }
+
+                    // Dashboard Pie Chart
+                    const pieChartEl = document.getElementById('pieChart');
+                    if (pieChartEl) {
+                        const ctxPie = pieChartEl.getContext('2d');
+                        new Chart(ctxPie, {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['Sichuan', 'Cantonese', 'Western', 'Others'],
+                                datasets: [{
+                                    data: [35, 25, 20, 20],
+                                    backgroundColor: [
+                                        '#10b981', // Emerald
+                                        '#6366f1', // Indigo
+                                        '#f59e0b', // Amber
+                                        '#cbd5e1'  // Slate
+                                    ],
+                                    borderWidth: 0
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false }
+                                },
+                                cutout: '70%'
+                            }
+                        });
+                    }
+                    
+                    // AI Monitor Chart (Bar)
+                    const aiChartEl = document.getElementById('aiChart');
+                    if (aiChartEl) {
+                        const ctxAI = aiChartEl.getContext('2d');
+                        new Chart(ctxAI, {
+                            type: 'bar',
+                            data: {
+                                labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                                datasets: [{
+                                    label: 'Successful Requests',
+                                    data: [1200, 800, 3500, 5200, 4800, 6000],
+                                    backgroundColor: '#2563eb',
+                                    borderRadius: 4
+                                },
+                                {
+                                    label: 'Failed/Error',
+                                    data: [10, 5, 25, 40, 30, 50],
+                                    backgroundColor: '#e11d48',
+                                    borderRadius: 4
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: { stacked: true, grid: { color: '#f1f5f9' } },
+                                    x: { stacked: true, grid: { display: false } }
+                                }
+                            }
+                        });
+                    }
+
+                    chartsInitialized = true;
+                } catch (err) {
+                    console.error("Error initializing charts:", err);
+                }
+            }
+
+            // Modal Logic
+            const modalRecipe = document.getElementById('modal-recipe');
+            const closeModals = document.querySelectorAll('.close-modal');
+            
+            // Open Recipe Modal
+            const newRecipeBtns = Array.from(document.querySelectorAll('button')).filter(b => b.innerText.includes('新建菜谱'));
+            newRecipeBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    modalRecipe.classList.remove('hidden');
+                });
+            });
+
+            // Close Modals
+            document.querySelectorAll('.close-modal').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    modalRecipe.classList.add('hidden');
+                    if (typeof modalRole !== 'undefined') modalRole.classList.add('hidden');
+                });
+            });
+            
+            // Close on click outside
+            window.addEventListener('click', (e) => {
+                if (e.target === modalRecipe) modalRecipe.classList.add('hidden');
+                if (typeof modalRole !== 'undefined' && e.target === modalRole) modalRole.classList.add('hidden');
+            });
+
+            // --- Role Management Logic ---
+            const roleData = {
+                'super_admin': { id: 'super_admin', name: '超级管理员', type: 'system', desc: '拥有系统全部权限', count: 1, permissions: ['all'] },
+                'system_admin': { id: 'system_admin', name: '系统管理员', type: 'system', desc: '系统配置与用户管理', count: 2, permissions: ['sys_user', 'sys_role', 'sys_log', 'sys_settings'] },
+                'content_manager': { id: 'content_manager', name: '内容管理员', type: 'custom', desc: '负责菜谱与内容审核', count: 5, permissions: ['content_view', 'content_edit', 'content_audit', 'content_comment'] },
+                'maintenance': { id: 'maintenance', name: '维护人员', type: 'custom', desc: '查看日志与监控', count: 12, permissions: ['sys_log', 'ai_monitor'] }
+            };
+
+            const permissionGroups = [
+                {
+                    id: 'content', name: '内容管理',
+                    items: [
+                        { id: 'content_view', name: '查看菜谱' },
+                        { id: 'content_edit', name: '编辑菜谱' },
+                        { id: 'content_publish', name: '发布/下架' },
+                        { id: 'content_audit', name: '审核内容' },
+                        { id: 'content_comment', name: '管理评论' },
+                        { id: 'content_tag', name: '标签管理' }
+                    ]
+                },
+                {
+                    id: 'ai', name: 'AI 服务管理',
+                    items: [
+                        { id: 'ai_monitor', name: '查看监控' },
+                        { id: 'ai_prompt', name: '管理 Prompts' },
+                        { id: 'ai_config', name: '配置模型参数' }
+                    ]
+                },
+                {
+                    id: 'system', name: '系统管理',
+                    items: [
+                        { id: 'sys_user', name: '用户管理' },
+                        { id: 'sys_role', name: '角色权限' },
+                        { id: 'sys_log', name: '查看日志' },
+                        { id: 'sys_settings', name: '系统设置' }
+                    ]
+                }
+            ];
+
+            let currentRoleId = 'super_admin';
+
+            function renderRoleList() {
+                const container = document.getElementById('role-list');
+                if (!container) return;
+                container.innerHTML = '';
+
+                Object.values(roleData).forEach(role => {
+                    const el = document.createElement('div');
+                    const isActive = role.id === currentRoleId;
+                    const activeClass = isActive ? 'border-primary-500 bg-primary-50 shadow-sm ring-1 ring-primary-500/20' : 'border-slate-200 bg-white hover:border-primary-300 hover:shadow-sm';
+                    const textClass = isActive ? 'text-primary-700' : 'text-slate-700';
+                    const labelClass = isActive ? 'bg-primary-200 text-primary-700' : (role.type === 'system' ? 'bg-slate-100 text-slate-500' : 'bg-emerald-50 text-emerald-600');
+                    
+                    el.className = `p-3 rounded-lg border cursor-pointer transition-all group relative overflow-hidden ${activeClass}`;
+                    el.onclick = () => {
+                        currentRoleId = role.id;
+                        renderRoleList();
+                        renderPermissionMatrix();
+                    };
+
+                    el.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <span class="font-bold text-sm ${textClass}">${role.name}</span>
+                            <span class="${labelClass} text-[10px] px-1.5 rounded">${role.type === 'system' ? '系统' : '自定义'}</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1 line-clamp-1">${role.desc}</p>
+                        <div class="mt-2 text-xs text-slate-400 font-medium">${role.count} 人</div>
+                        ${isActive ? '<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-600"></div>' : ''}
+                    `;
+                    container.appendChild(el);
+                });
+            }
+
+            function renderPermissionMatrix() {
+                const role = roleData[currentRoleId];
+                const isSystem = role.type === 'system';
+                const isSuper = role.id === 'super_admin';
+                
+                // Update Header
+                const header = document.getElementById('permission-header');
+                if (header) {
+                    header.innerHTML = `
+                        <h4 class="font-bold text-slate-800">${role.name} - 权限配置</h4>
+                        <p class="text-xs text-slate-500 mt-0.5">${isSystem ? '系统内置角色，不可编辑权限' : '自定义角色，可配置详细权限'}</p>
+                    `;
+                }
+
+                // Update Button
+                const btnSave = document.getElementById('btn-save-permissions');
+                if (btnSave) {
+                    btnSave.disabled = isSystem;
+                    btnSave.className = `px-4 py-1.5 text-white rounded text-sm transition-all shadow-sm ${isSystem ? 'bg-slate-300 cursor-not-allowed' : 'bg-primary-600 hover:bg-primary-700'}`;
+                }
+
+                // Render Matrix
+                const container = document.getElementById('permission-matrix');
+                if (!container) return;
+                container.innerHTML = '';
+
+                permissionGroups.forEach(group => {
+                    const groupEl = document.createElement('div');
+                    
+                    // Group Header
+                    const groupHeader = `
+                        <div class="flex items-center mb-3">
+                            <input type="checkbox" disabled ${isSuper ? 'checked' : ''} class="w-4 h-4 text-primary-600 rounded border-slate-300 bg-slate-100">
+                            <span class="ml-2 font-bold text-slate-800">${group.name}</span>
+                            <hr class="flex-1 ml-4 border-slate-100">
+                        </div>
+                    `;
+
+                    // Items
+                    let itemsHtml = '<div class="grid grid-cols-4 gap-4 pl-6">';
+                    group.items.forEach(item => {
+                        const hasPerm = isSuper || role.permissions.includes(item.id) || (role.permissions.includes('all'));
+                        const disabled = isSystem ? 'disabled' : '';
+                        
+                        itemsHtml += `
+                            <label class="flex items-center space-x-2 text-sm text-slate-600 cursor-pointer select-none">
+                                <input type="checkbox" ${hasPerm ? 'checked' : ''} ${disabled} 
+                                    class="rounded text-primary-600 border-slate-300 focus:ring-primary-500 transition-colors"
+                                    onchange="togglePermission('${item.id}')">
+                                <span>${item.name}</span>
+                            </label>
+                        `;
+                    });
+                    itemsHtml += '</div>';
+
+                    groupEl.innerHTML = groupHeader + itemsHtml;
+                    container.appendChild(groupEl);
+                });
+            }
+
+            // Global function for inline onclick
+            window.togglePermission = (permId) => {
+                const role = roleData[currentRoleId];
+                if (role.type === 'system') return;
+                
+                if (role.permissions.includes(permId)) {
+                    role.permissions = role.permissions.filter(p => p !== permId);
+                } else {
+                    role.permissions.push(permId);
+                }
+            };
+
+            // Initial Render
+            renderRoleList();
+            renderPermissionMatrix();
+
+            // Add Role Logic
+            const modalRole = document.getElementById('modal-role');
+            const btnAddRole = document.getElementById('btn-add-role');
+            const formAddRole = document.getElementById('add-role-form');
+
+            if (btnAddRole) {
+                btnAddRole.addEventListener('click', () => {
+                    modalRole.classList.remove('hidden');
+                });
+            }
+
+            if (formAddRole) {
+                formAddRole.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(formAddRole);
+                    const name = formData.get('roleName');
+                    const desc = formData.get('roleDesc');
+                    const newId = 'role_' + Date.now();
+
+                    roleData[newId] = {
+                        id: newId,
+                        name: name,
+                        type: 'custom',
+                        desc: desc || '暂无描述',
+                        count: 0,
+                        permissions: []
+                    };
+
+                    renderRoleList();
+                    modalRole.classList.add('hidden');
+                    formAddRole.reset();
+                    showToast('角色创建成功', 'success');
+                    
+                    // Switch to new role
+                    currentRoleId = newId;
+                    renderRoleList();
+                    renderPermissionMatrix();
+                });
+            }
+
+            // Save Logic
+            const btnSavePerms = document.getElementById('btn-save-permissions');
+            if (btnSavePerms) {
+                btnSavePerms.addEventListener('click', () => {
+                    showToast('权限配置已保存', 'success');
+                });
+            }
+
+            // Toast Helper
+            function showToast(message, type = 'success') {
+                const container = document.getElementById('toast-container');
+                if (!container) return;
+                const el = document.createElement('div');
+                const icon = type === 'success' ? '<i class="fas fa-check-circle text-emerald-500 text-xl"></i>' : '<i class="fas fa-info-circle text-blue-500 text-xl"></i>';
+                
+                el.className = 'bg-white border border-slate-100 shadow-lg rounded-lg p-4 flex items-center gap-3 min-w-[300px] toast-enter pointer-events-auto';
+                el.innerHTML = `
+                    ${icon}
+                    <div class="flex-1">
+                        <p class="font-bold text-slate-800 text-sm">${type === 'success' ? '操作成功' : '提示'}</p>
+                        <p class="text-xs text-slate-500 mt-0.5">${message}</p>
+                    </div>
+                `;
+                
+                container.appendChild(el);
+                setTimeout(() => {
+                    el.style.opacity = '0';
+                    el.style.transform = 'translateX(100%)';
+                    el.style.transition = 'all 0.3s ease';
+                    setTimeout(() => el.remove(), 300);
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>

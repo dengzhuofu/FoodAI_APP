@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation/types';
 import { aroundSearch, LocationPOI, reverseGeocode, searchPOI } from '../../../api/maps';
+import AmapWebView from '../../components/AmapWebView';
 
 type MapSelectorRouteProp = RouteProp<RootStackParamList, 'MapSelector'>;
 
@@ -12,16 +13,17 @@ export default function MapSelectorScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const route = useRoute<MapSelectorRouteProp>();
+  const params = (route as any).params || {};
 
-  const mapRef = useRef<any>(null);
   const [target, setTarget] = useState<{ latitude: number; longitude: number } | null>(
-    route.params.initialLocation || null
+    params.initialLocation || null
   );
   const [address, setAddress] = useState<string>('');
   const [keyword, setKeyword] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [pois, setPois] = useState<LocationPOI[]>([]);
   const [selectedPOI, setSelectedPOI] = useState<LocationPOI | null>(null);
+  const lastCenterRef = useRef<{ latitude: number; longitude: number } | null>(null);
 
   const centerText = useMemo(() => {
     if (!target) return '—';
@@ -71,19 +73,6 @@ export default function MapSelectorScreen() {
     [keyword]
   );
 
-  const onCameraIdle = useCallback(
-    async ({ nativeEvent }: any) => {
-      const next = nativeEvent?.cameraPosition?.target;
-      if (!next?.latitude || !next?.longitude) return;
-      const newTarget = { latitude: next.latitude, longitude: next.longitude };
-      setTarget(newTarget);
-      setSelectedPOI(null);
-      await syncAddress(newTarget);
-      await refreshAround(newTarget);
-    },
-    [refreshAround, syncAddress]
-  );
-
   useEffect(() => {
     const run = async () => {
       if (!target) return;
@@ -117,7 +106,6 @@ export default function MapSelectorScreen() {
       setSelectedPOI(poi);
       setTarget(next);
       setAddress(poi.address || '');
-      mapRef.current?.moveCamera?.({ target: next, zoom: 16 }, 300);
     },
     []
   );
@@ -135,9 +123,11 @@ export default function MapSelectorScreen() {
       tel: selectedPOI?.tel,
       distance: selectedPOI?.distance,
     };
-    route.params.onSelect(payload);
+    if (typeof params.onSelect === 'function') {
+      params.onSelect(payload);
+    }
     navigation.goBack();
-  }, [address, navigation, route.params, selectedPOI, target]);
+  }, [address, navigation, params, selectedPOI, target]);
 
   const renderMap = () => {
     if (Platform.OS === 'web') {
@@ -147,29 +137,28 @@ export default function MapSelectorScreen() {
         </View>
       );
     }
-    const { MapView } = require('react-native-amap3d');
     return (
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        myLocationEnabled
-        myLocationButtonEnabled
-        scaleControlsEnabled={false}
-        compassEnabled={false}
-        initialCameraPosition={{
-          target: target || { latitude: 39.909187, longitude: 116.397451 },
-          zoom: target ? 16 : 12,
+      <AmapWebView
+        mode="picker"
+        initialCenter={target || { latitude: 39.909187, longitude: 116.397451 }}
+        center={target || undefined}
+        onCenterChange={async (p) => {
+          const prev = lastCenterRef.current;
+          if (prev && Math.abs(prev.latitude - p.latitude) < 0.000001 && Math.abs(prev.longitude - p.longitude) < 0.000001) return;
+          lastCenterRef.current = p;
+          const newTarget = { latitude: p.latitude, longitude: p.longitude };
+          setTarget(newTarget);
+          setSelectedPOI(null);
+          await syncAddress(newTarget);
+          await refreshAround(newTarget);
         }}
-        onCameraIdle={onCameraIdle}
-        onLocation={({ nativeEvent }: any) => {
+        onLocation={async (p) => {
           if (target) return;
-          if (!nativeEvent?.coords) return;
-          const next = {
-            latitude: nativeEvent.coords.latitude,
-            longitude: nativeEvent.coords.longitude,
-          };
-          setTarget(next);
-          mapRef.current?.moveCamera?.({ target: next, zoom: 16 }, 0);
+          lastCenterRef.current = p;
+          const newTarget = { latitude: p.latitude, longitude: p.longitude };
+          setTarget(newTarget);
+          await syncAddress(newTarget);
+          await refreshAround(newTarget);
         }}
       />
     );

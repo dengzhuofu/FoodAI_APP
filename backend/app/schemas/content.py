@@ -37,6 +37,7 @@ class RecipeBase(BaseModel):
     difficulty: Optional[str] = None
     cuisine: Optional[str] = None
     category: Optional[str] = None
+    tags: List[str] = []
     calories: Optional[int] = None
     nutrition: Optional[Dict] = None
     ingredients: List[Dict[str, str]] = []  # List of {name: str, amount: str}

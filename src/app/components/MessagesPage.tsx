@@ -73,19 +73,25 @@ const MessagesPage = () => {
 
   const renderTabs = () => (
     <View style={styles.tabContainer}>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[styles.tab, activeTab === 'notifications' && styles.activeTab]}
         onPress={() => setActiveTab('notifications')}
+        activeOpacity={0.9}
       >
-        <Text style={[styles.tabText, activeTab === 'notifications' && styles.activeTabText]}>通知</Text>
-        {hasUnreadSystem && <View style={styles.badge} />}
+        <View style={styles.tabRow}>
+          <Text style={[styles.tabText, activeTab === 'notifications' && styles.activeTabText]}>通知</Text>
+          {hasUnreadSystem && <View style={styles.badge} />}
+        </View>
       </TouchableOpacity>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[styles.tab, activeTab === 'chats' && styles.activeTab]}
         onPress={() => setActiveTab('chats')}
+        activeOpacity={0.9}
       >
-        <Text style={[styles.tabText, activeTab === 'chats' && styles.activeTabText]}>聊天</Text>
-        {hasUnreadChat && <View style={styles.badge} />}
+        <View style={styles.tabRow}>
+          <Text style={[styles.tabText, activeTab === 'chats' && styles.activeTabText]}>聊天</Text>
+          {hasUnreadChat && <View style={styles.badge} />}
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -142,6 +148,13 @@ const MessagesPage = () => {
       <ScrollView contentContainerStyle={styles.content}>
         {activeTab === 'notifications' ? (
           <View>
+            {notifications.length === 0 ? (
+              <View style={styles.emptyWrap}>
+                <Ionicons name="notifications-off" size={44} color="rgba(17,17,17,0.18)" />
+                <Text style={styles.emptyTitle}>暂无通知</Text>
+                <Text style={styles.emptySub}>系统消息会在这里展示</Text>
+              </View>
+            ) : null}
             {notifications.map((item) => (
               <TouchableOpacity
                 key={item.id}
@@ -164,6 +177,13 @@ const MessagesPage = () => {
           </View>
         ) : (
           <View>
+            {conversations.length === 0 ? (
+              <View style={styles.emptyWrap}>
+                <Ionicons name="chatbubble-ellipses-outline" size={44} color="rgba(17,17,17,0.18)" />
+                <Text style={styles.emptyTitle}>暂无聊天</Text>
+                <Text style={styles.emptySub}>在用户详情页点“发私信”开始聊天</Text>
+              </View>
+            ) : null}
             {conversations.map((conv) => (
               <TouchableOpacity key={conv.id} style={styles.interactionCard} activeOpacity={0.85} onPress={() => openChat(conv)}>
                 <Image source={{ uri: conv.peer.avatar || 'https://via.placeholder.com/150' }} style={styles.avatar} />
@@ -193,7 +213,7 @@ const MessagesPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#FAFAF7',
   },
   header: {
     flexDirection: 'row',
@@ -202,58 +222,65 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     backgroundColor: theme.colors.white,
-    ...theme.shadows.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(17,17,17,0.08)',
   },
   backButton: {
     padding: theme.spacing.sm,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.white,
+    backgroundColor: '#FAFAF7',
     paddingHorizontal: theme.spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    paddingTop: theme.spacing.sm,
+    paddingBottom: theme.spacing.sm,
   },
   tab: {
-    flexDirection: 'row',
+    flex: 1,
+    height: 38,
+    borderRadius: 14,
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: 'rgba(17,17,17,0.08)',
     alignItems: 'center',
-    paddingVertical: theme.spacing.md,
-    marginRight: theme.spacing.xl,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    justifyContent: 'center',
   },
   activeTab: {
-    borderBottomColor: theme.colors.primary,
+    backgroundColor: '#111',
+    borderColor: '#111',
   },
+  tabRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   tabText: {
-    fontSize: 16,
-    color: theme.colors.textSecondary,
+    fontSize: 13,
+    color: '#111',
+    fontWeight: '800',
   },
   activeTabText: {
-    color: theme.colors.text,
-    fontWeight: 'bold',
+    color: '#FFF',
   },
   badge: {
     width: 6,
     height: 6,
     borderRadius: 3,
     backgroundColor: theme.colors.error,
-    marginLeft: 4,
-    marginBottom: 8,
   },
   content: {
-    padding: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.sm,
+    paddingBottom: theme.spacing.lg,
   },
   notificationCard: {
     flexDirection: 'row',
     padding: theme.spacing.md,
     backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.md,
+    borderRadius: 18,
     marginBottom: theme.spacing.sm,
-    ...theme.shadows.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(17,17,17,0.08)',
   },
   unreadCard: {
-    backgroundColor: '#FFF8E1',
+    backgroundColor: '#FFF',
+    borderColor: 'rgba(17,17,17,0.18)',
   },
   iconContainer: {
     width: 48,
@@ -290,9 +317,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: theme.spacing.md,
     backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.md,
+    borderRadius: 18,
     marginBottom: theme.spacing.sm,
-    ...theme.shadows.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(17,17,17,0.08)',
   },
   chatBadge: {
     minWidth: 22,
@@ -314,6 +342,8 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     marginRight: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(17,17,17,0.08)',
   },
   interactionContent: {
     flex: 1,
@@ -325,7 +355,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '900',
     color: theme.colors.text,
   },
   actionText: {
@@ -336,6 +366,13 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     fontWeight: '500',
   },
+  emptyWrap: {
+    paddingVertical: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: { marginTop: 10, fontSize: 14, fontWeight: '900', color: '#111' },
+  emptySub: { marginTop: 6, fontSize: 12, color: 'rgba(17,17,17,0.55)', fontWeight: '700' },
 });
 
 export default MessagesPage;

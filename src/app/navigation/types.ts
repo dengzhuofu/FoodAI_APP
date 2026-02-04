@@ -22,6 +22,7 @@ export type RootStackParamList = {
   TextToRecipe: undefined;
   FridgeToRecipe: undefined;
   VoiceAssistant: undefined;
+  MealPlan: undefined;
   GeneratedRecipeResult: { recipe: any; logId?: number }; // Using any for now to avoid circular dependency
   AIGenerationHistory: undefined;
   

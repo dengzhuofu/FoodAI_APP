@@ -8,6 +8,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../navigation/types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getRecommendations, getHealthNews, HealthNews, FeedItem } from '../../../api/explore';
+import { getDailyRecommendation, Recipe } from '../../../api/content';
 import FeedCard from '../../components/FeedCard';
 import Svg, { Circle } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
@@ -26,6 +27,7 @@ const RecommendScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [recipes, setRecipes] = useState<FeedItem[]>([]);
   const [banners, setBanners] = useState<HealthNews[]>([]);
+  const [dailyRecs, setDailyRecs] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [page, setPage] = useState(1);
@@ -56,7 +58,10 @@ const RecommendScreen = () => {
 
       if (shouldRefresh || pageNum === 1) {
         setRecipes(items);
-        if (pageNum === 1) setBanners(newsData);
+        if (pageNum === 1) {
+          setBanners(newsData);
+          getDailyRecommendation().then(setDailyRecs).catch(console.error);
+        }
       } else {
         setRecipes(prev => [...prev, ...items]);
       }
@@ -207,6 +212,37 @@ const RecommendScreen = () => {
     </View>
   );
 
+  const renderDailyRecommendations = () => {
+    if (dailyRecs.length === 0) return null;
+    return (
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>今日推荐菜谱</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 16 }}>
+          {dailyRecs.map((item, index) => (
+            <TouchableOpacity 
+              key={item.id}
+              style={styles.dailyCard}
+              onPress={() => navigation.navigate('RecipeDetail', { id: item.id.toString() })}
+            >
+              <Image source={{ uri: item.cover_image }} style={styles.dailyImage} />
+              <LinearGradient
+                colors={['transparent', 'rgba(0,0,0,0.8)']}
+                style={styles.dailyGradient}
+              />
+              <View style={styles.dailyContent}>
+                <Text style={styles.dailyTitle} numberOfLines={1}>{item.title}</Text>
+                <View style={styles.dailyMeta}>
+                   <Ionicons name="heart" size={12} color="#FFF" />
+                   <Text style={styles.dailyMetaText}>{item.likes_count}</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
+
   const renderFeedItem = (item: FeedItem, index: number) => {
     const isRestaurant = item.type === 'restaurant';
     const randomHeight = 180 + (item.id % 5) * 30; 
@@ -268,6 +304,7 @@ const RecommendScreen = () => {
           }
         >
           {renderHeader()}
+          {renderDailyRecommendations()}
           {renderWhatToEat()}
           {renderBanner()}
           {renderFeed()}
@@ -583,6 +620,51 @@ const styles = StyleSheet.create({
   },
   column: {
     width: COLUMN_WIDTH,
+  },
+  
+  // Daily Recommendations
+  dailyCard: {
+    width: 140,
+    height: 180,
+    borderRadius: 12,
+    marginRight: 12,
+    overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: '#f0f0f0',
+  },
+  dailyImage: {
+    width: '100%',
+    height: '100%',
+  },
+  dailyGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+  },
+  dailyContent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 10,
+  },
+  dailyTitle: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  dailyMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  dailyMetaText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: '500',
   },
 });
 

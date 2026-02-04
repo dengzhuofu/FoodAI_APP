@@ -11,6 +11,7 @@ class Recipe(models.Model):
     difficulty = fields.CharField(max_length=20, null=True)
     cuisine = fields.CharField(max_length=50, null=True)  # 菜系
     category = fields.CharField(max_length=50, null=True)  # 食材/分类
+    tags = fields.JSONField(default=list)  # Added tags field
     calories = fields.IntField(null=True)
     nutrition = fields.JSONField(null=True)  # {protein, fat, carbs}
     ingredients = fields.JSONField(default=list)

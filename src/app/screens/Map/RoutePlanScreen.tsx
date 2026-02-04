@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, PermissionsAndroid, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +6,7 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation/types';
 import { routePlan, RouteResult, RouteType } from '../../../api/maps';
 import { theme } from '../../styles/theme';
+import AmapWebView from '../../components/AmapWebView';
 
 type RoutePlanRouteProp = RouteProp<RootStackParamList, 'RoutePlan'>;
 
@@ -20,12 +21,14 @@ export default function RoutePlanScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<RoutePlanRouteProp>();
 
-  const destination = route.params.destination;
+  const params = (route as any).params || {};
+  const destination = params.destination as { latitude: number; longitude: number; name?: string; address?: string } | undefined;
+  const destinationLat = destination?.latitude ?? 0;
+  const destinationLng = destination?.longitude ?? 0;
   const [origin, setOrigin] = useState<{ latitude: number; longitude: number } | null>(null);
   const [selectedType, setSelectedType] = useState<RouteType>('driving');
   const [routes, setRoutes] = useState<Partial<Record<RouteType, RouteResult | null>>>({});
   const [loading, setLoading] = useState(false);
-  const mapRef = useRef<any>(null);
 
   const hasAnyRoute = useMemo(() => {
     return Boolean(routes.walking || routes.riding || routes.driving || routes.transit);
@@ -48,7 +51,7 @@ export default function RoutePlanScreen() {
 
   useEffect(() => {
     const fetchRoutes = async () => {
-      if (!origin) return;
+      if (!origin || !destination) return;
       setLoading(true);
       try {
         const originStr = `${origin.longitude},${origin.latitude}`;
@@ -65,23 +68,7 @@ export default function RoutePlanScreen() {
       }
     };
     fetchRoutes();
-  }, [origin, destination.latitude, destination.longitude]);
-
-  useEffect(() => {
-    if (!origin) return;
-    if (Platform.OS === 'web') return;
-    const mid = {
-      latitude: (origin.latitude + destination.latitude) / 2,
-      longitude: (origin.longitude + destination.longitude) / 2,
-    };
-    mapRef.current?.moveCamera?.(
-      {
-        target: mid,
-        zoom: 13,
-      },
-      300
-    );
-  }, [origin, destination.latitude, destination.longitude]);
+  }, [origin, destinationLat, destinationLng]);
 
   const renderTabs = () => {
     const tab: Array<{ type: RouteType; label: string }> = [
@@ -177,67 +164,38 @@ export default function RoutePlanScreen() {
         </View>
       );
     }
-    const { MapView, Marker, Polyline } = require('react-native-amap3d');
-
+    if (!destination) {
+      return (
+        <View style={styles.mapWeb}>
+          <Text style={styles.mapWebText}>缺少目的地坐标，无法展示地图</Text>
+        </View>
+      );
+    }
     const walking = routes.walking;
     const riding = routes.riding;
     const driving = routes.driving;
 
     return (
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        myLocationEnabled
-        myLocationButtonEnabled
-        zoomControlsEnabled={false}
-        scaleControlsEnabled={false}
-        compassEnabled={false}
-        initialCameraPosition={{
-          target: { latitude: destination.latitude, longitude: destination.longitude },
-          zoom: 14,
+      <AmapWebView
+        mode="route"
+        initialCenter={{ latitude: destination.latitude, longitude: destination.longitude }}
+        destination={{ latitude: destination.latitude, longitude: destination.longitude }}
+        origin={origin || undefined}
+        polylines={[
+          walking?.path?.length
+            ? { points: walking.path, color: COLORS.walking, width: selectedType === 'walking' ? 7 : 4 }
+            : null,
+          riding?.path?.length
+            ? { points: riding.path, color: COLORS.riding, width: selectedType === 'riding' ? 7 : 4 }
+            : null,
+          driving?.path?.length
+            ? { points: driving.path, color: COLORS.driving, width: selectedType === 'driving' ? 7 : 4 }
+            : null,
+        ].filter(Boolean) as Array<{ points: { latitude: number; longitude: number }[]; color?: string; width?: number }>}
+        onLocation={(p) => {
+          setOrigin((prev) => prev || { latitude: p.latitude, longitude: p.longitude });
         }}
-        onLocation={({ nativeEvent }: any) => {
-          if (!nativeEvent?.coords) return;
-          const next = {
-            latitude: nativeEvent.coords.latitude,
-            longitude: nativeEvent.coords.longitude,
-          };
-          setOrigin((prev) => prev || next);
-        }}
-      >
-        <Marker position={{ latitude: destination.latitude, longitude: destination.longitude }}>
-          <View style={styles.destinationMarker} />
-        </Marker>
-        {origin && (
-          <Marker position={{ latitude: origin.latitude, longitude: origin.longitude }}>
-            <View style={styles.userMarkerOuter}>
-              <View style={styles.userMarkerInner} />
-            </View>
-          </Marker>
-        )}
-
-        {walking?.path?.length ? (
-          <Polyline
-            points={walking.path}
-            width={selectedType === 'walking' ? 7 : 4}
-            color={COLORS.walking}
-          />
-        ) : null}
-        {riding?.path?.length ? (
-          <Polyline
-            points={riding.path}
-            width={selectedType === 'riding' ? 7 : 4}
-            color={COLORS.riding}
-          />
-        ) : null}
-        {driving?.path?.length ? (
-          <Polyline
-            points={driving.path}
-            width={selectedType === 'driving' ? 7 : 4}
-            color={COLORS.driving}
-          />
-        ) : null}
-      </MapView>
+      />
     );
   };
 
@@ -250,7 +208,7 @@ export default function RoutePlanScreen() {
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>路线规划</Text>
           <Text style={styles.headerSub} numberOfLines={1}>
-            {destination.address || '目的地'}
+              {destination?.address || '目的地'}
           </Text>
         </View>
         <View style={styles.headerRight} />

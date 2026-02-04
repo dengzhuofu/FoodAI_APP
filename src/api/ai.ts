@@ -104,6 +104,29 @@ export interface AgentPresetUpdate {
   allowed_tools?: string[];
 }
 
+export interface MealPlanRequest {
+  dietary_restrictions?: string;
+  preferences?: string;
+  headcount?: number;
+  duration_days?: number;
+  goal?: string;
+}
+
+export interface MealPlanResult {
+  title: string;
+  overview: string;
+  daily_plans: Array<{
+    day: number;
+    meals: Array<{
+      type: string;
+      name: string;
+      description: string;
+      calories: number;
+    }>;
+    total_calories: number;
+  }>;
+}
+
 export const getAgentPresets = async (): Promise<AgentPreset[]> => {
   const response = await client.get('/ai/presets');
   return response.data;
@@ -257,6 +280,18 @@ export const generateWhatToEat = async (categories: string[], quantity: number):
     quantity
   });
   return response.data.options;
+};
+
+export const generateMealPlan = async (data: MealPlanRequest): Promise<MealPlanResult> => {
+  const response = await client.post('/ai/meal-plan', data);
+  try {
+    return typeof response.data === 'string' 
+      ? JSON.parse(response.data) 
+      : response.data;
+  } catch (e) {
+    console.error("Failed to parse AI result", e);
+    throw e;
+  }
 };
 
 export const transcribeAudio = async (uri: string): Promise<string> => {

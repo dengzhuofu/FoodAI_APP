@@ -19,9 +19,10 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../../styles/theme';
-import { createRecipe } from '../../../api/content';
+import { createRecipe, getCommonTags } from '../../../api/content';
 import Toast from '../../components/Toast';
 import { uploadFile } from '../../../api/upload';
+import { useEffect } from 'react';
 
 interface Ingredient {
   name: string;
@@ -57,9 +58,15 @@ const PublishRecipe = () => {
   const [difficulty, setDifficulty] = useState('Medium');
   const [cookingTime, setCookingTime] = useState('30 mins');
   const [category, setCategory] = useState('Lunch');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
   
   // Modal State
-  const [activeModal, setActiveModal] = useState<'difficulty' | 'time' | 'category' | null>(null);
+  const [activeModal, setActiveModal] = useState<'difficulty' | 'time' | 'category' | 'tags' | null>(null);
+
+  useEffect(() => {
+    getCommonTags().then(setAvailableTags).catch(console.error);
+  }, []);
 
   // 1. Image Picker for Recipe Cover/Gallery
   const pickImages = async () => {
@@ -196,6 +203,7 @@ const PublishRecipe = () => {
         cooking_time: cookingTime,
         difficulty: difficulty,
         category: category,
+        tags: selectedTags,
         cuisine: "General" 
       };
       
@@ -224,24 +232,38 @@ const PublishRecipe = () => {
     let data: string[] = [];
     let onSelect: (val: string) => void = () => {};
     let title = '';
+    let isMulti = false;
 
     switch (activeModal) {
       case 'difficulty':
         data = DIFFICULTIES;
         onSelect = setDifficulty;
-        title = 'Select Difficulty';
+        title = '选择难度';
         break;
       case 'time':
         data = COOKING_TIMES;
         onSelect = setCookingTime;
-        title = 'Select Cooking Time';
+        title = '选择烹饪时间';
         break;
       case 'category':
         data = CATEGORIES;
         onSelect = setCategory;
-        title = 'Select Category';
+        title = '选择分类';
+        break;
+      case 'tags':
+        data = availableTags;
+        isMulti = true;
+        title = '选择标签';
         break;
     }
+
+    const toggleTag = (tag: string) => {
+      if (selectedTags.includes(tag)) {
+        setSelectedTags(selectedTags.filter(t => t !== tag));
+      } else {
+        setSelectedTags([...selectedTags, tag]);
+      }
+    };
 
     return (
       <Modal
@@ -260,23 +282,41 @@ const PublishRecipe = () => {
             <FlatList
               data={data}
               keyExtractor={(item) => item}
-              renderItem={({ item }) => (
-                <TouchableOpacity 
-                  style={styles.modalItem}
-                  onPress={() => {
-                    onSelect(item);
-                    setActiveModal(null);
-                  }}
-                >
-                  <Text style={styles.modalItemText}>{item}</Text>
-                  {(activeModal === 'difficulty' && difficulty === item ||
-                    activeModal === 'time' && cookingTime === item ||
-                    activeModal === 'category' && category === item) && (
-                    <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
-                  )}
-                </TouchableOpacity>
-              )}
+              renderItem={({ item }) => {
+                const isSelected = isMulti 
+                  ? selectedTags.includes(item)
+                  : (activeModal === 'difficulty' && difficulty === item ||
+                     activeModal === 'time' && cookingTime === item ||
+                     activeModal === 'category' && category === item);
+
+                return (
+                  <TouchableOpacity 
+                    style={styles.modalItem}
+                    onPress={() => {
+                      if (isMulti) {
+                        toggleTag(item);
+                      } else {
+                        onSelect(item);
+                        setActiveModal(null);
+                      }
+                    }}
+                  >
+                    <Text style={[styles.modalItemText, isSelected && { color: theme.colors.primary, fontWeight: 'bold' }]}>{item}</Text>
+                    {isSelected && (
+                      <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                );
+              }}
             />
+            {isMulti && (
+              <TouchableOpacity 
+                style={[styles.addBtn, { marginTop: 16, backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]} 
+                onPress={() => setActiveModal(null)}
+              >
+                <Text style={[styles.addBtnText, { color: '#fff' }]}>完成</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </TouchableOpacity>
       </Modal>
@@ -347,6 +387,10 @@ const PublishRecipe = () => {
                 <TouchableOpacity style={styles.metaChip} onPress={() => setActiveModal('category')}>
                   <Ionicons name="restaurant-outline" size={16} color="#666" />
                   <Text style={styles.metaText}>{category}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.metaChip} onPress={() => setActiveModal('tags')}>
+                  <Ionicons name="pricetags-outline" size={16} color="#666" />
+                  <Text style={styles.metaText}>{selectedTags.length > 0 ? selectedTags.join(', ') : '添加标签'}</Text>
                 </TouchableOpacity>
               </View>
             </View>

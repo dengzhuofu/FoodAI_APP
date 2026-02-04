@@ -33,6 +33,81 @@ async def create_recipe(
     await recipe.fetch_related("author")
     return recipe
 
+@router.get("/common/tags", response_model=List[str])
+async def get_common_tags():
+    """Return a list of common tags for recipes"""
+    return [
+        "早餐", "午餐", "晚餐", "下午茶", "夜宵",
+        "减脂", "增肌", "低卡", "高蛋白",
+        "家常菜", "快手菜", "下饭菜", "宴客菜",
+        "川菜", "粤菜", "湘菜", "鲁菜", "苏菜", "浙菜", "徽菜", "闽菜",
+        "西餐", "日料", "韩餐", "烘焙", "甜点", "饮品", "汤羹"
+    ]
+
+@router.get("/recipes/recommend/daily", response_model=List[RecipeOut])
+async def get_daily_recommendation(
+    limit: int = 5,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Recommend recipes based on user's likes and collections.
+    If no history, return random popular recipes.
+    """
+    # 1. Get user's interests (tags from liked/collected recipes)
+    liked_recipe_ids = await Like.filter(user=current_user, target_type='recipe').values_list('target_id', flat=True)
+    collected_recipe_ids = await Collection.filter(user=current_user, target_type='recipe').values_list('target_id', flat=True)
+    
+    target_ids = list(set(liked_recipe_ids) | set(collected_recipe_ids))
+    
+    recommended_recipes = []
+    
+    if target_ids:
+        # Get tags from these recipes
+        # Note: Tortoise doesn't support array agg easily on JSONField, so we fetch and process
+        # For performance, limit the number of source recipes
+        source_recipes = await Recipe.filter(id__in=target_ids[:20]).values('tags', 'cuisine', 'category')
+        
+        interest_tags = []
+        for r in source_recipes:
+            if r.get('tags'):
+                interest_tags.extend(r['tags'])
+            if r.get('cuisine'):
+                interest_tags.append(r['cuisine'])
+            if r.get('category'):
+                interest_tags.append(r['category'])
+        
+        from collections import Counter
+        if interest_tags:
+            # Get top 5 tags
+            top_tags = [tag for tag, _ in Counter(interest_tags).most_common(5)]
+            
+            # Find recipes with these tags, excluding ones user interacted with
+            # Since tags is JSONField, we can't easily filter by "contains" in all DBs efficiently without specific dialect support
+            # But Tortoise supports some JSON operations. 
+            # For simplicity and cross-DB support, we might fetch recent recipes and filter in python if dataset is small,
+            # or use simple text search if tags are stored as text.
+            # Here we try to filter by category/cuisine first as they are indexed columns
+            
+            # Hybrid approach: Fetch candidates by category/cuisine matching top tags, then score them
+            candidates = await Recipe.filter(
+                Q(cuisine__in=top_tags) | Q(category__in=top_tags)
+            ).exclude(id__in=target_ids).limit(20).prefetch_related("author").all()
+            
+            recommended_recipes.extend(candidates)
+            
+            # If we need more, we might need a more complex query or full text search
+            # For now, let's also add some random popular ones if not enough
+    
+    if len(recommended_recipes) < limit:
+        # Fill with popular recipes
+        needed = limit - len(recommended_recipes)
+        existing_ids = [r.id for r in recommended_recipes] + target_ids
+        
+        popular = await Recipe.filter(id__not_in=existing_ids).order_by("-likes_count").limit(needed).prefetch_related("author").all()
+        recommended_recipes.extend(popular)
+        
+    return recommended_recipes[:limit]
+
 @router.get("/recipes", response_model=List[RecipeOut])
 async def get_recipes(
     page: int = Query(1, ge=1),

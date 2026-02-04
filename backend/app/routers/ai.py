@@ -14,6 +14,7 @@ from app.schemas.ai import (
     RecognizeFridgeRequest,
     GenerateWhatToEatRequest,
     KitchenAgentRequest,
+    MealPlanRequest,
     ChatSessionCreate,
     ChatSessionUpdate,
     ChatSessionOut,
@@ -189,6 +190,29 @@ async def delete_chat_session(
     return {"message": "Session deleted"}
 
 # --- Agent Chat Endpoint ---
+
+@router.post("/meal-plan")
+async def generate_meal_plan(
+    request: MealPlanRequest,
+    current_user: User = Depends(get_current_user)
+):
+    result = await ai_service.generate_meal_plan(
+        request.dietary_restrictions,
+        request.preferences,
+        request.headcount,
+        request.duration_days,
+        request.goal
+    )
+    
+    # Log to DB
+    await AILog.create(
+        user=current_user,
+        feature="meal-plan",
+        input_summary=f"{request.duration_days} days plan for {request.headcount}",
+        output_result=result
+    )
+    
+    return result
 
 @router.post("/agent/chat")
 async def kitchen_agent_chat(

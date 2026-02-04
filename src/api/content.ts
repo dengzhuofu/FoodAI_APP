@@ -43,6 +43,7 @@ export interface Recipe {
   difficulty?: string;
   cuisine?: string;
   category?: string;
+  tags?: string[];
   calories?: number;
   nutrition?: any;
   ingredients: any[]; // Supports {name, amount} objects
@@ -104,6 +105,16 @@ export const getRecipe = async (id: number): Promise<Recipe> => {
 
 export const getRecipes = async (params: RecipeQueryParams = {}): Promise<Recipe[]> => {
   const response = await client.get('/recipes', { params });
+  return response.data;
+};
+
+export const getCommonTags = async (): Promise<string[]> => {
+  const response = await client.get('/common/tags');
+  return response.data;
+};
+
+export const getDailyRecommendation = async (limit: number = 5): Promise<Recipe[]> => {
+  const response = await client.get('/recipes/recommend/daily', { params: { limit } });
   return response.data;
 };
 

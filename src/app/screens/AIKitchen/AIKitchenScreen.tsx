@@ -66,6 +66,15 @@ const AIKitchenScreen = () => {
       border: '#E0E0E0'
     },
     { 
+      name: '膳食计划', 
+      desc: '定制专属膳食计划', 
+      route: 'MealPlan', 
+      icon: 'calendar', 
+      color: '#1A1A1A',
+      bg: '#FFFFFF',
+      border: '#E0E0E0'
+    },
+    { 
       name: t('kitchen.featureVoiceAssistant'), 
       desc: t('kitchen.featureVoiceAssistantDesc'), 
       route: 'VoiceAssistant', 

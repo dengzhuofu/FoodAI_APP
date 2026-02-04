@@ -410,6 +410,53 @@ class AIService:
             print(f"Error parsing AI response: {e}")
             return []
 
+    async def generate_meal_plan(self, restrictions: str, preferences: str, headcount: int, days: int, goal: str) -> Dict[str, Any]:
+        """Generate a meal plan"""
+        template = """你是一个专业的营养师。请根据以下要求，为用户制定一个{days}天的膳食计划。
+        
+        要求：
+        1. 用餐人数：{headcount}人
+        2. 忌口/限制：{restrictions}
+        3. 口味/喜好：{preferences}
+        4. 目标：{goal}
+        
+        请返回一个JSON格式的计划，结构如下：
+        {{
+            "title": "膳食计划名称",
+            "overview": "计划概述",
+            "daily_plans": [
+                {{
+                    "day": 1,
+                    "meals": [
+                        {{
+                            "type": "早餐",
+                            "name": "菜名",
+                            "description": "简短描述",
+                            "calories": 300
+                        }},
+                        ... (午餐, 晚餐)
+                    ],
+                    "total_calories": 2000
+                }},
+                ...
+            ]
+        }}
+        
+        只返回JSON，不要其他文字。"""
+        
+        prompt = PromptTemplate.from_template(template)
+        chain = prompt | self.llm_text
+        
+        response = await chain.ainvoke({
+            "days": days,
+            "headcount": headcount,
+            "restrictions": restrictions or "无",
+            "preferences": preferences or "无",
+            "goal": goal or "健康饮食"
+        })
+        
+        return self._clean_recipe_response(response.content)
+
     async def kitchen_agent_chat(self, user_id: int, message: str, history: List[Dict[str, Any]], agent_id: str = "kitchen_agent", session_id: int = None) -> Dict[str, Any]:
         """
         Agent with tool use for kitchen management.

@@ -195,22 +195,7 @@ const RecipeDetailPage = () => {
           </View>
         )}
         
-        {/* Top Bar */}
-        <View style={[styles.topBar, { top: insets.top }]}>
-          <TouchableOpacity 
-            style={styles.iconButton} 
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="arrow-back" size={20} color="#FFF" />
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.iconButton} 
-            onPress={handleCollection}
-          >
-            <Ionicons name={isCollected ? "heart" : "heart-outline"} size={20} color={isCollected ? "#FF6B6B" : "#FFF"} />
-          </TouchableOpacity>
-        </View>
+    
 
       </View>
     );

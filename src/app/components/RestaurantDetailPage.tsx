@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Linking, Alert, ActivityIndicator, Platform, PermissionsAndroid } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../styles/theme';
 import { RootStackParamList } from '../navigation/types';
 import { getRestaurant, getComments, toggleCollection, Restaurant, Comment, toggleLike, recordView } from '../../api/content';
@@ -12,6 +11,7 @@ import { getMe } from '../../api/auth';
 import CommentsSection from './CommentsSection';
 import DetailBottomBar from './DetailBottomBar';
 import { reverseGeocode } from '../../api/maps';
+import AmapWebView from './AmapWebView';
 
 type RestaurantDetailRouteProp = RouteProp<RootStackParamList, 'RestaurantDetail'>;
 
@@ -34,7 +34,6 @@ const RestaurantDetailPage = () => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
-  const mapRef = useRef<any>(null);
 
   const handleLike = async () => {
     try {
@@ -197,151 +196,96 @@ const RestaurantDetailPage = () => {
     if (Platform.OS === 'web') return null;
     if (!restaurant.latitude || !restaurant.longitude) return null;
 
-    const { MapView, Marker } = require('react-native-amap3d');
     const destination = { latitude: restaurant.latitude, longitude: restaurant.longitude };
 
-    const initialCameraPosition = userLocation
+    const initialCenter = userLocation
       ? {
-          target: {
-            latitude: (userLocation.latitude + destination.latitude) / 2,
-            longitude: (userLocation.longitude + destination.longitude) / 2,
-          },
-          zoom: 14,
+          latitude: (userLocation.latitude + destination.latitude) / 2,
+          longitude: (userLocation.longitude + destination.longitude) / 2,
         }
-      : {
-          target: destination,
-          zoom: 15,
-        };
+      : destination;
 
     return (
       <View style={styles.mapContainer}>
-        <MapView
-          ref={mapRef}
-          myLocationEnabled
-          scrollGesturesEnabled={false}
-          zoomGesturesEnabled={false}
-          rotateGesturesEnabled={false}
-          tiltGesturesEnabled={false}
-          compassEnabled={false}
-          scaleControlsEnabled={false}
-          initialCameraPosition={initialCameraPosition}
-          onLocation={({ nativeEvent }: any) => {
-            if (!nativeEvent?.coords) return;
-            const next = {
-              latitude: nativeEvent.coords.latitude,
-              longitude: nativeEvent.coords.longitude,
-            };
-            setUserLocation((prev) => prev || next);
+        <AmapWebView
+          mode="preview"
+          initialCenter={initialCenter}
+          destination={destination}
+          onLocation={(p) => {
+            setUserLocation((prev) => prev || { latitude: p.latitude, longitude: p.longitude });
           }}
-        >
-          <Marker position={destination}>
-            <View style={styles.destinationMarker} />
-          </Marker>
-          {userLocation && (
-            <Marker position={userLocation}>
-              <View style={styles.userMarkerOuter}>
-                <View style={styles.userMarkerInner} />
-              </View>
-            </Marker>
-          )}
-        </MapView>
+        />
       </View>
     );
   };
 
   const renderHeader = () => (
     <View style={styles.imageContainer}>
+      {(() => {
+        const displayImages = restaurant.images && restaurant.images.length > 0 ? restaurant.images : ['https://via.placeholder.com/400x300'];
+        return (
+          <>
       <ScrollView 
         horizontal 
         pagingEnabled 
         showsHorizontalScrollIndicator={false}
-        onScroll={(e) => {
-          const slide = Math.ceil(e.nativeEvent.contentOffset.x / e.nativeEvent.layoutMeasurement.width);
+        onMomentumScrollEnd={(event) => {
+          const slide = Math.ceil(event.nativeEvent.contentOffset.x / event.nativeEvent.layoutMeasurement.width);
           if (slide !== activeImageIndex) setActiveImageIndex(slide);
         }}
-        scrollEventThrottle={16}
       >
-        {restaurant.images.length > 0 ? (
-          restaurant.images.map((img, index) => (
-            <Image 
-              key={index}
-              source={{ uri: img }} 
-              style={{ width: width, height: 400 }} 
-              contentFit="cover" 
-            />
-          ))
-        ) : (
+        {displayImages.map((img, index) => (
           <Image 
-            source={{ uri: 'https://via.placeholder.com/400x300' }} 
-            style={{ width: width, height: 400 }} 
+            key={index}
+            source={{ uri: img }} 
+            style={styles.heroImage} 
             contentFit="cover" 
           />
-        )}
+        ))}
       </ScrollView>
       
       {/* Pagination Dots */}
-      {restaurant.images.length > 1 && (
-        <View style={styles.pagination}>
-          {restaurant.images.map((_, index) => (
+      {displayImages.length > 1 && (
+        <View style={styles.paginationContainer}>
+          {displayImages.map((_, index) => (
             <View 
               key={index} 
               style={[
-                styles.paginationDot, 
-                activeImageIndex === index && styles.paginationDotActive
+                styles.paginationDot,
+                activeImageIndex === index ? styles.paginationDotActive : styles.paginationDotInactive
               ]} 
             />
           ))}
         </View>
       )}
+          </>
+        );
+      })()}
+    </View>
+  );
 
-      <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.8)']}
-        style={styles.gradient}
-      />
-      
-      {/* Top Bar */}
-      <View style={[styles.topBar, { top: insets.top }]}>
-        <TouchableOpacity 
-          style={styles.iconButton} 
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={20} color="#FFF" />
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.iconButton} 
-          onPress={handleCollection}
-        >
-          <Ionicons name={isCollected ? "heart" : "heart-outline"} size={20} color={isCollected ? "#FF6B6B" : "#FFF"} />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.headerContent}>
-        <View style={styles.tagContainer}>
-          <View style={styles.ratingTag}>
-            <Ionicons name="star" size={12} color="#1A1A1A" />
-            <Text style={styles.ratingText}>{restaurant.rating || '-'}</Text>
-          </View>
-          <View style={styles.statusTag}>
-            <Text style={styles.statusText}>OPEN NOW</Text>
-          </View>
+  const renderRestaurantInfo = () => (
+    <View style={styles.headerContent}>
+      <Text style={styles.title}>{restaurant.title}</Text>
+      <View style={styles.tagContainer}>
+        <View style={styles.tagChip}>
+          <Ionicons name="star" size={14} color="#666" />
+          <Text style={styles.tagChipText}>{restaurant.rating || '-'}</Text>
         </View>
-        
-        <Text style={styles.title}>{restaurant.title}</Text>
-        
-        <TouchableOpacity
-          style={styles.authorRow}
-          activeOpacity={0.85}
-          onPress={() => {
-            if (!restaurant?.author?.id) return;
-            // @ts-ignore
-            navigation.navigate('UserDetail', { userId: restaurant.author.id });
-          }}
-        >
-          <Image source={{ uri: restaurant.author.avatar || 'https://via.placeholder.com/150' }} style={styles.avatar} />
-          <Text style={styles.authorName}>{restaurant.author.username}</Text>
-        </TouchableOpacity>
+        {restaurant.cuisine ? (
+          <View style={styles.tagChip}>
+            <Ionicons name="restaurant-outline" size={14} color="#666" />
+            <Text style={styles.tagChipText}>{restaurant.cuisine}</Text>
+          </View>
+        ) : null}
+        {restaurant.hours ? (
+          <View style={styles.tagChip}>
+            <Ionicons name="time-outline" size={14} color="#666" />
+            <Text style={styles.tagChipText} numberOfLines={1}>{restaurant.hours}</Text>
+          </View>
+        ) : null}
       </View>
+      {restaurant.content ? <Text style={styles.description}>{restaurant.content}</Text> : null}
     </View>
   );
 
@@ -398,6 +342,49 @@ const RestaurantDetailPage = () => {
 
   return (
     <View style={styles.container}>
+      <View style={[styles.topBar, { paddingTop: insets.top + 10 }]}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="chevron-back" size={28} color="#333" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.topBarAuthor}
+          activeOpacity={0.85}
+          onPress={() => {
+            if (!restaurant?.author?.id) return;
+            // @ts-ignore
+            navigation.navigate('UserDetail', { userId: restaurant.author.id });
+          }}
+        >
+          <Image 
+            source={{ uri: restaurant?.author.avatar || 'https://via.placeholder.com/150' }} 
+            style={styles.topBarAvatar} 
+            contentFit="cover"
+          />
+          <Text style={styles.topBarAuthorName} numberOfLines={1}>
+            {restaurant?.author.username}
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.topBarActions}>
+          <TouchableOpacity 
+            style={[styles.followButton, isCollected && styles.followingButton]} 
+            onPress={handleCollection}
+          >
+            <Text style={[styles.followButtonText, isCollected && styles.followingButtonText]}>
+              {isCollected ? '已收藏' : '收藏'}
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.shareButton} activeOpacity={0.8}>
+            <Ionicons name="share-outline" size={24} color="#333" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <ScrollView 
         style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent} 
@@ -405,7 +392,7 @@ const RestaurantDetailPage = () => {
       >
         {renderHeader()}
         <View style={styles.content}>
-          <Text style={styles.description}>{restaurant.content}</Text>
+          {renderRestaurantInfo()}
           {renderInfo()}
           {renderComments()}
         </View>
@@ -443,7 +430,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     backgroundColor: theme.colors.white,
-    ...theme.shadows.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(17,17,17,0.08)',
   },
   backButton: {
     padding: theme.spacing.sm,
@@ -461,127 +449,112 @@ const styles = StyleSheet.create({
     width: '100%',
     position: 'relative',
   },
-  gradient: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 240,
+  heroImage: {
+    width: width,
+    height: 400,
   },
-  pagination: {
+  paginationContainer: {
     position: 'absolute',
-    bottom: 150, // Above gradient
+    bottom: 14,
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 8,
-    zIndex: 5,
+    gap: 6,
   },
   paginationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
   },
   paginationDotActive: {
     backgroundColor: '#FFF',
-    width: 24,
+  },
+  paginationDotInactive: {
+    backgroundColor: 'rgba(255,255,255,0.45)',
   },
   topBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    zIndex: 10,
-    marginTop: 10,
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  headerContent: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 24,
-    paddingBottom: 40,
-  },
-  tagContainer: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    gap: 8,
-  },
-  ratingTag: {
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 100,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    backgroundColor: '#FFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    zIndex: 100,
   },
-  ratingText: {
-    color: '#1A1A1A',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  statusTag: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 100,
-  },
-  statusText: {
-    color: '#FFF',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  title: {
-    fontSize: 36,
-    fontWeight: '900',
-    color: '#FFF',
-    marginBottom: 20,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 4 },
-    textShadowRadius: 12,
-    lineHeight: 42,
-    letterSpacing: -1,
-  },
-  authorRow: {
+  topBarAuthor: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    marginLeft: 8,
   },
-  avatar: {
+  topBarAvatar: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#FFF',
-    marginRight: 12,
+    marginRight: 8,
+    backgroundColor: '#EEE',
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
-  authorName: {
-    color: '#FFF',
+  topBarAuthorName: {
     fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontWeight: '600',
+    color: '#333',
+    maxWidth: 140,
+  },
+  topBarActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  followButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 18,
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#FF6B6B',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  followingButton: {
+    backgroundColor: '#F5F5F5',
+    borderColor: '#DDD',
+  },
+  followButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FF6B6B',
+  },
+  followingButtonText: {
+    color: '#999',
+  },
+  shareButton: {
+    padding: 4,
+  },
+  headerContent: {
+    paddingBottom: 30,
+  },
+  tagContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 24,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#1A1A1A',
+    marginBottom: 12,
+    textShadowRadius: 8,
+    lineHeight: 34,
   },
   content: {
     padding: 24,
-    marginTop: -32,
+    marginTop: -30,
     backgroundColor: '#F9F9F9',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
   },
   description: {
     fontSize: 16,
@@ -591,28 +564,45 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     letterSpacing: 0.2,
   },
+  tagChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+    elevation: 1,
+    marginRight: 10,
+  },
+  tagChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+  },
   section: {
     marginBottom: 40,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '900',
-    color: '#1A1A1A',
-    marginBottom: 20,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
+    color: '#111',
+    marginBottom: 14,
+    letterSpacing: 0.2,
   },
   infoCard: {
     backgroundColor: '#FFF',
     borderRadius: 24,
     padding: 24,
     borderWidth: 1,
-    borderColor: '#F0F0F0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.03,
-    shadowRadius: 16,
-    elevation: 2,
+    borderColor: 'rgba(17,17,17,0.08)',
+    ...theme.shadows.sm,
   },
   infoRow: {
     flexDirection: 'row',
@@ -624,7 +614,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FAFAF7',
+    borderWidth: 1,
+    borderColor: 'rgba(17,17,17,0.08)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -660,7 +652,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: 'rgba(17,17,17,0.08)',
     marginLeft: 56,
   },
   mapContainer: {
@@ -671,6 +663,17 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 16,
     position: 'relative',
+  },
+  mapFallback: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F2F2F2',
+  },
+  mapFallbackText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '700',
   },
   destinationMarker: {
     width: 14,

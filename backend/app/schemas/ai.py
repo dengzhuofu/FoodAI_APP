@@ -30,6 +30,13 @@ class GenerateWhatToEatRequest(BaseModel):
     categories: List[str]
     quantity: int
 
+class MealPlanRequest(BaseModel):
+    dietary_restrictions: Optional[str] = None # 忌口
+    preferences: Optional[str] = None # 口味/喜好
+    headcount: int = 1 # 用餐人数
+    duration_days: int = 7 # 周期（天）
+    goal: Optional[str] = None # 目标（减脂/增肌/维持）
+
 class KitchenAgentRequest(BaseModel):
     message: str
     history: List[dict] = []
