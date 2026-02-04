@@ -9,7 +9,7 @@ from app.schemas.content import (
     RestaurantCreate, RestaurantOut,
     CommentCreate, CommentOut
 )
-from app.models.recipes import Recipe, Comment, Collection, Like, ViewHistory
+from app.models.recipes import Recipe, RecipeStep, Comment, Collection, Like, ViewHistory
 from app.models.restaurants import Restaurant
 from app.models.users import User
 from app.core.deps import get_current_user
@@ -29,8 +29,32 @@ async def create_recipe(
     if not recipe_in.nutrition:
         recipe_in.nutrition = await analyze_nutrition(recipe_in.ingredients, recipe_in.steps)
 
-    recipe = await Recipe.create(author=current_user, **recipe_in.dict())
+    # 1. Create Recipe object (excluding steps)
+    recipe_data = recipe_in.dict()
+    steps_data = recipe_data.pop("steps", [])
+    
+    recipe = await Recipe.create(author=current_user, **recipe_data)
+    
+    # 2. Create RecipeStep objects
+    for i, step in enumerate(steps_data):
+        description = step.get("description", "") if isinstance(step, dict) else str(step)
+        image = step.get("image") if isinstance(step, dict) else None
+        
+        await RecipeStep.create(
+            recipe=recipe,
+            step_number=i + 1,
+            description=description,
+            image=image
+        )
+    
+    # 3. Reload to include author (and steps if we prefetch)
+    # Note: We need to manually attach steps for response model
     await recipe.fetch_related("author")
+    
+    # Convert RecipeStep objects back to list of dicts for response
+    # Or rely on the fact that response model expects 'steps' which we can populate
+    recipe.steps = steps_data 
+    
     return recipe
 
 @router.get("/common/tags", response_model=List[str])
@@ -188,17 +212,43 @@ async def get_recipes(
         query = query.order_by(sort_by)
         
     # Pagination
-    return await query.offset((page - 1) * page_size).limit(page_size).prefetch_related("author")
+    recipes = await query.offset((page - 1) * page_size).limit(page_size).prefetch_related("author", "recipe_steps")
+    
+    # Populate steps
+    for recipe in recipes:
+        steps_objs = sorted(list(recipe.recipe_steps), key=lambda x: x.step_number)
+        if steps_objs:
+            recipe.steps = [
+                {"description": s.description, "image": s.image} 
+                for s in steps_objs
+            ]
+            
+    return recipes
 
 @router.get("/recipes/{recipe_id}", response_model=RecipeOut)
 async def get_recipe_detail(
     recipe_id: int,
     current_user: User = Depends(get_current_user)
 ):
-    recipe = await Recipe.get_or_none(id=recipe_id).prefetch_related("author")
+    recipe = await Recipe.get_or_none(id=recipe_id).prefetch_related("author", "recipe_steps")
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
         
+    # Populate steps from RecipeStep relation
+    # Sort by step_number
+    steps_objs = sorted(list(recipe.recipe_steps), key=lambda x: x.step_number)
+    if steps_objs:
+        recipe.steps = [
+            {"description": s.description, "image": s.image} 
+            for s in steps_objs
+        ]
+    else:
+        # Fallback to old JSON field if exists and new table is empty
+        # But wait, we didn't populate JSON field in create_recipe anymore
+        # So this handles old data migration implicitly if we keep using JSON field for old data
+        # For new data, recipe.steps (the model field) might be empty list if default=list
+        pass
+
     # Check if liked and collected
     is_liked = await Like.filter(
         user=current_user, target_id=recipe_id, target_type='recipe'
@@ -208,15 +258,6 @@ async def get_recipe_detail(
         user=current_user, target_id=recipe_id, target_type='recipe'
     ).exists()
     
-    # Manually attach these fields (Pydantic schema will need update or return dict)
-    # Since we use response_model, we might need to update the schema or return a dict that matches
-    # Let's update the return to include these extra fields if the schema supports it, 
-    # OR for now, just return the recipe object and let frontend handle it if we modify schema.
-    # To avoid schema validation error, let's update schema first.
-    # But for quick fix without changing global schema, we can return a dict and update frontend to expect it?
-    # No, better update schema.
-    
-    # Actually, we can attach them to the recipe object dynamically
     recipe.is_liked = is_liked
     recipe.is_collected = is_collected
     

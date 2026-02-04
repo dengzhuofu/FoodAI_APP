@@ -27,6 +27,19 @@ async def upgrade_db():
         "ALTER TABLE restaurants ADD COLUMN cuisine VARCHAR(50) NULL;",
         "ALTER TABLE restaurants ADD COLUMN latitude DOUBLE NULL;",
         "ALTER TABLE restaurants ADD COLUMN longitude DOUBLE NULL;",
+
+        # Recipe Steps table
+        """
+        CREATE TABLE IF NOT EXISTS `recipe_steps` (
+            `id` BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+            `step_number` INT NOT NULL,
+            `description` LONGTEXT NOT NULL,
+            `image` VARCHAR(255),
+            `created_at` DATETIME(6) NOT NULL  DEFAULT CURRENT_TIMESTAMP(6),
+            `recipe_id` BIGINT NOT NULL,
+            CONSTRAINT `fk_recipe_s_recipes_5e80d` FOREIGN KEY (`recipe_id`) REFERENCES `recipes` (`id`) ON DELETE CASCADE
+        );
+        """
     ]
     
     logger.info("Starting schema upgrade...")

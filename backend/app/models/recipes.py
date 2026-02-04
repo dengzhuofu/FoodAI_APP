@@ -23,6 +23,18 @@ class Recipe(models.Model):
     class Meta:
         table = "recipes"
 
+class RecipeStep(models.Model):
+    id = fields.BigIntField(pk=True)
+    recipe = fields.ForeignKeyField("models.Recipe", related_name="recipe_steps")
+    step_number = fields.IntField()
+    description = fields.TextField()
+    image = fields.CharField(max_length=255, null=True)
+    created_at = fields.DatetimeField(auto_now_add=True)
+
+    class Meta:
+        table = "recipe_steps"
+        ordering = ["step_number"]
+
 class Comment(models.Model):
     id = fields.BigIntField(pk=True)
     user = fields.ForeignKeyField("models.User", related_name="comments")

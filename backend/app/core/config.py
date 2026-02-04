@@ -3,7 +3,7 @@ from typing import Dict, Any
 import os
 from dotenv import load_dotenv
 
-load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"))
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".env"))
 
 class Settings(BaseSettings):
     DATABASE_URL: str
@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     AMAP_API_KEY: str = ""
 
     class Config:
-        env_file = ".env"
+        env_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".env")
         env_file_encoding = 'utf-8'
         extra = "ignore"
         # Environment variables take precedence over .env file
