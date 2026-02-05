@@ -96,7 +96,11 @@ async def chat_with_mcp(
 
     # 5. Run LLM
     messages = [
-        SystemMessage(content="You are a McDonald's assistant. You can help users check activities, coupons, and claim coupons using the available tools. If you provide image URLs, please use Markdown format: ![image description](url) so they can be rendered."),
+        SystemMessage(content="""You are a McDonald's assistant. You can help users check activities, coupons, and claim coupons using the available tools. 
+If you provide image URLs, please use Markdown format: ![image description](url) so they can be rendered.
+IMPORTANT: When calling tools, ensure you follow the schema strictly. If a tool does not require arguments, pass an empty object.
+If a tool execution fails, politely inform the user and show the error message.
+If the tool returns Markdown content (e.g. calendars, coupons), please output it directly so the user can see it."""),
         HumanMessage(content=request.message)
     ]
     

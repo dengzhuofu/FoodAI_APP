@@ -140,7 +140,16 @@ const McDonaldsAssistantFeature = () => {
       try {
         setLoading(true);
         const result = await callTool(name, args);
-        Alert.alert('Result', JSON.stringify(result.result, null, 2));
+        
+        // Use result.result directly as string, or handle object
+        const content = typeof result.result === 'string' 
+          ? result.result 
+          : JSON.stringify(result.result, null, 2);
+
+        navigation.navigate('ToolResult', {
+          title: name,
+          content: content
+        });
       } catch (e) {
           Alert.alert('Error', 'Tool execution failed');
       } finally {

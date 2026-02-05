@@ -37,6 +37,8 @@ import GeneratedRecipeResult from '../screens/AIKitchen/GeneratedRecipeResult';
 import AIGenerationHistoryScreen from '../screens/AIKitchen/AIGenerationHistoryScreen';
 import McDonaldsAssistantFeature from '../screens/AIKitchen/features/McDonaldsAssistantFeature';
 
+import ToolResultScreen from '../screens/AIKitchen/ToolResultScreen';
+
 // Profile Sub-pages
 import CollectionsPage from '../screens/Profile/CollectionsPage';
 import ShoppingListPage from '../screens/Profile/ShoppingListPage';
@@ -234,6 +236,7 @@ const AppNavigator = () => {
             <Stack.Screen name="GeneratedRecipeResult" component={GeneratedRecipeResult} options={{ title: 'AI 生成结果', headerShown: false }} />
             <Stack.Screen name="AIGenerationHistory" component={AIGenerationHistoryScreen} options={{ title: '生成记录', headerShown: false }} />
             <Stack.Screen name="McDonaldsAssistant" component={McDonaldsAssistantFeature} options={{ title: '麦当劳助手', headerShown: false }} />
+            <Stack.Screen name="ToolResult" component={ToolResultScreen} options={{ headerShown: false, presentation: 'modal' }} />
             
             {/* Profile Sub-pages */}
             <Stack.Screen name="Collections" component={CollectionsPage} options={{ title: '我的收藏' }} />
