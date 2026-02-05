@@ -1,15 +1,13 @@
 from typing import List, Dict, Any, Optional
-import httpx
-import json
 from app.models.users import User, UserIntegration
 from tortoise.exceptions import DoesNotExist
-
-# Note: In a real implementation with modelcontextprotocol, we would import:
-# from modelcontextprotocol.client import Client
-# from modelcontextprotocol.types import ClientOptions
+from mcp import ClientSession
+from mcp.client.sse import sse_client
+import mcp.types as types
 
 class McDonaldsService:
-    BASE_URL = "https://mcp.mcd.cn"
+    # Default URL from user config, but can be overridden if stored in DB or env
+    DEFAULT_URL = "https://mcp.mcd.cn"
 
     async def get_token(self, user: User) -> Optional[str]:
         try:
@@ -26,7 +24,7 @@ class McDonaldsService:
     async def _get_headers(self, token: str) -> Dict[str, str]:
         return {
             "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
+            "User-Agent": "FoodAI-Backend/1.0"
         }
 
     async def list_tools(self, user: User) -> List[Dict[str, Any]]:
@@ -34,70 +32,65 @@ class McDonaldsService:
         if not token:
             raise ValueError("Token not found. Please configure your McDonald's token.")
 
-        # Since we don't have the exact MCP HTTP protocol specs here, 
-        # we will assume a standard JSON-RPC over HTTP or similar endpoint.
-        # However, typically MCP uses a specific transport. 
-        # For this implementation, we'll mock the tool list based on the user's description
-        # if the actual call fails, or try to hit a likely endpoint.
+        headers = await self._get_headers(token)
         
-        # Mocking for now as the URL might not be accessible or requires specific protocol handling
-        return [
-            {
-                "name": "get_activity_calendar",
-                "description": "Get McDonald's activity calendar",
-                "input_schema": {
-                    "type": "object",
-                    "properties": {}
-                }
-            },
-            {
-                "name": "get_coupons",
-                "description": "Get available McDonald's coupons",
-                "input_schema": {
-                    "type": "object",
-                    "properties": {}
-                }
-            },
-            {
-                "name": "claim_coupon",
-                "description": "Claim a specific coupon",
-                "input_schema": {
-                    "type": "object",
-                    "properties": {
-                        "coupon_id": {"type": "string"}
-                    },
-                    "required": ["coupon_id"]
-                }
-            }
-        ]
+        # Connect to the MCP server
+        # We use the connect-query-disconnect pattern for simplicity
+        try:
+            async with sse_client(self.DEFAULT_URL, headers=headers) as streams:
+                async with ClientSession(streams[0], streams[1]) as session:
+                    await session.initialize()
+                    
+                    # List tools
+                    result = await session.list_tools()
+                    
+                    # Convert MCP tool objects to dicts
+                    tools_data = []
+                    for tool in result.tools:
+                        tools_data.append({
+                            "name": tool.name,
+                            "description": tool.description,
+                            "input_schema": tool.inputSchema
+                        })
+                    
+                    return tools_data
+        except Exception as e:
+            print(f"Error listing tools from MCP: {e}")
+            # Fallback to mock if connection fails (optional, but good for testing if URL is invalid)
+            # For now, let's re-raise or return a descriptive error so the user knows it failed
+            raise ValueError(f"Failed to connect to McDonald's MCP service: {str(e)}")
 
     async def call_tool(self, user: User, tool_name: str, arguments: Dict[str, Any]) -> Any:
         token = await self.get_token(user)
         if not token:
             raise ValueError("Token not found")
 
-        # In a real scenario, this would send a JSON-RPC request to the MCP server
-        # payload = {
-        #     "jsonrpc": "2.0",
-        #     "method": "tools/call",
-        #     "params": {
-        #         "name": tool_name,
-        #         "arguments": arguments
-        #     },
-        #     "id": 1
-        # }
-        # async with httpx.AsyncClient() as client:
-        #     resp = await client.post(f"{self.BASE_URL}/messages", json=payload, headers=await self._get_headers(token))
-        #     return resp.json()
+        headers = await self._get_headers(token)
 
-        # Mock response
-        if tool_name == "get_activity_calendar":
-            return {"events": [{"date": "2026-02-06", "activity": "Free Fries Friday"}]}
-        elif tool_name == "get_coupons":
-            return {"coupons": [{"id": "C123", "name": "Big Mac BOGO", "discount": "50%"}]}
-        elif tool_name == "claim_coupon":
-            return {"status": "success", "message": f"Coupon {arguments.get('coupon_id')} claimed!"}
-        
-        return {"error": "Tool not found"}
+        try:
+            async with sse_client(self.DEFAULT_URL, headers=headers) as streams:
+                async with ClientSession(streams[0], streams[1]) as session:
+                    await session.initialize()
+                    
+                    # Call tool
+                    result = await session.call_tool(tool_name, arguments)
+                    
+                    # Result is likely a CallToolResult object
+                    # We need to parse the content
+                    output = []
+                    if hasattr(result, 'content'):
+                        for content in result.content:
+                            if content.type == 'text':
+                                output.append(content.text)
+                            elif content.type == 'image':
+                                output.append(f"[Image: {content.data}]")
+                            elif content.type == 'resource':
+                                output.append(f"[Resource: {content.resource.uri}]")
+                    
+                    return "\n".join(output) if output else "No output"
+                    
+        except Exception as e:
+            print(f"Error calling tool {tool_name}: {e}")
+            raise ValueError(f"Failed to execute tool: {str(e)}")
 
 mcdonalds_service = McDonaldsService()

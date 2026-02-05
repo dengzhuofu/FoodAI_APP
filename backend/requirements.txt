@@ -16,4 +16,4 @@ langchain-community
 email-validator
 bcrypt==4.0.1
 cos-python-sdk-v5
-modelcontextprotocol
+mcp
