@@ -14,8 +14,6 @@ import mcp.types as types
 import asyncio
 import httpx
 import json
-import pandas as pd
-from io import StringIO
 
 class MCPClientWrapper:
     """
@@ -93,7 +91,7 @@ class MCPClientWrapper:
 
     def _format_nutrition_data(self, json_str: str) -> str:
         """
-        Format raw JSON nutrition data into a readable Markdown table.
+        Format raw JSON nutrition data into a readable Markdown table (Pure Python version).
         """
         try:
             # Try to parse the string as JSON
@@ -101,7 +99,7 @@ class MCPClientWrapper:
             
             # If it's a list of dictionaries, we can format it as a table
             if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
-                # Define readable column names map (optional, can be expanded)
+                # Define readable column names map
                 col_map = {
                     "productName": "产品名称",
                     "nutritionDescription": "描述",
@@ -114,22 +112,41 @@ class MCPClientWrapper:
                     "calcium": "钙(mg)"
                 }
                 
-                # Filter/Order columns if needed, or use all
-                # For now, let's just rename keys if they match
-                df = pd.DataFrame(data)
-                df = df.rename(columns=col_map)
+                # Determine columns to display
+                # Use keys from col_map that exist in the first data item (or all items)
+                # We'll just check the first item for simplicity, or iterate all keys in col_map
+                display_keys = [k for k in col_map.keys() if any(k in item for item in data)]
                 
-                # Select only columns that are present in our map to keep it clean, 
-                # or keep all but renamed. Let's keep known columns for better readability.
-                known_cols = [c for c in col_map.values() if c in df.columns]
-                if known_cols:
-                    df = df[known_cols]
+                if not display_keys:
+                    return json_str
+
+                # Build Markdown Table
+                # 1. Header Row
+                headers = [col_map[k] for k in display_keys]
+                header_row = "| " + " | ".join(headers) + " |"
                 
-                return df.to_markdown(index=False)
+                # 2. Separator Row
+                separator_row = "| " + " | ".join(["---"] * len(headers)) + " |"
+                
+                # 3. Data Rows
+                rows = []
+                for item in data:
+                    row_values = []
+                    for k in display_keys:
+                        val = item.get(k, "")
+                        # Handle None or non-string values
+                        if val is None:
+                            val = "-"
+                        else:
+                            val = str(val).replace("|", "&#124;") # Escape pipes
+                        row_values.append(val)
+                    rows.append("| " + " | ".join(row_values) + " |")
+                
+                # Combine
+                return f"{header_row}\n{separator_row}\n" + "\n".join(rows)
             
-            return json_str # Return original if not a list of dicts
+            return json_str 
         except Exception as e:
-            # If parsing fails, just return original string
             return json_str
 
     async def call_tool(self, name: str, args: Dict[str, Any]) -> Any:
