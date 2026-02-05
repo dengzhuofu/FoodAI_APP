@@ -123,9 +123,12 @@ If a tool execution fails, politely inform the user and show the error message.
                 tool_result = await mcdonalds_service.call_tool(current_user, tool_name, tool_args)
                 results.append({"tool": tool_name, "result": tool_result})
                 
+                # Ensure tool_result is a string for the LLM
+                content_str = tool_result if isinstance(tool_result, str) else json.dumps(tool_result, ensure_ascii=False)
+                
                 messages.append(ToolMessage(
                     tool_call_id=tool_call["id"],
-                    content=json.dumps(tool_result)
+                    content=content_str
                 ))
             except Exception as e:
                 results.append({"tool": tool_name, "error": str(e)})

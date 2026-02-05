@@ -191,6 +191,10 @@ const McDonaldsAssistantFeature = () => {
       );
     }
     
+    // Pre-process content to fix potential image syntax issues if needed
+    // But standard markdown renderer should handle ![alt](url) fine.
+    // Sometimes URLs might have spaces or weird chars, but let's trust the renderer first.
+
     // For assistant messages, use Markdown renderer
     return (
       <Markdown

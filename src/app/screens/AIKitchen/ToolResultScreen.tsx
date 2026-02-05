@@ -51,6 +51,24 @@ const ToolResultScreen = () => {
   const route = useRoute<any>();
   const { title, content } = route.params || {};
 
+  // Pre-process content to handle HTML img tags
+  // Convert <img src="..." /> to ![image](...)
+  // Also handle \n newlines if they are escaped literals
+  const processedContent = React.useMemo(() => {
+    if (!content) return '';
+    
+    let newContent = content;
+    
+    // Replace <img src="..." ...> with markdown image syntax
+    newContent = newContent.replace(/<img[^>]+src="([^"]+)"[^>]*>/g, '![image]($1)');
+    newContent = newContent.replace(/<img[^>]+src='([^']+)'[^>]*>/g, '![image]($1)');
+    
+    // Replace literal \n with actual newlines if the content came from JSON stringify
+    newContent = newContent.replace(/\\n/g, '\n');
+    
+    return newContent;
+  }, [content]);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -73,7 +91,7 @@ const ToolResultScreen = () => {
             list_item: { marginBottom: 8 },
           }}
         >
-          {content || '无内容'}
+          {processedContent || '无内容'}
         </Markdown>
       </ScrollView>
     </SafeAreaView>
