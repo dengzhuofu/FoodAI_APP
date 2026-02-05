@@ -97,8 +97,17 @@ class MCPClientWrapper:
             # Try to parse the string as JSON
             data = json.loads(json_str)
             
-            # If it's a list of dictionaries, we can format it as a table
-            if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
+            # Check if it's the expected structure: {"code": 200, "data": [...]}
+            # Or if it's just the list directly
+            
+            target_list = None
+            if isinstance(data, list):
+                target_list = data
+            elif isinstance(data, dict) and "data" in data and isinstance(data["data"], list):
+                target_list = data["data"]
+            
+            # If we found a valid list of dictionaries
+            if target_list and len(target_list) > 0 and isinstance(target_list[0], dict):
                 # Define readable column names map
                 col_map = {
                     "productName": "产品名称",
@@ -113,9 +122,7 @@ class MCPClientWrapper:
                 }
                 
                 # Determine columns to display
-                # Use keys from col_map that exist in the first data item (or all items)
-                # We'll just check the first item for simplicity, or iterate all keys in col_map
-                display_keys = [k for k in col_map.keys() if any(k in item for item in data)]
+                display_keys = [k for k in col_map.keys() if any(k in item for item in target_list)]
                 
                 if not display_keys:
                     return json_str
@@ -130,7 +137,7 @@ class MCPClientWrapper:
                 
                 # 3. Data Rows
                 rows = []
-                for item in data:
+                for item in target_list:
                     row_values = []
                     for k in display_keys:
                         val = item.get(k, "")
