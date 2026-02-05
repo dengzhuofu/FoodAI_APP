@@ -54,3 +54,12 @@ class ShoppingItem(models.Model):
 
     class Meta:
         table = "shopping_items"
+
+class UserIntegration(models.Model):
+    id = fields.IntField(pk=True)
+    user = fields.OneToOneField("models.User", related_name="integration", on_delete=fields.CASCADE)
+    mcdonalds_token = fields.CharField(max_length=255, null=True)
+    updated_at = fields.DatetimeField(auto_now=True)
+
+    class Meta:
+        table = "user_integrations"

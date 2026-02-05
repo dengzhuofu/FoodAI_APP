@@ -83,6 +83,15 @@ const AIKitchenScreen = () => {
       bg: '#FFFFFF',
       border: '#E0E0E0'
     },
+    { 
+      name: '麦当劳助手', 
+      desc: '活动、优惠券查询', 
+      route: 'McDonaldsAssistant', 
+      icon: 'fast-food', 
+      color: '#1A1A1A',
+      bg: '#FFFFFF',
+      border: '#E0E0E0'
+    },
   ] as const;
 
   return (

@@ -47,6 +47,21 @@ async def upgrade_db():
     except Exception as e:
         print(f"Failed to create what_to_eat_presets table: {e}")
 
+    # Add user_integrations table
+    try:
+        await conn.execute_script("""
+            CREATE TABLE IF NOT EXISTS `user_integrations` (
+                `id` INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+                `mcdonalds_token` VARCHAR(255),
+                `updated_at` DATETIME(6) NOT NULL  DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+                `user_id` BIGINT NOT NULL UNIQUE,
+                CONSTRAINT `fk_user_int_users_123` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+            );
+        """)
+        print("Created user_integrations table")
+    except Exception as e:
+        print(f"Failed to create user_integrations table: {e}")
+
     await Tortoise.close_connections()
 
 if __name__ == "__main__":
