@@ -5,7 +5,9 @@ class UserCreate(BaseModel):
     username: str
     password: str
     email: Optional[EmailStr] = None
+    # nickname: str
     nickname: str
+
 
 class UserLogin(BaseModel):
     username: str
