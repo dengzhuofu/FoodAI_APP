@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -128,6 +128,48 @@ const McDonaldsAssistantFeature = () => {
     }
   };
 
+  const renderMessageContent = (content: string, role: 'user' | 'assistant') => {
+    if (!content) return null;
+    
+    // Split by markdown image syntax: ![alt](url)
+    // regex captures the full match, alt text, and url
+    const parts = content.split(/(!\[.*?\]\(.*?\))/g);
+    
+    return (
+      <View>
+        {parts.map((part, index) => {
+          if (!part) return null;
+          
+          const imageMatch = part.match(/!\[(.*?)\]\((.*?)\)/);
+          if (imageMatch) {
+            const [_, alt, uri] = imageMatch;
+            return (
+              <View key={index} style={styles.imageContainer}>
+                <Image 
+                  source={{ uri }} 
+                  style={styles.messageImage} 
+                  resizeMode="cover"
+                />
+              </View>
+            );
+          }
+          
+          return (
+            <Text 
+              key={index} 
+              style={[
+                styles.messageText, 
+                role === 'user' ? styles.userText : styles.assistantText
+              ]}
+            >
+              {part}
+            </Text>
+          );
+        })}
+      </View>
+    );
+  };
+
   if (!hasToken) {
     return (
       <SafeAreaView style={styles.container}>
@@ -203,7 +245,7 @@ const McDonaldsAssistantFeature = () => {
           <ScrollView style={styles.chatContainer} contentContainerStyle={{ paddingBottom: 20 }}>
             {messages.map((msg) => (
               <View key={msg.id} style={[styles.messageBubble, msg.role === 'user' ? styles.userBubble : styles.assistantBubble]}>
-                <Text style={[styles.messageText, msg.role === 'user' ? styles.userText : styles.assistantText]}>{msg.content}</Text>
+                {renderMessageContent(msg.content, msg.role)}
                 {msg.toolCalls && msg.toolCalls.length > 0 && (
                     <View style={styles.toolCallsContainer}>
                         <Text style={styles.toolCallsTitle}>调用工具:</Text>
@@ -367,7 +409,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   messageBubble: {
-    maxWidth: '80%',
+    maxWidth: '85%',
     padding: 16,
     borderRadius: 20,
     marginBottom: 12,
@@ -446,6 +488,17 @@ const styles = StyleSheet.create({
       fontSize: 10,
       color: '#666',
       fontFamily: 'monospace',
+  },
+  imageContainer: {
+    marginVertical: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  messageImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 12,
+    backgroundColor: '#F0F0F0',
   }
 });
 

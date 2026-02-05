@@ -96,7 +96,7 @@ async def chat_with_mcp(
 
     # 5. Run LLM
     messages = [
-        SystemMessage(content="You are a McDonald's assistant. You can help users check activities, coupons, and claim coupons using the available tools."),
+        SystemMessage(content="You are a McDonald's assistant. You can help users check activities, coupons, and claim coupons using the available tools. If you provide image URLs, please use Markdown format: ![image description](url) so they can be rendered."),
         HumanMessage(content=request.message)
     ]
     

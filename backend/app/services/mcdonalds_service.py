@@ -102,7 +102,8 @@ class MCPClientWrapper:
                 if content.type == 'text':
                     output.append(content.text)
                 elif content.type == 'image':
-                    output.append(f"[Image: {content.data}]")
+                    mime = getattr(content, 'mimeType', 'image/jpeg')
+                    output.append(f"![image](data:{mime};base64,{content.data})")
                 elif content.type == 'resource':
                     output.append(f"[Resource: {content.resource.uri}]")
         
