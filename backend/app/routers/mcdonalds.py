@@ -69,44 +69,30 @@ async def chat_with_mcp(
     except Exception as e:
          raise HTTPException(status_code=500, detail=f"Failed to list MCP tools: {e}")
 
-    # 3. Create LangChain tools
-    langchain_tools = []
+    # 3. Create OpenAI-compatible tool definitions from MCP tools
+    openai_tools = []
     
-    # Helper to create a dynamic tool function
-    def create_tool_func(tool_name):
-        async def func(**kwargs):
-            # This function will be called by the LLM
-            return await mcdonalds_service.call_tool(current_user, tool_name, kwargs)
-        return func
-
     for tool_def in mcp_tools:
-        name = tool_def["name"]
-        description = tool_def.get("description", "")
-        # We need to convert JSON schema to Pydantic or just let LangChain handle it if we use StructuredTool.from_function
-        # But for simplicity in this dynamic setup, we might need a workaround or simple tool definition.
-        # Since we are using bind_tools with ChatOpenAI, we can pass the JSON schema directly if we format it right,
-        # or use StructuredTool.
-        
-        # Simplified: We define a tool that takes any args, validation happens at MCP level (or mock level)
-        t = StructuredTool.from_function(
-            func=None,
-            coroutine=create_tool_func(name),
-            name=name,
-            description=description,
-            # args_schema=... # skipping schema validation here for brevity, trusting LLM to follow description
-        )
-        langchain_tools.append(t)
+        openai_tools.append({
+            "type": "function",
+            "function": {
+                "name": tool_def["name"],
+                "description": tool_def.get("description", ""),
+                "parameters": tool_def["input_schema"]
+            }
+        })
 
     # 4. Initialize LLM
     llm = ChatOpenAI(
         api_key=settings.SILICONFLOW_API_KEY,
         base_url=settings.SILICONFLOW_BASE_URL,
-        model="Qwen/Qwen2.5-7B-Instruct", # Or whatever model is used
+        model="Qwen/Qwen2.5-7B-Instruct",
         temperature=0.1
     )
     
-    # Bind tools
-    llm_with_tools = llm.bind_tools(langchain_tools)
+    # Bind tools directly using the OpenAI format
+    # Note: bind_tools accepts a list of tool definitions
+    llm_with_tools = llm.bind_tools(openai_tools)
 
     # 5. Run LLM
     messages = [
