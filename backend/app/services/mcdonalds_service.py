@@ -12,6 +12,7 @@ except ImportError:
 from contextlib import AsyncExitStack
 import mcp.types as types
 import asyncio
+import httpx
 
 class MCPClientWrapper:
     """
@@ -33,13 +34,28 @@ class MCPClientWrapper:
         # Use streamable_http_client if available and requested (based on URL hint or default)
         # The user requested StreamableHTTPClientTransport which maps to streamable_http_client in this SDK
         if streamable_http_client:
-            client_ctx = streamable_http_client(self.url, headers=headers)
+            # streamable_http_client does NOT accept headers directly, it accepts an http_client.
+            # We must create an httpx client with the headers and manage its lifecycle.
+            http_client = await self.stack.enter_async_context(httpx.AsyncClient(headers=headers, timeout=60.0))
+            client_ctx = streamable_http_client(self.url, http_client=http_client)
         else:
             # Fallback to SSE if streamable http is not available
+            # sse_client accepts headers directly
             client_ctx = sse_client(self.url, headers=headers)
 
         # Enter the transport context
-        read, write = await self.stack.enter_async_context(client_ctx)
+        # streamable_http_client yields (read, write, get_session_id)
+        # sse_client yields (read, write)
+        res = await self.stack.enter_async_context(client_ctx)
+        
+        # Handle unpacking based on result length
+        if isinstance(res, tuple) and len(res) == 3:
+            read, write, _ = res
+        elif isinstance(res, tuple) and len(res) == 2:
+            read, write = res
+        else:
+            # Unexpected, try to unpack as 2
+            read, write = res
         
         # Enter the session context
         self.session = await self.stack.enter_async_context(
