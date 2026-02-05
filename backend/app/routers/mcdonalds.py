@@ -100,7 +100,8 @@ async def chat_with_mcp(
 If you provide image URLs, please use Markdown format: ![image description](url) so they can be rendered.
 IMPORTANT: When calling tools, ensure you follow the schema strictly. If a tool does not require arguments, pass an empty object.
 If a tool execution fails, politely inform the user and show the error message.
-If the tool returns Markdown content (e.g. calendars, coupons), please output it directly so the user can see it."""),
+ If the tool returns Markdown content (e.g. calendars, coupons), please output it directly so the user can see it.
+ If the tool returns image URLs, please strictly use the standard Markdown image syntax: ![description](url) so the frontend can render them."""),
         HumanMessage(content=request.message)
     ]
     
