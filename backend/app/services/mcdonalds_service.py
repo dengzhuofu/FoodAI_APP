@@ -13,6 +13,9 @@ from contextlib import AsyncExitStack
 import mcp.types as types
 import asyncio
 import httpx
+import json
+import pandas as pd
+from io import StringIO
 
 class MCPClientWrapper:
     """
@@ -88,6 +91,47 @@ class MCPClientWrapper:
             })
         return tools_data
 
+    def _format_nutrition_data(self, json_str: str) -> str:
+        """
+        Format raw JSON nutrition data into a readable Markdown table.
+        """
+        try:
+            # Try to parse the string as JSON
+            data = json.loads(json_str)
+            
+            # If it's a list of dictionaries, we can format it as a table
+            if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
+                # Define readable column names map (optional, can be expanded)
+                col_map = {
+                    "productName": "产品名称",
+                    "nutritionDescription": "描述",
+                    "energyKj": "能量(KJ)",
+                    "energyKcal": "能量(Kcal)",
+                    "protein": "蛋白质(g)",
+                    "fat": "脂肪(g)",
+                    "carbohydrate": "碳水(g)",
+                    "sodium": "钠(mg)",
+                    "calcium": "钙(mg)"
+                }
+                
+                # Filter/Order columns if needed, or use all
+                # For now, let's just rename keys if they match
+                df = pd.DataFrame(data)
+                df = df.rename(columns=col_map)
+                
+                # Select only columns that are present in our map to keep it clean, 
+                # or keep all but renamed. Let's keep known columns for better readability.
+                known_cols = [c for c in col_map.values() if c in df.columns]
+                if known_cols:
+                    df = df[known_cols]
+                
+                return df.to_markdown(index=False)
+            
+            return json_str # Return original if not a list of dicts
+        except Exception as e:
+            # If parsing fails, just return original string
+            return json_str
+
     async def call_tool(self, name: str, args: Dict[str, Any]) -> Any:
         await self.ensure_connected()
         if not self.session:
@@ -100,7 +144,11 @@ class MCPClientWrapper:
         if hasattr(result, 'content'):
             for content in result.content:
                 if content.type == 'text':
-                    output.append(content.text)
+                    text_content = content.text
+                    # Special handling for list-nutrition-foods to format as table
+                    if name == 'list-nutrition-foods':
+                         text_content = self._format_nutrition_data(text_content)
+                    output.append(text_content)
                 elif content.type == 'image':
                     # Try to get mime type or default to jpeg
                     mime = getattr(content, 'mimeType', 'image/jpeg')
