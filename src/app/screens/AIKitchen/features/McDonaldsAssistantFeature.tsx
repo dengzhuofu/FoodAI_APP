@@ -1,9 +1,53 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Image, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { saveToken, getTokenStatus, listTools, callTool, chatWithMCP, MCPTool } from '../../../../api/mcdonalds';
+import Markdown, { ASTNode } from 'react-native-markdown-display';
+
+// ...
+
+const MarkdownImage = ({ src }: { src: string }) => {
+  const [aspectRatio, setAspectRatio] = useState(16/9);
+
+  useEffect(() => {
+    if (src) {
+      Image.getSize(src, (width, height) => {
+        if (width && height) {
+          setAspectRatio(width / height);
+        }
+      }, (error) => {
+        console.error('Failed to get image size:', error);
+      });
+    }
+  }, [src]);
+
+  return (
+    <View style={{
+        width: '100%',
+        marginVertical: 10,
+        borderRadius: 12,
+        overflow: 'hidden',
+        backgroundColor: '#F0F0F0',
+    }}>
+      <Image
+        source={{ uri: src }}
+        style={{
+            width: '100%',
+            aspectRatio: aspectRatio,
+        }}
+        resizeMode="contain"
+      />
+    </View>
+  );
+};
+
+const rules = {
+  image: (node: ASTNode, children: any, parent: any, styles: any) => {
+    return <MarkdownImage key={node.key} src={node.attributes.src} />;
+  }
+};
 
 interface Message {
   id: string;
@@ -131,42 +175,27 @@ const McDonaldsAssistantFeature = () => {
   const renderMessageContent = (content: string, role: 'user' | 'assistant') => {
     if (!content) return null;
     
-    // Split by markdown image syntax: ![alt](url)
-    // regex captures the full match, alt text, and url
-    const parts = content.split(/(!\[.*?\]\(.*?\))/g);
+    // For user messages, keep simple text
+    if (role === 'user') {
+      return (
+        <Text style={styles.userText}>{content}</Text>
+      );
+    }
     
+    // For assistant messages, use Markdown renderer
     return (
-      <View>
-        {parts.map((part, index) => {
-          if (!part) return null;
-          
-          const imageMatch = part.match(/!\[(.*?)\]\((.*?)\)/);
-          if (imageMatch) {
-            const [_, alt, uri] = imageMatch;
-            return (
-              <View key={index} style={styles.imageContainer}>
-                <Image 
-                  source={{ uri }} 
-                  style={styles.messageImage} 
-                  resizeMode="cover"
-                />
-              </View>
-            );
-          }
-          
-          return (
-            <Text 
-              key={index} 
-              style={[
-                styles.messageText, 
-                role === 'user' ? styles.userText : styles.assistantText
-              ]}
-            >
-              {part}
-            </Text>
-          );
-        })}
-      </View>
+      <Markdown
+        rules={rules}
+        style={{
+          body: { color: '#1A1A1A', fontSize: 15, lineHeight: 22 },
+          // image style is now handled by custom rule
+          link: { color: '#007AFF' },
+          paragraph: { marginVertical: 8 }, // Increased spacing
+          list_item: { marginBottom: 10 }, // Increased list item spacing
+        }}
+      >
+        {content}
+      </Markdown>
     );
   };
 
@@ -181,7 +210,7 @@ const McDonaldsAssistantFeature = () => {
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.content}>
-          <Text style={styles.label}>请输入您的 MCP Token</Text>
+          <Text style={styles.label}>请输入您的 MCP Token。申请地址：<Text style={styles.link} onPress={() => Linking.openURL('https://open.mcd.cn/mcp')}>https://open.mcd.cn/mcp</Text></Text>
           <TextInput
             style={styles.input}
             value={token}
@@ -252,7 +281,7 @@ const McDonaldsAssistantFeature = () => {
                         {msg.toolCalls.map((tc, idx) => (
                             <View key={idx} style={styles.toolCallItem}>
                                 <Text style={styles.toolCallName}>{tc.tool}</Text>
-                                <Text style={styles.toolCallResult}>{JSON.stringify(tc.result)}</Text>
+                                {/* <Text style={styles.toolCallResult}>{JSON.stringify(tc.result)}</Text> */}
                             </View>
                         ))}
                     </View>
@@ -493,10 +522,11 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     borderRadius: 12,
     overflow: 'hidden',
+    width: '100%',
   },
   messageImage: {
-    width: 200,
-    height: 200,
+    width: '100%',
+    aspectRatio: 16/9, // Set a default aspect ratio or adjust based on image dimensions if known
     borderRadius: 12,
     backgroundColor: '#F0F0F0',
   }
