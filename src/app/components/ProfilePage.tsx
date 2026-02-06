@@ -200,6 +200,12 @@ const ProfilePage = () => {
       ]
     },
     {
+      title: '健康管理',
+      items: [
+        { name: '个人健康档案', route: 'HealthProfile', icon: 'fitness', color: '#2ECC71' },
+      ]
+    },
+    {
       title: t('profile.groupMoreServices'),
       items: [
         { name: t('profile.proMember'), route: 'Settings', icon: 'diamond', color: '#9B59B6', badge: t('profile.badgeUpgrade') },

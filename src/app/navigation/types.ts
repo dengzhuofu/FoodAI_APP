@@ -75,6 +75,10 @@ export type RootStackParamList = {
       address: string;
     };
   };
+
+  // Health
+  HealthProfile: undefined;
+  HealthCheckIn: { date?: string };
 };
 
 export type MainTabParamList = {

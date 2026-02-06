@@ -55,6 +55,8 @@ import RoutePlanScreen from '../screens/Map/RoutePlanScreen';
 // Search Screen
 import SearchScreen from '../screens/Search/SearchScreen';
 import SearchResultScreen from '../screens/Search/SearchResultScreen';
+import HealthProfileScreen from '../screens/Health/HealthProfileScreen';
+import HealthCheckInScreen from '../screens/Health/HealthCheckInScreen';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const Stack = createStackNavigator<RootStackParamList>();
@@ -261,6 +263,9 @@ const AppNavigator = () => {
             <Stack.Screen name="MapSelector" component={MapSelectorScreen} options={{ headerShown: false }} />
             <Stack.Screen name="RoutePlan" component={RoutePlanScreen} options={{ headerShown: false }} />
             
+            <Stack.Screen name="HealthProfile" component={HealthProfileScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="HealthCheckIn" component={HealthCheckInScreen} options={{ headerShown: false, presentation: 'modal' }} />
+
             {/* Modals */}
             <Stack.Screen 
               name="Publish" 

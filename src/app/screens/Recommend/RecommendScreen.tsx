@@ -9,6 +9,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getRecommendations, getHealthNews, HealthNews, FeedItem } from '../../../api/explore';
 import { getDailyRecommendation, Recipe } from '../../../api/content';
+import { getCheckIns, CheckIn } from '../../../api/health';
 import FeedCard from '../../components/FeedCard';
 import Svg, { Circle } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
@@ -28,6 +29,7 @@ const RecommendScreen = () => {
   const [recipes, setRecipes] = useState<FeedItem[]>([]);
   const [banners, setBanners] = useState<HealthNews[]>([]);
   const [dailyRecs, setDailyRecs] = useState<Recipe[]>([]);
+  const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [page, setPage] = useState(1);
@@ -86,6 +88,7 @@ const RecommendScreen = () => {
       if (recipes.length === 0) {
         fetchData(1);
       }
+      getCheckIns().then(setCheckIns).catch(console.error);
     }, [])
   );
 
@@ -144,6 +147,54 @@ const RecommendScreen = () => {
       </TouchableOpacity>
     </View>
   );
+
+  const renderDiscipline = () => {
+    const today = new Date();
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(today.getDate() - i);
+      days.push(d);
+    }
+
+    return (
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>今天你自律了吗？</Text>
+        <View style={styles.disciplineCard}>
+          <View style={styles.calendarRow}>
+            {days.map((day, index) => {
+              const dateStr = day.toISOString().split('T')[0];
+              const checkIn = checkIns.find(c => c.date === dateStr);
+              
+              let dotColor = '#EEE'; // Default empty
+              if (checkIn) {
+                if (checkIn.status === 'white') dotColor = '#FFF'; 
+                else if (checkIn.status === 'orange') dotColor = '#FFA502';
+                else if (checkIn.status === 'red') dotColor = '#FF4757';
+              }
+              
+              return (
+                <TouchableOpacity 
+                  key={index} 
+                  style={styles.dayItem}
+                  onPress={() => navigation.navigate('HealthCheckIn', { date: dateStr })}
+                >
+                  <Text style={[styles.dayText, { color: '#FFF' }]}>{day.getDate()}</Text>
+                  <View style={[styles.statusDot, { backgroundColor: dotColor }]} />
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <TouchableOpacity 
+            style={styles.checkInButton}
+            onPress={() => navigation.navigate('HealthCheckIn', { date: today.toISOString().split('T')[0] })}
+          >
+            <Text style={styles.checkInButtonText}>立即打卡</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
 
   const renderWhatToEat = () => (
     <TouchableOpacity 
@@ -305,6 +356,7 @@ const RecommendScreen = () => {
         >
           {renderHeader()}
           {renderDailyRecommendations()}
+          {renderDiscipline()}
           {renderWhatToEat()}
           {renderBanner()}
           {renderFeed()}
@@ -665,6 +717,48 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 10,
     fontWeight: '500',
+  },
+  
+  // Discipline
+  disciplineCard: {
+    backgroundColor: '#2ECC71', // Green
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  calendarRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  dayItem: {
+    alignItems: 'center',
+    width: 36,
+  },
+  dayText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 6,
+  },
+  statusDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  checkInButton: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  checkInButtonText: {
+    color: '#2ECC71',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
 });
 
