@@ -8,6 +8,8 @@ import { chatWithMapAgent } from '../../../../api/maps';
 
 const { width } = Dimensions.get('window');
 
+import * as Location from 'expo-location';
+
 const MapAssistantFeature = () => {
   const navigation = useNavigation();
   const route = useRoute();
@@ -15,6 +17,20 @@ const MapAssistantFeature = () => {
   
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Permission to access location was denied');
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      setUserLocation(location);
+    })();
+  }, []);
   
   useEffect(() => {
     // Initial greeting
@@ -57,8 +73,18 @@ const MapAssistantFeature = () => {
 
       // Add context about the destination if available
       let messageToSend = userMessage.text;
-      if (destination && messages.length === 1) { // First user message
-         messageToSend = `[Context: User is looking at ${destination.name}, Address: ${destination.address}, Location: ${destination.longitude},${destination.latitude}] ${userMessage.text}`;
+      let contextInfo = [];
+
+      if (userLocation) {
+        contextInfo.push(`User's current location: ${userLocation.coords.longitude},${userLocation.coords.latitude}`);
+      }
+      
+      if (destination) {
+        contextInfo.push(`Target destination: ${destination.name} (Address: ${destination.address}, Location: ${destination.longitude},${destination.latitude})`);
+      }
+
+      if (contextInfo.length > 0) {
+        messageToSend = `[Context Info:\n${contextInfo.join('\n')}]\n\n${userMessage.text}`;
       }
 
       const response = await chatWithMapAgent(messageToSend, history);

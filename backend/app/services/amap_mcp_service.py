@@ -58,8 +58,11 @@ class AmapMCPService:
                         llm_with_tools = self.llm
                     
                     # Construct Messages
+                    system_content = "你是高德地图智能助手。你可以使用工具来查询地点、规划路线、查询天气等。请根据用户的需求调用相应的工具。请用中文回答。"
+                    system_content += "\n\n当用户询问路线时，如果提供了当前位置（User's current location），请将其作为起点（origin）。如果提供了目标位置（Target destination），请将其作为终点（destination）。注意坐标格式为 'lng,lat'。"
+                    
                     messages = [
-                        SystemMessage(content="你是高德地图智能助手。你可以使用工具来查询地点、规划路线、查询天气等。请根据用户的需求调用相应的工具。请用中文回答。")
+                        SystemMessage(content=system_content)
                     ]
                     
                     for msg in history:
