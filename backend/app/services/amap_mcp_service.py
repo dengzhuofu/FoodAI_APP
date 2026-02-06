@@ -59,7 +59,7 @@ class AmapMCPService:
                     
                     # Construct Messages
                     system_content = "你是高德地图智能助手。你可以使用工具来查询地点、规划路线、查询天气等。请根据用户的需求调用相应的工具。请用中文回答。"
-                    system_content += "\n\n当用户询问路线时，如果提供了当前位置（User's current location），请将其作为起点（origin）。如果提供了目标位置（Target destination），请将其作为终点（destination）。注意坐标格式为 'lng,lat'。"
+                    system_content += "\n\n重要规则：\n1. 当用户询问“怎么去某个地方”或“导航到某个地方”且没有明确说明起点时，必须默认使用提供的“User's current location”作为起点（origin）。\n2. 只有在用户明确指定了其他起点时（例如“从天安门到故宫怎么走”），才不使用当前位置作为起点。\n3. 注意坐标格式为 'lng,lat'。\n4. 如果用户询问“我在哪”或者“我的位置”，且你已获取到“User's current location”上下文，请调用 maps_regeocode 工具将该坐标转换为地址，然后告诉用户。"
                     
                     messages = [
                         SystemMessage(content=system_content)

@@ -12,6 +12,7 @@ import CommentsSection from './CommentsSection';
 import DetailBottomBar from './DetailBottomBar';
 import { reverseGeocode } from '../../api/maps';
 import AmapWebView from './AmapWebView';
+import * as Location from 'expo-location';
 
 type RestaurantDetailRouteProp = RouteProp<RootStackParamList, 'RestaurantDetail'>;
 
@@ -167,11 +168,26 @@ const RestaurantDetailPage = () => {
     }
   };
 
-  const handleNavigate = () => {
+  const handleNavigate = async () => {
     if (!restaurant.latitude || !restaurant.longitude) {
       Alert.alert('提示', '该餐厅暂无坐标信息，无法导航');
       return;
     }
+
+    let currentLocation = null;
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const location = await Location.getCurrentPositionAsync({});
+        currentLocation = {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude
+        };
+      }
+    } catch (e) {
+      console.log('Failed to get location before navigation', e);
+    }
+
     (navigation as any).navigate('MapAssistant', {
       destination: {
         latitude: restaurant.latitude,
@@ -179,6 +195,7 @@ const RestaurantDetailPage = () => {
         name: restaurant.title,
         address: resolvedAddress || restaurant.address || '',
       },
+      userLocation: currentLocation
     });
   };
 

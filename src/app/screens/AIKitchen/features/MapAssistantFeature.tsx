@@ -1,36 +1,59 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, SafeAreaView, ActivityIndicator, Modal } from 'react-native';
+import { Image } from 'expo-image';
 import { GiftedChat, IMessage, Bubble, Send, MessageText } from 'react-native-gifted-chat';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Markdown from 'react-native-markdown-display';
-import { chatWithMapAgent } from '../../../../api/maps';
-
-const { width } = Dimensions.get('window');
-
 import * as Location from 'expo-location';
+import { chatWithMapAgent } from '../../../../api/maps';
+import AmapWebView, { AmapPoint } from '../../../components/AmapWebView';
+
+const { width, height } = Dimensions.get('window');
 
 const MapAssistantFeature = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { destination } = (route.params as any) || {};
+  const { destination, userLocation: passedUserLocation } = (route.params as any) || {};
   
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [userLocation, setUserLocation] = useState<Location.LocationObject | null>(null);
+  const [fullScreenMapData, setFullScreenMapData] = useState<any>(null);
 
   useEffect(() => {
-    (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        console.log('Permission to access location was denied');
-        return;
-      }
+    if (passedUserLocation) {
+      setUserLocation({
+        coords: {
+          latitude: passedUserLocation.latitude,
+          longitude: passedUserLocation.longitude,
+          altitude: null,
+          accuracy: null,
+          altitudeAccuracy: null,
+          heading: null,
+          speed: null
+        },
+        timestamp: Date.now()
+      });
+      console.log('Using passed user location:', passedUserLocation);
+    } else {
+      (async () => {
+        try {
+          let { status } = await Location.requestForegroundPermissionsAsync();
+          if (status !== 'granted') {
+            console.log('Permission to access location was denied');
+            return;
+          }
 
-      let location = await Location.getCurrentPositionAsync({});
-      setUserLocation(location);
-    })();
-  }, []);
+          let location = await Location.getCurrentPositionAsync({});
+          console.log('User location obtained:', location);
+          setUserLocation(location);
+        } catch (error) {
+          console.error('Error getting location:', error);
+        }
+      })();
+    }
+  }, [passedUserLocation]);
   
   useEffect(() => {
     // Initial greeting
@@ -85,6 +108,9 @@ const MapAssistantFeature = () => {
 
       if (contextInfo.length > 0) {
         messageToSend = `[Context Info:\n${contextInfo.join('\n')}]\n\n${userMessage.text}`;
+      } else if (userLocation) {
+        // Always attach location if available, even if not explicitly contextualized yet
+        messageToSend = `[Context Info:\nUser's current location: ${userLocation.coords.longitude},${userLocation.coords.latitude}]\n\n${userMessage.text}`;
       }
 
       const response = await chatWithMapAgent(messageToSend, history);
@@ -215,6 +241,14 @@ const MapAssistantFeature = () => {
     onSend([message]);
   };
 
+  const parsePolyline = (polylineStr: string): AmapPoint[] => {
+    if (!polylineStr) return [];
+    return polylineStr.split(';').map(p => {
+      const [lng, lat] = p.split(',');
+      return { longitude: Number(lng), latitude: Number(lat) };
+    });
+  };
+
   const renderCustomView = (props: any) => {
     const { currentMessage } = props;
     if (currentMessage.toolResults && currentMessage.toolResults.length > 0) {
@@ -230,8 +264,20 @@ const MapAssistantFeature = () => {
                    <Text style={styles.resultTitle}>📍 推荐地点</Text>
                    {pois.slice(0, 3).map((poi: any, i: number) => (
                      <View key={i} style={styles.poiItem}>
-                        <Text style={styles.poiName}>{poi.name}</Text>
-                        <Text style={styles.poiAddress}>{poi.address || poi.location}</Text>
+                        <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+                           <View style={{flex: 1}}>
+                              <Text style={styles.poiName}>{poi.name}</Text>
+                              <Text style={styles.poiAddress}>{poi.address || poi.location}</Text>
+                           </View>
+                           {/* Render photos if available */}
+                           {poi.photos && poi.photos.length > 0 && (
+                              <Image 
+                                source={{ uri: poi.photos[0].url }} 
+                                style={{width: 60, height: 60, borderRadius: 8, marginLeft: 8}} 
+                                contentFit="cover"
+                              />
+                           )}
+                        </View>
                      </View>
                    ))}
                  </View>
@@ -254,6 +300,67 @@ const MapAssistantFeature = () => {
                   </View>
                 );
              }
+
+             // Handle Route Planning
+             if (res.tool === 'maps_direction_driving' || res.tool === 'maps_direction_walking' || res.tool === 'maps_direction_bicycling') {
+                const route = res.data?.route;
+                if (!route) return null;
+                
+                const path = route.paths?.[0];
+                if (!path) return null;
+
+                const distance = path.distance ? (Number(path.distance) / 1000).toFixed(1) + 'km' : '';
+                const duration = path.duration ? Math.ceil(Number(path.duration) / 60) + '分钟' : '';
+                
+                // Extract Polylines
+                let allPoints: AmapPoint[] = [];
+                if (path.steps) {
+                    path.steps.forEach((step: any) => {
+                        allPoints = [...allPoints, ...parsePolyline(step.polyline)];
+                    });
+                }
+                
+                // Extract Origin/Destination
+                const originStr = route.origin || '';
+                const destStr = route.destination || '';
+                const [originLng, originLat] = originStr.split(',');
+                const [destLng, destLat] = destStr.split(',');
+                
+                const originPoint = { longitude: Number(originLng), latitude: Number(originLat) };
+                const destPoint = { longitude: Number(destLng), latitude: Number(destLat) };
+
+                const mapData = {
+                    mode: 'route',
+                    origin: originPoint,
+                    destination: destPoint,
+                    polylines: [{ points: allPoints, color: '#0091FF', width: 6 }],
+                    center: originPoint
+                };
+
+                return (
+                    <View key={index} style={styles.routeCard}>
+                        <View style={styles.routeHeader}>
+                            <Text style={styles.routeTitle}>
+                                {res.tool === 'maps_direction_driving' ? '🚗 驾车' : 
+                                 res.tool === 'maps_direction_walking' ? '🚶 步行' : '🚲 骑行'}方案
+                            </Text>
+                            <Text style={styles.routeInfo}>{duration} • {distance}</Text>
+                        </View>
+                        <View style={styles.mapPreview}>
+                            <AmapWebView
+                                {...mapData as any}
+                            />
+                             <TouchableOpacity 
+                                style={styles.fullScreenButton}
+                                onPress={() => setFullScreenMapData(mapData)}
+                             >
+                                <Ionicons name="expand" size={20} color="#666" />
+                             </TouchableOpacity>
+                        </View>
+                    </View>
+                );
+             }
+
              return null;
            })}
         </View>
@@ -305,6 +412,27 @@ const MapAssistantFeature = () => {
             )}
           />
         </View>
+        
+        {/* Full Screen Map Modal */}
+        <Modal
+            visible={!!fullScreenMapData}
+            animationType="slide"
+            onRequestClose={() => setFullScreenMapData(null)}
+        >
+            <SafeAreaView style={{flex: 1, backgroundColor: 'white'}}>
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => setFullScreenMapData(null)} style={styles.backButton}>
+                        <Ionicons name="close" size={24} color="#1A1A1A" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>路线详情</Text>
+                    <View style={{width: 40}} />
+                </View>
+                {fullScreenMapData && (
+                    <AmapWebView {...fullScreenMapData} />
+                )}
+            </SafeAreaView>
+        </Modal>
+
       </SafeAreaView>
     </View>
   );
@@ -445,6 +573,50 @@ const styles = StyleSheet.create({
   weatherTime: {
     fontSize: 10,
     color: '#90CAF9',
+  },
+  routeCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    marginTop: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#EEE',
+    width: width * 0.7,
+  },
+  routeHeader: {
+    padding: 12,
+    backgroundColor: '#F5F5F5',
+  },
+  routeTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  routeInfo: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+  mapPreview: {
+    height: 150,
+    width: '100%',
+    position: 'relative',
+  },
+  fullScreenButton: {
+    position: 'absolute',
+    right: 8,
+    bottom: 8,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
 });
 

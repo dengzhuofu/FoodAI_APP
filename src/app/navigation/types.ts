@@ -60,6 +60,10 @@ export type RootStackParamList = {
       name: string;
       address: string;
     };
+    userLocation?: {
+      latitude: number;
+      longitude: number;
+    };
   };
   
   // Map Route

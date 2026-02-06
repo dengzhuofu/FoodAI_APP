@@ -173,6 +173,7 @@ import UserListScreen from '../screens/Profile/UserListScreen';
 import UserPostsScreen from '../screens/Profile/UserPostsScreen';
 import ChatScreen from '../screens/Chat/ChatScreen';
 import UserDetailScreen from '../screens/User/UserDetailScreen';
+import MapAssistantFeature from '../screens/AIKitchen/features/MapAssistantFeature';
 
 const AppNavigator = () => {
   const { isLoading, userToken } = useAuth();
