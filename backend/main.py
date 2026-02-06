@@ -137,29 +137,40 @@ sse = SseServerTransport("/api/v1/mcp/messages")
 async def handle_sse(request: Request, user_id: int = 1):
     """
     Establish an SSE connection for MCP.
-    Accepts an optional 'user_id' query parameter to set the user context for this session.
-    Default user_id is 1 if not provided.
     """
-    # Set the user_id in the environment for this process/context
-    # Note: In a real concurrent environment (like uvicorn workers), modifying os.environ is NOT thread-safe/request-safe.
-    # However, for FastMCP simple tool calls that read os.environ, this is a hacky way to pass context.
-    # A better way would be to use ContextVars or pass user_id explicitly in the MCP Context object if supported.
-    # For this demo/MVP, we will use a ContextVar if we could, but mcp_server.py reads os.environ at import time or call time.
-    # Let's rely on the tool function reading os.environ dynamically.
-    
+    # 动态注入环境变量
     import os
     os.environ["MCP_USER_ID"] = str(user_id)
     
-    async with sse.connect_sse(request.scope, request.receive, request._send) as streams:
-        await mcp.run(
-            read_stream=streams[0],
-            write_stream=streams[1],
-            initialization_options=mcp.create_initialization_options()
-        )
+    # 修复：直接使用 sse.connect_sse，不传入 request.receive/send，因为 Starlette/FastAPI 的请求对象在 SSE 上下文中可能已经消耗
+    # 实际上 mcp.server.sse.SseServerTransport.connect_sse 需要 scope, receive, send
+    # 但在 FastAPI 中，我们需要确保这些对象是可用的。
+    # 另外，FastMCP 可能在内部有自己的生命周期管理。
+    # 让我们添加一些日志来调试
+    print(f"MCP SSE Connection requested for user_id={user_id}")
+    
+    try:
+        async with sse.connect_sse(request.scope, request.receive, request._send) as streams:
+            print("MCP SSE Connected, starting runner...")
+            await mcp.run(
+                read_stream=streams[0],
+                write_stream=streams[1],
+                initialization_options=mcp.create_initialization_options()
+            )
+            print("MCP SSE Runner finished (connection closed)")
+    except Exception as e:
+        print(f"MCP SSE Error: {e}")
+        # 这里不要抛出异常，否则客户端会收到 500 而不是断开连接
+        pass
 
 @app.post("/api/v1/mcp/messages")
 async def handle_messages(request: Request):
-    await sse.handle_post_message(request.scope, request.receive, request._send)
+    print("MCP Message received")
+    try:
+        await sse.handle_post_message(request.scope, request.receive, request._send)
+    except Exception as e:
+        print(f"MCP Message Error: {e}")
+        raise
 
 
 
