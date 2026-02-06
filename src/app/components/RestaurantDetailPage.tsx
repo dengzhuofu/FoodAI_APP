@@ -172,11 +172,11 @@ const RestaurantDetailPage = () => {
       Alert.alert('提示', '该餐厅暂无坐标信息，无法导航');
       return;
     }
-    (navigation as any).navigate('RoutePlan', {
+    (navigation as any).navigate('MapAssistant', {
       destination: {
         latitude: restaurant.latitude,
         longitude: restaurant.longitude,
-        name: '',
+        name: restaurant.title,
         address: resolvedAddress || restaurant.address || '',
       },
     });
@@ -299,7 +299,7 @@ const RestaurantDetailPage = () => {
           </View>
           <Text style={styles.infoText}>{resolvedAddress || restaurant.address || '暂无地址信息'}</Text>
           <TouchableOpacity style={styles.navButton} onPress={handleNavigate} activeOpacity={0.8}>
-            <Text style={styles.navButtonText}>导航</Text>
+            <Text style={styles.navButtonText}>地图助手</Text>
           </TouchableOpacity>
         </View>
         

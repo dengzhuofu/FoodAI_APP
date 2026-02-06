@@ -2,8 +2,19 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Optional, Dict, Any
 import httpx
 from app.core.config import settings
+from pydantic import BaseModel
 
 router = APIRouter()
+
+class ChatRequest(BaseModel):
+    message: str
+    history: List[Dict[str, str]] = []
+    session_id: Optional[int] = None
+
+@router.post("/chat")
+async def chat_with_map(request: ChatRequest):
+    from app.services.amap_mcp_service import amap_service
+    return await amap_service.chat(request.message, request.history, request.session_id)
 
 AMAP_BASE_URL = "https://restapi.amap.com/v3"
 

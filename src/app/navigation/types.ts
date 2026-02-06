@@ -53,6 +53,15 @@ export type RootStackParamList = {
     onSelect: (location: any) => void;
   };
   
+  MapAssistant: {
+    destination?: {
+      latitude: number;
+      longitude: number;
+      name: string;
+      address: string;
+    };
+  };
+  
   // Map Route
   RoutePlan: {
     destination: {

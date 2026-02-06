@@ -85,3 +85,17 @@ export async function reverseGeocode(params: { location: string }): Promise<stri
   if (typeof formatted === 'string' && formatted.trim()) return formatted;
   return null;
 }
+
+export const chatWithMapAgent = async (message: string, history: Array<{ role: string; content: string }> = [], sessionId?: number) => {
+  try {
+    const response = await client.post('/maps/chat', { 
+      message, 
+      history,
+      session_id: sessionId
+    });
+    return response.data; 
+  } catch (error) {
+    console.error('Map Agent Error:', error);
+    throw error;
+  }
+};
