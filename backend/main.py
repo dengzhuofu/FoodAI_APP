@@ -23,8 +23,8 @@ app = FastAPI(
 # Global Response Middleware
 @app.middleware("http")
 async def standard_response_middleware(request: Request, call_next):
-    # Skip documentation and static files
-    if request.url.path.startswith(("/docs", "/redoc", "/openapi.json", "/static")):
+    # Skip documentation, static files, and MCP SSE streams
+    if request.url.path.startswith(("/docs", "/redoc", "/openapi.json", "/static", "/api/v1/mcp")):
         return await call_next(request)
     
     # start_time = time.time()
