@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, RefreshControl, ActivityIndicator, StatusBar, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, RefreshControl, ActivityIndicator, StatusBar, Platform, Modal, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../styles/theme';
@@ -31,6 +31,8 @@ const RecommendScreen = () => {
   const [dailyRecs, setDailyRecs] = useState<Recipe[]>([]);
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [loading, setLoading] = useState(true);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [carouselWidth, setCarouselWidth] = useState(0);
 
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -49,11 +51,9 @@ const RecommendScreen = () => {
       let pagination = { page: 1, limit: 10, total: 0 };
 
       if (Array.isArray(recData)) {
-        // Fallback for old API response (array)
         items = recData;
-        pagination.total = 100; // Mock total to allow scrolling if unknown
+        pagination.total = 100;
       } else if (recData?.items) {
-        // New API response (object with items & pagination)
         items = recData.items;
         pagination = recData.pagination;
       }
@@ -72,7 +72,6 @@ const RecommendScreen = () => {
       setPage(pageNum);
     } catch (error) {
       console.error("Failed to fetch data", error);
-      // Reset loading states on error to prevent UI freeze
       setLoading(false);
       setLoadingMore(false);
       setRefreshing(false);
@@ -84,7 +83,6 @@ const RecommendScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      // Only fetch if empty (initial load) to avoid resetting scroll position on back nav
       if (recipes.length === 0) {
         fetchData(1);
       }
@@ -148,51 +146,165 @@ const RecommendScreen = () => {
     </View>
   );
 
-  const renderDiscipline = () => {
+  const renderHeroSection = () => {
+    return (
+      <View style={styles.heroContainer}>
+        {/* Left: Recommended Recipes Carousel */}
+        <View style={styles.leftColumn}>
+          <Text style={styles.heroTitle}>今日推荐</Text>
+          <View 
+            style={styles.carouselContainer}
+            onLayout={(e) => setCarouselWidth(e.nativeEvent.layout.width)}
+          >
+            {dailyRecs.length > 0 ? (
+              <ScrollView 
+                horizontal 
+                pagingEnabled 
+                showsHorizontalScrollIndicator={false}
+                style={{ flex: 1 }}
+              >
+                {dailyRecs.map((item, index) => (
+                  <TouchableOpacity 
+                    key={index}
+                    activeOpacity={0.9}
+                    onPress={() => navigation.navigate('RecipeDetail', { id: item.id.toString() })}
+                    style={[styles.carouselItem, { width: carouselWidth }]}
+                  >
+                    <Image source={{ uri: item.cover_image }} style={styles.carouselImage} />
+                    <LinearGradient
+                      colors={['transparent', 'rgba(0,0,0,0.8)']}
+                      style={styles.carouselGradient}
+                    />
+                    <View style={styles.carouselContent}>
+                      <Text style={styles.carouselTitle} numberOfLines={1}>{item.title}</Text>
+                      <View style={styles.carouselMeta}>
+                        <Ionicons name="heart" size={12} color="#FFF" />
+                        <Text style={styles.carouselMetaText}>{item.likes_count}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={[styles.carouselItem, { backgroundColor: '#EEE', justifyContent: 'center', alignItems: 'center', width: '100%' }]}>
+                 <Text style={{ color: '#999' }}>暂无推荐</Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Right: Check-in Entry */}
+        <TouchableOpacity 
+          style={styles.rightColumn}
+          activeOpacity={0.9}
+          onPress={() => setModalVisible(true)}
+        >
+          <LinearGradient
+            colors={['#2ECC71', '#27AE60']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.checkInCard}
+          >
+            <View style={styles.checkInIconBg}>
+               <Ionicons name="calendar-outline" size={24} color="#2ECC71" />
+            </View>
+            <Text style={styles.checkInTitle}>今天你自律了吗?</Text>
+            <Text style={styles.checkInSubtitle}>点击打卡</Text>
+            
+            <View style={styles.miniProgressRow}>
+               {/* Show simplified dots for last 3 days */}
+               {[0, 1, 2].map((i) => (
+                  <View key={i} style={[styles.miniDot, { opacity: 0.6 + (i * 0.2) }]} />
+               ))}
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  const renderCheckInModal = () => {
     const today = new Date();
+    // Generate current week dates
     const days = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(today.getDate() - i);
+    const currentDay = today.getDay(); // 0-6
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - currentDay + (currentDay === 0 ? -6 : 1)); // Adjust to Monday start or as needed
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
       days.push(d);
     }
 
+    const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
     return (
-      <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>今天你自律了吗？</Text>
-        <View style={styles.disciplineCard}>
-          <View style={styles.calendarRow}>
-            {days.map((day, index) => {
-              const dateStr = day.toISOString().split('T')[0];
-              const checkIn = checkIns.find(c => c.date === dateStr);
-              
-              let dotColor = '#EEE'; // Default empty
-              if (checkIn) {
-                if (checkIn.status === 'white') dotColor = '#FFF'; 
-                else if (checkIn.status === 'orange') dotColor = '#FFA502';
-                else if (checkIn.status === 'red') dotColor = '#FF4757';
-              }
-              
-              return (
-                <TouchableOpacity 
-                  key={index} 
-                  style={styles.dayItem}
-                  onPress={() => navigation.navigate('HealthCheckIn', { date: dateStr })}
-                >
-                  <Text style={[styles.dayText, { color: '#FFF' }]}>{day.getDate()}</Text>
-                  <View style={[styles.statusDot, { backgroundColor: dotColor }]} />
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <TouchableOpacity 
-            style={styles.checkInButton}
-            onPress={() => navigation.navigate('HealthCheckIn', { date: today.toISOString().split('T')[0] })}
-          >
-            <Text style={styles.checkInButtonText}>立即打卡</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
+          <Pressable style={styles.modalContent} onPress={e => e.stopPropagation()}>
+             <View style={styles.modalHeader}>
+               <Text style={styles.modalTitle}>每日自律打卡</Text>
+               <TouchableOpacity onPress={() => setModalVisible(false)}>
+                 <Ionicons name="close" size={24} color="#333" />
+               </TouchableOpacity>
+             </View>
+
+             <View style={styles.calendarContainer}>
+               <View style={styles.weekHeader}>
+                 {weekDays.map((day, index) => (
+                   <Text key={index} style={styles.weekDayText}>{day}</Text>
+                 ))}
+               </View>
+               <View style={styles.daysRow}>
+                 {days.map((day, index) => {
+                   const dateStr = day.toISOString().split('T')[0];
+                   const checkIn = checkIns.find(c => c.date === dateStr);
+                   const isToday = dateStr === today.toISOString().split('T')[0];
+                   
+                   let bgColor = '#F5F5F5';
+                   let textColor = '#333';
+                   
+                   if (checkIn) {
+                     if (checkIn.status === 'white') { bgColor = '#E8F5E9'; textColor = '#2ECC71'; } // Healthy
+                     else if (checkIn.status === 'orange') { bgColor = '#FFF3E0'; textColor = '#FFA502'; } // Warning
+                     else if (checkIn.status === 'red') { bgColor = '#FFEBEE'; textColor = '#FF4757'; } // Bad
+                   }
+                   
+                   if (isToday) {
+                     // Highlight today border
+                   }
+
+                   return (
+                     <View key={index} style={[styles.modalDayItem, { backgroundColor: bgColor, borderWidth: isToday ? 1 : 0, borderColor: '#2ECC71' }]}>
+                       <Text style={[styles.modalDayText, { color: textColor }]}>{day.getDate()}</Text>
+                       {checkIn && <View style={[styles.modalStatusDot, { backgroundColor: textColor }]} />}
+                     </View>
+                   );
+                 })}
+               </View>
+             </View>
+
+             <TouchableOpacity 
+               style={styles.modalCheckInButton}
+               onPress={() => {
+                 setModalVisible(false);
+                 navigation.navigate('HealthCheckIn', { date: today.toISOString().split('T')[0] });
+               }}
+             >
+               <View style={styles.checkButtonCircle}>
+                 <Ionicons name="checkmark" size={24} color="#2ECC71" />
+               </View>
+               <Text style={styles.modalCheckInText}>立即打卡</Text>
+             </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     );
   };
 
@@ -203,10 +315,8 @@ const RecommendScreen = () => {
       activeOpacity={0.9}
     >
       <View style={styles.whatToEatCard}>
-        {/* Decorative Background */}
         <View style={styles.patternContainer}>
           <Svg height="100%" width="100%" style={{ opacity: 0.1 }}>
-             {/* Diagonal Stripes */}
              <Circle cx="0" cy="0" r="80" fill="#000" />
              <Circle cx="100%" cy="100%" r="100" fill="#000" />
           </Svg>
@@ -262,37 +372,6 @@ const RecommendScreen = () => {
       </View>
     </View>
   );
-
-  const renderDailyRecommendations = () => {
-    if (dailyRecs.length === 0) return null;
-    return (
-      <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>今日推荐菜谱</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 16 }}>
-          {dailyRecs.map((item, index) => (
-            <TouchableOpacity 
-              key={item.id}
-              style={styles.dailyCard}
-              onPress={() => navigation.navigate('RecipeDetail', { id: item.id.toString() })}
-            >
-              <Image source={{ uri: item.cover_image }} style={styles.dailyImage} />
-              <LinearGradient
-                colors={['transparent', 'rgba(0,0,0,0.8)']}
-                style={styles.dailyGradient}
-              />
-              <View style={styles.dailyContent}>
-                <Text style={styles.dailyTitle} numberOfLines={1}>{item.title}</Text>
-                <View style={styles.dailyMeta}>
-                   <Ionicons name="heart" size={12} color="#FFF" />
-                   <Text style={styles.dailyMetaText}>{item.likes_count}</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-    );
-  };
 
   const renderFeedItem = (item: FeedItem, index: number) => {
     const isRestaurant = item.type === 'restaurant';
@@ -355,14 +434,15 @@ const RecommendScreen = () => {
           }
         >
           {renderHeader()}
-          {renderDailyRecommendations()}
-          {renderDiscipline()}
+          {renderHeroSection()}
           {renderWhatToEat()}
           {renderBanner()}
           {renderFeed()}
           {loadingMore && <ActivityIndicator style={{ padding: 20 }} color="#1A1A1A" />}
         </ScrollView>
       </SafeAreaView>
+      
+      {renderCheckInModal()}
     </View>
   );
 };
@@ -478,6 +558,204 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   
+  // Hero Section (Recipes + Check-in)
+  heroContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginBottom: 24,
+    height: 180,
+  },
+  leftColumn: {
+    flex: 3, // 60%
+    marginRight: 12,
+  },
+  rightColumn: {
+    flex: 2, // 40%
+  },
+  heroTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    marginBottom: 12,
+  },
+  carouselContainer: {
+    flex: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#F0F0F0',
+  },
+  carouselItem: {
+    height: '100%',
+    position: 'relative',
+  },
+  carouselImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  carouselGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '60%',
+  },
+  carouselContent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 12,
+  },
+  carouselTitle: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  carouselMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  carouselMetaText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  
+  // Check In Card
+  checkInCard: {
+    flex: 1,
+    borderRadius: 16,
+    padding: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 32, // Align with carousel top (approx)
+  },
+  checkInIconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  checkInTitle: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  checkInSubtitle: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 10,
+    marginBottom: 12,
+  },
+  miniProgressRow: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  miniDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FFF',
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    backgroundColor: '#FFF',
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  calendarContainer: {
+    marginBottom: 24,
+  },
+  weekHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  weekDayText: {
+    width: 40,
+    textAlign: 'center',
+    fontSize: 12,
+    color: '#999',
+    fontWeight: '600',
+  },
+  daysRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalDayItem: {
+    width: 40,
+    height: 50,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  modalDayText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  modalStatusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    position: 'absolute',
+    bottom: 6,
+  },
+  modalCheckInButton: {
+    backgroundColor: '#2ECC71',
+    borderRadius: 16,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkButtonCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  modalCheckInText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+
   // What to Eat
   whatToEatButtonContainer: {
     marginHorizontal: 16,
@@ -717,48 +995,6 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 10,
     fontWeight: '500',
-  },
-  
-  // Discipline
-  disciplineCard: {
-    backgroundColor: '#2ECC71', // Green
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  calendarRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  dayItem: {
-    alignItems: 'center',
-    width: 36,
-  },
-  dayText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 6,
-  },
-  statusDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  checkInButton: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  checkInButtonText: {
-    color: '#2ECC71',
-    fontWeight: 'bold',
-    fontSize: 14,
   },
 });
 
