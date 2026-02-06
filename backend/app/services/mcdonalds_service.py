@@ -94,17 +94,53 @@ class MCPClientWrapper:
         Format raw JSON nutrition data into a readable Markdown table (Pure Python version).
         """
         try:
-            # Try to parse the string as JSON
-            data = json.loads(json_str)
+            # First, check if the string contains actual JSON data or if it's wrapped in a text description
+            # Sometimes the tool returns "Here is the data: [...]" or similar
+            # We'll try to find the first '[' or '{' to start parsing
+            start_idx = -1
+            for i, char in enumerate(json_str):
+                if char == '{' or char == '[':
+                    start_idx = i
+                    break
             
+            if start_idx != -1:
+                json_part = json_str[start_idx:]
+                # Try to parse the JSON part
+                try:
+                    data = json.loads(json_part)
+                except json.JSONDecodeError:
+                    # If failed, maybe try to clean it up or fallback to original
+                    data = None
+            else:
+                 # Try parsing the whole string directly
+                try:
+                    data = json.loads(json_str)
+                except json.JSONDecodeError:
+                    data = None
+
+            if not data:
+                return json_str
+
             # Check if it's the expected structure: {"code": 200, "data": [...]}
             # Or if it's just the list directly
             
             target_list = None
             if isinstance(data, list):
                 target_list = data
-            elif isinstance(data, dict) and "data" in data and isinstance(data["data"], list):
-                target_list = data["data"]
+            elif isinstance(data, dict):
+                 # Handle cases where data is nested like {"code": 200, "data": "JSON_STRING"} or {"data": [...]}
+                 if "data" in data:
+                     nested_data = data["data"]
+                     if isinstance(nested_data, list):
+                         target_list = nested_data
+                     elif isinstance(nested_data, str):
+                         # Double encoded JSON string in 'data' field
+                         try:
+                             parsed_nested = json.loads(nested_data)
+                             if isinstance(parsed_nested, list):
+                                 target_list = parsed_nested
+                         except:
+                             pass
             
             # If we found a valid list of dictionaries
             if target_list and len(target_list) > 0 and isinstance(target_list[0], dict):
@@ -145,15 +181,60 @@ class MCPClientWrapper:
                         if val is None:
                             val = "-"
                         else:
-                            val = str(val).replace("|", "&#124;") # Escape pipes
+                            val = str(val).replace("|", "&#124;").replace("\n", " ") # Escape pipes and remove newlines
                         row_values.append(val)
                     rows.append("| " + " | ".join(row_values) + " |")
                 
                 # Combine
                 return f"{header_row}\n{separator_row}\n" + "\n".join(rows)
             
+            # Special handling for CSV-like string: "name,desc,val1,val2..."
+            # If target_list is None, check if it's a CSV string
+            if isinstance(json_str, str) and ',' in json_str and '\n' in json_str:
+                lines = json_str.strip().split('\n')
+                if len(lines) > 1:
+                    # Assume first line is header if it contains keys, OR if it's just data
+                    # The screenshot shows: "猪柳麦满分,null,1288,308..."
+                    # This looks like raw CSV data without headers, or maybe just values
+                    
+                    # Let's try to parse it as a table
+                    # We can't know column names for sure, but we can try to guess or just use generic ones
+                    # Based on previous col_map: Name, Desc, KJ, Kcal, Protein, Fat, Carb, Sodium, Calcium
+                    
+                    default_headers = ["产品名称", "描述", "能量(KJ)", "能量(Kcal)", "蛋白质(g)", "脂肪(g)", "碳水(g)", "钠(mg)", "钙(mg)"]
+                    
+                    # Check if first line matches our expected column count
+                    first_line_cols = lines[0].split(',')
+                    if len(first_line_cols) >= 5: # Arbitrary threshold to detect nutrition data
+                        
+                        # Build table
+                        header_row = "| " + " | ".join(default_headers) + " |"
+                        separator_row = "| " + " | ".join(["---"] * len(default_headers)) + " |"
+                        
+                        rows = []
+                        for line in lines:
+                            cols = line.split(',')
+                            # Pad with empty strings if row is shorter
+                            if len(cols) < len(default_headers):
+                                cols += ["-"] * (len(default_headers) - len(cols))
+                            # Truncate if longer
+                            cols = cols[:len(default_headers)]
+                            
+                            # Clean values
+                            clean_cols = []
+                            for c in cols:
+                                val = c.strip()
+                                if val == 'null' or val == '':
+                                    val = '-'
+                                clean_cols.append(val)
+                                
+                            rows.append("| " + " | ".join(clean_cols) + " |")
+                            
+                        return f"{header_row}\n{separator_row}\n" + "\n".join(rows)
+
             return json_str 
         except Exception as e:
+            print(f"Error formatting nutrition data: {e}")
             return json_str
 
     async def call_tool(self, name: str, args: Dict[str, Any]) -> Any:
