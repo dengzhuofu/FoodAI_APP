@@ -134,7 +134,22 @@ app.include_router(mcdonalds.router, prefix="/api/v1/mcdonalds", tags=["mcdonald
 sse = SseServerTransport("/api/v1/mcp/messages")
 
 @app.get("/api/v1/mcp/sse")
-async def handle_sse(request: Request):
+async def handle_sse(request: Request, user_id: int = 1):
+    """
+    Establish an SSE connection for MCP.
+    Accepts an optional 'user_id' query parameter to set the user context for this session.
+    Default user_id is 1 if not provided.
+    """
+    # Set the user_id in the environment for this process/context
+    # Note: In a real concurrent environment (like uvicorn workers), modifying os.environ is NOT thread-safe/request-safe.
+    # However, for FastMCP simple tool calls that read os.environ, this is a hacky way to pass context.
+    # A better way would be to use ContextVars or pass user_id explicitly in the MCP Context object if supported.
+    # For this demo/MVP, we will use a ContextVar if we could, but mcp_server.py reads os.environ at import time or call time.
+    # Let's rely on the tool function reading os.environ dynamically.
+    
+    import os
+    os.environ["MCP_USER_ID"] = str(user_id)
+    
     async with sse.connect_sse(request.scope, request.receive, request._send) as streams:
         await mcp.run(
             read_stream=streams[0],
