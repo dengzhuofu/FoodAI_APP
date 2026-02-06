@@ -23,8 +23,8 @@ app = FastAPI(
 # Global Response Middleware
 @app.middleware("http")
 async def standard_response_middleware(request: Request, call_next):
-    # Skip documentation, static files, and MCP SSE streams
-    if request.url.path.startswith(("/docs", "/redoc", "/openapi.json", "/static", "/api/v1/mcp")):
+    # Skip documentation and static files
+    if request.url.path.startswith(("/docs", "/redoc", "/openapi.json", "/static")):
         return await call_next(request)
     
     # start_time = time.time()
@@ -134,43 +134,17 @@ app.include_router(mcdonalds.router, prefix="/api/v1/mcdonalds", tags=["mcdonald
 sse = SseServerTransport("/api/v1/mcp/messages")
 
 @app.get("/api/v1/mcp/sse")
-async def handle_sse(request: Request, user_id: int = 1):
-    """
-    Establish an SSE connection for MCP.
-    """
-    # 动态注入环境变量
-    import os
-    os.environ["MCP_USER_ID"] = str(user_id)
-    
-    # 修复：直接使用 sse.connect_sse，不传入 request.receive/send，因为 Starlette/FastAPI 的请求对象在 SSE 上下文中可能已经消耗
-    # 实际上 mcp.server.sse.SseServerTransport.connect_sse 需要 scope, receive, send
-    # 但在 FastAPI 中，我们需要确保这些对象是可用的。
-    # 另外，FastMCP 可能在内部有自己的生命周期管理。
-    # 让我们添加一些日志来调试
-    print(f"MCP SSE Connection requested for user_id={user_id}")
-    
-    try:
-        async with sse.connect_sse(request.scope, request.receive, request._send) as streams:
-            print("MCP SSE Connected, starting runner...")
-            await mcp.run(
-                read_stream=streams[0],
-                write_stream=streams[1],
-                initialization_options=mcp.create_initialization_options()
-            )
-            print("MCP SSE Runner finished (connection closed)")
-    except Exception as e:
-        print(f"MCP SSE Error: {e}")
-        # 这里不要抛出异常，否则客户端会收到 500 而不是断开连接
-        pass
+async def handle_sse(request: Request):
+    async with sse.connect_sse(request.scope, request.receive, request._send) as streams:
+        await mcp.run(
+            read_stream=streams[0],
+            write_stream=streams[1],
+            initialization_options=mcp.create_initialization_options()
+        )
 
 @app.post("/api/v1/mcp/messages")
 async def handle_messages(request: Request):
-    print("MCP Message received")
-    try:
-        await sse.handle_post_message(request.scope, request.receive, request._send)
-    except Exception as e:
-        print(f"MCP Message Error: {e}")
-        raise
+    await sse.handle_post_message(request.scope, request.receive, request._send)
 
 
 

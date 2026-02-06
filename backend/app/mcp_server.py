@@ -15,27 +15,22 @@ import os
 # 我们创建一个名为 "AI Kitchen" 的 MCP 服务器
 mcp = FastMCP("AI Kitchen")
 
-# 获取默认用户 ID (从环境变量动态获取的辅助函数)
-def get_current_user_id() -> int:
-    return int(os.environ.get("MCP_USER_ID", "1"))
+# 获取默认用户 ID (从环境变量)
+DEFAULT_USER_ID = int(os.environ.get("MCP_USER_ID", "1"))
 
 # --- 工具定义 ---
 
 @mcp.tool()
-async def list_fridge_items(user_id: int = 0) -> str:
+async def list_fridge_items(user_id: int = DEFAULT_USER_ID) -> str:
     """
     列出用户冰箱中的当前所有食材。
     
     Args:
-        user_id: 用户的 ID (如果不传或为0，则使用当前上下文的用户 ID)。
+        user_id: 用户的 ID (默认为环境变量配置的 ID)。
         
     Returns:
         以 Markdown 列表格式返回的食材清单。
     """
-    # 动态处理默认值
-    if user_id == 0:
-        user_id = get_current_user_id()
-
     try:
         # 直接查询数据库
         items = await FridgeItem.filter(user_id=user_id).all()
@@ -61,7 +56,7 @@ async def list_fridge_items(user_id: int = 0) -> str:
         return f"获取冰箱数据时发生错误: {str(e)}"
 
 @mcp.tool()
-async def add_fridge_item(name: str, quantity: str = "1", category: str = "其他", user_id: int = 0) -> str:
+async def add_fridge_item(name: str, quantity: str = "1", category: str = "其他", user_id: int = DEFAULT_USER_ID) -> str:
     """
     向冰箱中添加一种食材。
     
@@ -69,15 +64,11 @@ async def add_fridge_item(name: str, quantity: str = "1", category: str = "其�
         name: 食材名称 (如 "鸡蛋").
         quantity: 数量描述 (如 "12个", "500g").
         category: 分类 (如 "蔬菜", "肉类", "其他").
-        user_id: 用户 ID (如果不传或为0，则使用当前上下文的用户 ID)。
+        user_id: 用户 ID (默认为环境变量配置的 ID)。
         
     Returns:
         操作结果消息。
     """
-    # 动态处理默认值
-    if user_id == 0:
-        user_id = get_current_user_id()
-        
     user = await User.get_or_none(id=user_id)
     if not user:
         return f"错误：找不到 ID 为 {user_id} 的用户。"
