@@ -5,6 +5,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from tortoise.contrib.fastapi import register_tortoise
 from app.routers import auth, users, profile, inventory, content, explore, ai, upload, notifications, search, shopping, maps, chats, mcdonalds
+from app.mcp_server import mcp
+from mcp.server.sse import SseServerTransport
+from starlette.routing import Mount, Route
+
 import os
 import time
 import json
@@ -121,6 +125,27 @@ app.include_router(chats.router, prefix="/api/v1", tags=["chats"])
 app.include_router(shopping.router, prefix="/api/v1/shopping-list", tags=["shopping"])
 app.include_router(maps.router, prefix="/api/v1/maps", tags=["maps"])
 app.include_router(mcdonalds.router, prefix="/api/v1/mcdonalds", tags=["mcdonalds"])
+
+# --- Mount MCP Server (SSE) ---
+# We use mcp.server.sse.SseServerTransport to handle SSE connections
+# Since FastMCP doesn't directly expose an ASGI app for SSE yet (it wraps Starlette internally but for standalone),
+# we will use the 'sse_handler' provided by mcp.server.sse
+
+sse = SseServerTransport("/api/v1/mcp/messages")
+
+@app.get("/api/v1/mcp/sse")
+async def handle_sse(request: Request):
+    async with sse.connect_sse(request.scope, request.receive, request._send) as streams:
+        await mcp.run(
+            read_stream=streams[0],
+            write_stream=streams[1],
+            initialization_options=mcp.create_initialization_options()
+        )
+
+@app.post("/api/v1/mcp/messages")
+async def handle_messages(request: Request):
+    await sse.handle_post_message(request.scope, request.receive, request._send)
+
 
 
 
