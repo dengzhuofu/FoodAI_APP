@@ -45,7 +45,8 @@ class Settings(BaseSettings):
                         "app.models.notifications",
                         "app.models.search",
                         "app.models.chat",
-                        "app.models.direct_chat"
+                        "app.models.direct_chat",
+                        "app.models.health"
                     ],
                     "default_connection": "default",
                 },
