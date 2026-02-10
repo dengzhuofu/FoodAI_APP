@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
+import { Video, ResizeMode } from 'expo-av';
 import { theme } from '../../styles/theme';
 import { createRestaurant } from '../../../api/content';
 import { uploadFile } from '../../../api/upload';
@@ -21,6 +22,7 @@ const PublishStoreScreen = () => {
   const [content, setContent] = useState('');
   const [rating, setRating] = useState(5);
   const [images, setImages] = useState<ImagePicker.ImagePickerAsset[]>([]);
+  const [video, setVideo] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [address, setAddress] = useState('');
   const [location, setLocation] = useState<LocationPOI | null>(null);
   const [hours, setHours] = useState('');
@@ -54,6 +56,29 @@ const PublishStoreScreen = () => {
     const newImages = [...images];
     newImages.splice(index, 1);
     setImages(newImages);
+  };
+
+  // --- Video Picker ---
+  const pickVideo = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('需要权限', '请允许访问相册以选择视频');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setVideo(result.assets[0]);
+    }
+  };
+
+  const removeVideo = () => {
+    setVideo(null);
   };
 
   // --- Location Selection ---
@@ -93,6 +118,12 @@ const PublishStoreScreen = () => {
         uploadedUrls.push(url);
       }
 
+      // Upload Video
+      let uploadedVideo = null;
+      if (video) {
+        uploadedVideo = await uploadFile(video.uri);
+      }
+
       // 2. Create Restaurant
       await createRestaurant({
         name: title,
@@ -101,6 +132,7 @@ const PublishStoreScreen = () => {
         address: address || (location ? location.address : '未知地点'),
         rating: rating,
         images: uploadedUrls,
+        video: uploadedVideo,
         cuisine: '其他', // Could add a picker for this
         hours: hours,
         phone: phone,
@@ -163,6 +195,28 @@ const PublishStoreScreen = () => {
         {/* Image Upload Area */}
         <View style={styles.imageSection}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {/* Video Preview */}
+            {video && (
+              <View style={styles.imageWrapper}>
+                <Video
+                  source={{ uri: video.uri }}
+                  style={styles.imageThumbnail}
+                  useNativeControls={false}
+                  resizeMode={ResizeMode.COVER}
+                  shouldPlay={false}
+                />
+                <View style={styles.videoBadge}>
+                  <Ionicons name="videocam" size={16} color="#fff" />
+                </View>
+                <TouchableOpacity 
+                  style={styles.removeImageButton} 
+                  onPress={removeVideo}
+                >
+                  <Ionicons name="close-circle" size={20} color={theme.colors.error} />
+                </TouchableOpacity>
+              </View>
+            )}
+
             {images.map((img, index) => (
               <View key={index} style={styles.imageWrapper}>
                 <Image source={{ uri: img.uri }} style={styles.imageThumbnail} contentFit="cover" />
@@ -174,14 +228,22 @@ const PublishStoreScreen = () => {
                 </TouchableOpacity>
               </View>
             ))}
+            
             {images.length < 9 && (
               <TouchableOpacity style={styles.addImageButton} onPress={pickImages}>
                 <Ionicons name="camera-outline" size={32} color={theme.colors.textTertiary} />
                 <Text style={styles.addImageText}>添加照片</Text>
               </TouchableOpacity>
             )}
+
+            {!video && (
+              <TouchableOpacity style={[styles.addImageButton, { marginLeft: 10 }]} onPress={pickVideo}>
+                <Ionicons name="videocam-outline" size={32} color={theme.colors.textTertiary} />
+                <Text style={styles.addImageText}>添加视频</Text>
+              </TouchableOpacity>
+            )}
           </ScrollView>
-          <Text style={styles.imageHint}>{images.length}/9 张</Text>
+          <Text style={styles.imageHint}>{images.length}/9 张图 {video ? '+ 1 视频' : ''}</Text>
         </View>
 
         {/* Form Fields */}
@@ -290,6 +352,14 @@ const styles = StyleSheet.create({
   imageWrapper: {
     marginRight: 10,
     position: 'relative',
+  },
+  videoBadge: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 8,
+    padding: 4,
   },
   imageThumbnail: {
     width: 100,

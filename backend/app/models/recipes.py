@@ -6,6 +6,7 @@ class Recipe(models.Model):
     title = fields.CharField(max_length=100)
     cover_image = fields.CharField(max_length=255)
     images = fields.JSONField(default=list)  # List of image URLs
+    video = fields.CharField(max_length=255, null=True)  # Video URL
     description = fields.TextField(null=True)
     cooking_time = fields.CharField(max_length=20, null=True)
     difficulty = fields.CharField(max_length=20, null=True)

@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { Video, ResizeMode } from 'expo-av';
 import { theme } from '../../styles/theme';
 import { createRecipe, getCommonTags } from '../../../api/content';
 import Toast from '../../components/Toast';
@@ -51,6 +52,7 @@ const PublishRecipe = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [images, setImages] = useState<ImagePicker.ImagePickerAsset[]>([]);
+  const [video, setVideo] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [ingredients, setIngredients] = useState<Ingredient[]>([{ name: '', amount: '' }]);
   const [steps, setSteps] = useState<Step[]>([{ description: '', image: undefined }]);
   
@@ -86,6 +88,23 @@ const PublishRecipe = () => {
     const newImages = [...images];
     newImages.splice(index, 1);
     setImages(newImages);
+  };
+
+  // 1.5 Video Picker
+  const pickVideo = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setVideo(result.assets[0]);
+    }
+  };
+
+  const removeVideo = () => {
+    setVideo(null);
   };
 
   // 2. Ingredients Logic
@@ -184,6 +203,12 @@ const PublishRecipe = () => {
         uploadedImages.push(url);
       }
 
+      // Upload video
+      let uploadedVideo = null;
+      if (video) {
+        uploadedVideo = await handleUpload(video.uri);
+      }
+
       // Upload step images
       const processedSteps = await Promise.all(steps.map(async (step) => {
         if (step.image) {
@@ -198,6 +223,7 @@ const PublishRecipe = () => {
         description,
         cover_image: uploadedImages[0], // Use first uploaded image as cover
         images: uploadedImages,
+        video: uploadedVideo,
         ingredients: validIngredients,
         steps: processedSteps,
         cooking_time: cookingTime,
@@ -341,8 +367,27 @@ const PublishRecipe = () => {
           style={{ flex: 1 }}
         >
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* 1. Images */}
+            {/* 1. Images & Video */}
             <ScrollView horizontal style={styles.imageScroll} showsHorizontalScrollIndicator={false}>
+              {/* Video Preview */}
+              {video && (
+                <View style={styles.imageWrapper}>
+                  <Video
+                    source={{ uri: video.uri }}
+                    style={styles.uploadedImage}
+                    useNativeControls={false}
+                    resizeMode={ResizeMode.COVER}
+                    shouldPlay={false}
+                  />
+                  <View style={styles.videoBadge}>
+                    <Ionicons name="videocam" size={16} color="#fff" />
+                  </View>
+                  <TouchableOpacity style={styles.removeImageBtn} onPress={removeVideo}>
+                    <Ionicons name="close-circle" size={20} color="rgba(0,0,0,0.6)" />
+                  </TouchableOpacity>
+                </View>
+              )}
+
               {images.map((img, index) => (
                 <View key={index} style={styles.imageWrapper}>
                   <Image source={{ uri: img.uri }} style={styles.uploadedImage} />
@@ -351,10 +396,18 @@ const PublishRecipe = () => {
                   </TouchableOpacity>
                 </View>
               ))}
+              
               <TouchableOpacity style={styles.addImageBtn} onPress={pickImages}>
                 <Ionicons name="camera" size={32} color="#999" />
-                <Text style={styles.addImageText}>{images.length > 0 ? '继续添加' : '上传成品图'}</Text>
+                <Text style={styles.addImageText}>{images.length > 0 ? '加图' : '上传图片'}</Text>
               </TouchableOpacity>
+
+              {!video && (
+                <TouchableOpacity style={[styles.addImageBtn, { marginLeft: 12 }]} onPress={pickVideo}>
+                  <Ionicons name="videocam-outline" size={32} color="#999" />
+                  <Text style={styles.addImageText}>上传视频</Text>
+                </TouchableOpacity>
+              )}
             </ScrollView>
 
             {/* 2. Basic Info */}
@@ -535,6 +588,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+  },
+  videoBadge: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 8,
+    padding: 4,
   },
   uploadedImage: {
     width: 100,

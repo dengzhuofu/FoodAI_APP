@@ -61,6 +61,7 @@ export interface Restaurant {
   title: string;
   content?: string;
   images: string[];
+  video?: string; // Video URL
   address?: string;
   rating?: number;
   cuisine?: string;

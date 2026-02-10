@@ -32,6 +32,7 @@ class RecipeBase(BaseModel):
     title: str
     cover_image: str
     images: List[str] = []
+    video: Optional[str] = None
     description: Optional[str] = None
     cooking_time: Optional[str] = None
     difficulty: Optional[str] = None
@@ -63,6 +64,7 @@ class RestaurantBase(BaseModel):
     title: str
     content: Optional[str] = None
     images: List[str] = []
+    video: Optional[str] = None
     address: Optional[str] = None
     rating: Optional[float] = None
     cuisine: Optional[str] = None

@@ -31,6 +31,20 @@ async def upgrade_db():
     except Exception as e:
         print(f"Failed to add category to restaurants (might already exist): {e}")
 
+    # Add video to recipes
+    try:
+        await conn.execute_script("ALTER TABLE `recipes` ADD COLUMN `video` VARCHAR(255) NULL;")
+        print("Added video to recipes")
+    except Exception as e:
+        print(f"Failed to add video to recipes (might already exist): {e}")
+
+    # Add video to restaurants
+    try:
+        await conn.execute_script("ALTER TABLE `restaurants` ADD COLUMN `video` VARCHAR(255) NULL;")
+        print("Added video to restaurants")
+    except Exception as e:
+        print(f"Failed to add video to restaurants (might already exist): {e}")
+
     # Add what_to_eat_presets table
     try:
         await conn.execute_script("""

@@ -7,6 +7,7 @@ class Restaurant(models.Model):
     title = fields.CharField(max_length=100)
     content = fields.TextField(null=True)
     images = fields.JSONField(default=list)
+    video = fields.CharField(max_length=255, null=True)  # Video URL
     address = fields.CharField(max_length=255, null=True)
     rating = fields.FloatField(null=True)
     cuisine = fields.CharField(max_length=50, null=True)  # 菜系
