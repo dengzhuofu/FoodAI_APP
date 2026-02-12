@@ -9,6 +9,7 @@ class User(models.Model):
     avatar = fields.CharField(max_length=255, null=True)
     bio = fields.TextField(null=True)
     is_pro = fields.BooleanField(default=False)
+    roles = fields.ManyToManyField("models.Role", related_name="users")
     created_at = fields.DatetimeField(auto_now_add=True)
 
     class Meta:

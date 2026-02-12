@@ -6,3 +6,4 @@ from .ai_logs import AILog
 from .search import SearchHistory
 from .chat import ChatSession, ChatMessage, AgentPreset
 from .health import HealthProfile, DailyCheckIn
+from .rbac import Role, Permission

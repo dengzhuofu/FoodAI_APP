@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from tortoise.contrib.fastapi import register_tortoise
-from app.routers import auth, users, profile, inventory, content, explore, ai, upload, notifications, search, shopping, maps, chats, mcdonalds, health
+from app.routers import auth, users, profile, inventory, content, explore, ai, upload, notifications, search, shopping, maps, chats, mcdonalds, health, admin
 from app.mcp_server import mcp
 from mcp.server.sse import SseServerTransport
 from starlette.routing import Mount, Route
@@ -126,6 +126,7 @@ app.include_router(shopping.router, prefix="/api/v1/shopping-list", tags=["shopp
 app.include_router(maps.router, prefix="/api/v1/maps", tags=["maps"])
 app.include_router(mcdonalds.router, prefix="/api/v1/mcdonalds", tags=["mcdonalds"])
 app.include_router(health.router, prefix="/api/v1/health", tags=["health"])
+app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 
 # --- Mount MCP Server (SSE) ---
 # We use mcp.server.sse.SseServerTransport to handle SSE connections

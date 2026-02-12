@@ -10,7 +10,19 @@ router = APIRouter()
 
 @router.get("/me", response_model=UserOut)
 async def read_users_me(current_user: User = Depends(get_current_user)):
-    return current_user
+    # Fetch roles and permissions
+    await current_user.fetch_related("roles__permissions")
+    
+    permissions = set()
+    for role in current_user.roles:
+        for perm in role.permissions:
+            permissions.add(perm.code)
+            
+    # Convert to UserOut schema manually or let Pydantic handle it if fields match
+    user_out = UserOut.model_validate(current_user)
+    user_out.permissions = list(permissions)
+    
+    return user_out
 
 @router.patch("/me", response_model=UserOut)
 async def update_user_me(
@@ -25,7 +37,17 @@ async def update_user_me(
         current_user.avatar = user_update.avatar
         
     await current_user.save()
-    return current_user
+    
+    # Re-fetch permissions for response
+    await current_user.fetch_related("roles__permissions")
+    permissions = set()
+    for role in current_user.roles:
+        for perm in role.permissions:
+            permissions.add(perm.code)
+            
+    user_out = UserOut.model_validate(current_user)
+    user_out.permissions = list(permissions)
+    return user_out
 
 @router.get("/me/what-to-eat-presets", response_model=List[WhatToEatPresetOut])
 async def get_my_presets(current_user: User = Depends(get_current_user)):

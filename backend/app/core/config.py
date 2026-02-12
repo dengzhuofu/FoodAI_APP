@@ -46,7 +46,8 @@ class Settings(BaseSettings):
                         "app.models.search",
                         "app.models.chat",
                         "app.models.direct_chat",
-                        "app.models.health"
+                        "app.models.health",
+                        "app.models.rbac"
                     ],
                     "default_connection": "default",
                 },

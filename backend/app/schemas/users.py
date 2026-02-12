@@ -20,6 +20,7 @@ class UserOut(BaseModel):
     nickname: str
     avatar: Optional[str]
     is_pro: bool
+    permissions: List[str] = [] # Added permissions list
     
     class Config:
         from_attributes = True
@@ -36,7 +37,7 @@ class Token(BaseModel):
 class WhatToEatPresetCreate(BaseModel):
     name: str
     options: List[str]
-
+    
 class WhatToEatPresetOut(BaseModel):
     id: int
     name: str
