@@ -72,6 +72,12 @@ const PublishRecipe = () => {
 
   // 1. Image Picker for Recipe Cover/Gallery
   const pickImages = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      showToast('需要相册权限才能选择图片', 'error');
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
@@ -92,6 +98,12 @@ const PublishRecipe = () => {
 
   // 1.5 Video Picker
   const pickVideo = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      showToast('需要相册权限才能选择视频', 'error');
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Videos,
       allowsEditing: true,
@@ -210,7 +222,7 @@ const PublishRecipe = () => {
       }
 
       // Upload step images
-      const processedSteps = await Promise.all(steps.map(async (step) => {
+      const processedSteps = await Promise.all(validSteps.map(async (step) => {
         if (step.image) {
           const url = await handleUpload(step.image);
           return { ...step, image: url };
@@ -244,9 +256,16 @@ const PublishRecipe = () => {
         });
       }, 1500);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      showToast('发布失败，请重试', 'error');
+      const detail = error?.response?.data?.detail;
+      const message =
+        typeof detail === 'string'
+          ? detail
+          : detail
+            ? JSON.stringify(detail)
+            : (typeof error?.message === 'string' ? error.message : null);
+      showToast(message || '发布失败，请重试', 'error');
     } finally {
       setLoading(false);
     }

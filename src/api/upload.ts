@@ -10,7 +10,24 @@ export const uploadFile = async (
   // Need to convert URI to blob/file object for React Native
   const filename = options?.filename || uri.split('/').pop() || 'file';
   const match = /\.(\w+)$/.exec(filename);
-  const type = options?.mimeType || (match ? `image/${match[1]}` : 'application/octet-stream');
+  const ext = (match?.[1] || '').toLowerCase();
+  const typeFromExt: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+    gif: 'image/gif',
+    heic: 'image/heic',
+    heif: 'image/heif',
+    mp4: 'video/mp4',
+    mov: 'video/quicktime',
+    m4v: 'video/x-m4v',
+    avi: 'video/x-msvideo',
+    mkv: 'video/x-matroska',
+  };
+  const type =
+    options?.mimeType ||
+    (ext && typeFromExt[ext] ? typeFromExt[ext] : 'application/octet-stream');
 
   if (Platform.OS === 'web') {
     // For Web, we need to fetch the blob from the blob: URI

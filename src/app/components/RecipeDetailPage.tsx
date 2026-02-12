@@ -4,6 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Video, ResizeMode } from 'expo-av';
 import { theme } from '../styles/theme';
 import { RootStackParamList } from '../navigation/types';
 import { getRecipe, getComments, toggleCollection, Recipe, Comment, toggleLike, recordView } from '../../api/content';
@@ -160,9 +161,14 @@ const RecipeDetailPage = () => {
 
   const renderHeader = () => {
     // Determine images to show
-    const displayImages = recipe?.images && recipe.images.length > 0 
-      ? recipe.images 
-      : [recipe?.cover_image || 'https://via.placeholder.com/400'];
+    const displayImages =
+      recipe?.images && recipe.images.length > 0
+        ? recipe.images
+        : [recipe?.cover_image || 'https://via.placeholder.com/400'];
+
+    const displayMedia: Array<{ type: 'video' | 'image'; uri: string }> = [];
+    if (recipe?.video) displayMedia.push({ type: 'video', uri: recipe.video });
+    for (const img of displayImages) displayMedia.push({ type: 'image', uri: img });
 
     return (
       <View style={styles.imageContainer}>
@@ -175,15 +181,26 @@ const RecipeDetailPage = () => {
             if (slide !== activeSlide) setActiveSlide(slide);
           }}
         >
-          {displayImages.map((img, index) => (
-            <Image key={index} source={{ uri: img }} style={styles.heroImage} resizeMode="cover" />
-          ))}
+          {displayMedia.map((item, index) =>
+            item.type === 'video' ? (
+              <Video
+                key={`video-${index}`}
+                source={{ uri: item.uri }}
+                style={styles.heroImage}
+                useNativeControls
+                resizeMode={ResizeMode.COVER}
+                shouldPlay={false}
+              />
+            ) : (
+              <Image key={`img-${index}`} source={{ uri: item.uri }} style={styles.heroImage} resizeMode="cover" />
+            )
+          )}
         </ScrollView>
         
         {/* Pagination Dots */}
-        {displayImages.length > 1 && (
+        {displayMedia.length > 1 && (
           <View style={styles.paginationContainer}>
-            {displayImages.map((_, index) => (
+            {displayMedia.map((_, index) => (
               <View 
                 key={index} 
                 style={[
@@ -451,34 +468,36 @@ const styles = StyleSheet.create({
     marginTop: 0, 
   },
   iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   paginationContainer: {
     position: 'absolute',
-    bottom: 14,
+    bottom: 20,
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 6,
+    gap: 8,
   },
   paginationDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    transform: [{ skewX: '-10deg' }],
   },
   paginationDotActive: {
-    backgroundColor: '#FFF',
+    backgroundColor: theme.colors.primary,
+    width: 24,
   },
   paginationDotInactive: {
-    backgroundColor: 'rgba(255,255,255,0.45)',
+    backgroundColor: 'rgba(255,255,255,0.5)',
   },
   heroImage: {
     width: width,
@@ -496,20 +515,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingBottom: 12,
-    backgroundColor: '#FFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    backgroundColor: 'transparent',
+    borderBottomWidth: 0,
     zIndex: 100,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
   },
   backButton: {
-    padding: 4,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   topBarAuthor: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     marginLeft: 8,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    padding: 4,
+    paddingRight: 12,
+    borderRadius: 20,
+    alignSelf: 'center',
+    maxWidth: 180,
   },
   topBarAvatar: {
     width: 32,
@@ -517,14 +555,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginRight: 8,
     backgroundColor: '#EEE',
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
   },
   topBarAuthorName: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
     color: '#333',
-    maxWidth: 140,
+    maxWidth: 120,
   },
   topBarActions: {
     flexDirection: 'row',
@@ -535,37 +573,53 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 18,
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#FF6B6B',
+    backgroundColor: theme.colors.primary,
+    borderWidth: 0,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   followingButton: {
-    backgroundColor: '#F5F5F5',
-    borderColor: '#DDD',
+    backgroundColor: theme.colors.surfaceVariant,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   followButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#FF6B6B',
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFF',
+    fontStyle: 'italic',
   },
   followingButtonText: {
-    color: '#999',
+    color: theme.colors.textSecondary,
   },
   shareButton: {
-    padding: 4,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   headerContent: {
-    paddingBottom: 30,
+    paddingBottom: 24,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '900',
-    color: '#1A1A1A',
+    color: theme.colors.text,
     marginBottom: 12,
-    textShadowRadius: 8,
-    lineHeight: 34,
+    lineHeight: 38,
+    fontStyle: 'italic',
   },
   tagsSection: {
     marginBottom: 24,
@@ -576,23 +630,19 @@ const styles = StyleSheet.create({
   tagChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
-    paddingHorizontal: 12,
+    backgroundColor: theme.colors.surfaceVariant,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
+    borderWidth: 0,
     gap: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
-    shadowRadius: 4,
-    elevation: 1,
+    transform: [{ skewX: '-10deg' }],
   },
   tagChipText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '700',
+    color: theme.colors.text,
+    fontStyle: 'italic',
   },
   authorRow: {
     flexDirection: 'row',
@@ -614,12 +664,14 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 24,
-    marginTop: -30,
-    backgroundColor: '#F9F9F9',
+    marginTop: -40,
+    backgroundColor: theme.colors.background,
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
   },
   description: {
     fontSize: 16,
-    color: '#555',
+    color: theme.colors.textSecondary,
     marginBottom: 36,
     lineHeight: 26,
     fontWeight: '400',
@@ -629,27 +681,27 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '900',
-    color: '#1A1A1A',
+    color: theme.colors.text,
     marginBottom: 20,
-    letterSpacing: 1.5,
+    letterSpacing: 0.5,
+    fontStyle: 'italic',
     textTransform: 'uppercase',
   },
   nutritionGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#FFF',
+    backgroundColor: theme.colors.surface,
     padding: 24,
     borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
+    borderWidth: 0,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.03,
-    shadowRadius: 16,
-    elevation: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 6,
   },
   nutritionItem: {
     flex: 1,
@@ -658,19 +710,21 @@ const styles = StyleSheet.create({
   verticalDivider: {
     width: 1,
     height: 32,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: theme.colors.surfaceVariant,
   },
   nutritionValue: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '900',
     marginBottom: 6,
-    color: '#1A1A1A',
+    color: theme.colors.primary,
+    fontStyle: 'italic',
   },
   nutritionLabel: {
     fontSize: 11,
-    color: '#999',
+    color: theme.colors.textSecondary,
     fontWeight: '700',
     letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   listContainer: {
     gap: 16,
@@ -678,113 +732,114 @@ const styles = StyleSheet.create({
   ingredientItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 18,
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
-    shadowColor: '#000',
+    padding: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 16,
+    marginBottom: 12,
+    borderWidth: 0,
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.02,
+    shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 1,
+    elevation: 2,
   },
   ingredientItemChecked: {
-    backgroundColor: '#FAFAFA',
-    borderColor: 'transparent',
+    backgroundColor: theme.colors.surfaceVariant,
     opacity: 0.5,
     shadowOpacity: 0,
+    elevation: 0,
   },
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#E0E0E0',
+    borderColor: theme.colors.primary,
     marginRight: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#1A1A1A',
-    borderColor: '#1A1A1A',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   ingredientText: {
     fontSize: 16,
-    color: '#1A1A1A',
+    color: theme.colors.text,
     flex: 1,
     fontWeight: '600',
   },
   ingredientAmount: {
     fontSize: 14,
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   ingredientTextChecked: {
-    color: '#999',
+    color: theme.colors.textTertiary,
     textDecorationLine: 'line-through',
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1A1A1A',
-    padding: 20,
+    backgroundColor: theme.colors.primary,
+    padding: 18,
     borderRadius: 24,
     marginTop: 12,
     gap: 10,
-    shadowColor: '#000',
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 16,
-    elevation: 6,
+    elevation: 8,
   },
   addButtonText: {
     color: '#FFF',
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.5,
+    fontStyle: 'italic',
   },
   stepItem: {
     flexDirection: 'row',
     marginBottom: 32,
   },
   stepNumberContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#1A1A1A',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 20,
     marginTop: 4,
-    shadowColor: '#000',
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
   stepNumber: {
     color: '#FFF',
-    fontSize: 14,
-    fontWeight: '800',
+    fontSize: 16,
+    fontWeight: '900',
+    fontStyle: 'italic',
   },
   stepContent: {
     flex: 1,
-    backgroundColor: '#FFF',
-    padding: 24,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
-    shadowColor: '#000',
+    backgroundColor: theme.colors.surface,
+    padding: 20,
+    borderRadius: 20,
+    borderWidth: 0,
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
+    shadowOpacity: 0.05,
     shadowRadius: 12,
     elevation: 2,
   },
   stepText: {
     fontSize: 16,
-    color: '#333',
+    color: theme.colors.text,
     lineHeight: 26,
     fontWeight: '500',
     marginBottom: 12,

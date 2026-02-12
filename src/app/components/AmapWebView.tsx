@@ -35,6 +35,7 @@ export default function AmapWebView(props: AmapWebViewProps) {
   const webViewRef = useRef<WebView>(null);
   const { mode, initialCenter, center, destination, origin, polylines, onCenterChange, onLocation } = props;
   const [loaded, setLoaded] = useState(false);
+  const wantsLocation = Boolean(onLocation);
 
   const html = useMemo(() => {
     const key = CONFIG.AMAP_JS_KEY || '';
@@ -45,6 +46,7 @@ export default function AmapWebView(props: AmapWebViewProps) {
     const isRoute = mode === 'route';
     const isPicker = mode === 'picker';
     const isPreview = mode === 'preview';
+    const needsGeolocation = wantsLocation || isPicker;
 
     return `<!DOCTYPE html>
 <html>
@@ -85,7 +87,7 @@ export default function AmapWebView(props: AmapWebViewProps) {
         }
       })();
     </script>
-    <script src="https://webapi.amap.com/maps?v=2.0&key=${key}&plugin=AMap.Geolocation"></script>
+    <script src="https://webapi.amap.com/maps?v=2.0&key=${key}${needsGeolocation ? '&plugin=AMap.Geolocation' : ''}"></script>
   </head>
   <body>
     <div id="root">
@@ -199,33 +201,40 @@ export default function AmapWebView(props: AmapWebViewProps) {
           } catch (e) {}
         };
 
-        AMap.plugin(['AMap.Geolocation'], function() {
-          try {
-            var geolocation = new AMap.Geolocation({
-              enableHighAccuracy: true,
-              timeout: 10000,
-              convert: true,
-              showButton: false,
-              showMarker: false,
-              showCircle: false
-            });
-            geolocation.getCurrentPosition(function(status, result) {
-              if (status === 'complete' && result && result.position) {
-                var p = result.position;
-                post({ type: 'location', longitude: p.lng, latitude: p.lat });
-                if (${isPicker ? 'true' : 'false'}) {
-                  map.setCenter(p);
-                  emitCenter();
+        if (${needsGeolocation ? 'true' : 'false'}) {
+          AMap.plugin(['AMap.Geolocation'], function() {
+            try {
+              var geolocation = new AMap.Geolocation({
+                enableHighAccuracy: true,
+                timeout: 8000,
+                convert: true,
+                showButton: false,
+                showMarker: false,
+                showCircle: false
+              });
+              geolocation.getCurrentPosition(function(status, result) {
+                if (status === 'complete' && result && result.position) {
+                  var p = result.position;
+                  post({ type: 'location', longitude: p.lng, latitude: p.lat });
+                  if (${isPicker ? 'true' : 'false'}) {
+                    map.setCenter(p);
+                    emitCenter();
+                  }
+                  return;
                 }
-              }
-            });
-          } catch (e) {}
-        });
+                if (status === 'error') {
+                  var msg = (result && (result.message || result.info)) ? (result.message || result.info) : '定位失败';
+                  post({ type: 'error', message: msg });
+                }
+              });
+            } catch (e) {}
+          });
+        }
       })();
     </script>
   </body>
 </html>`;
-  }, [initialCenter, mode]);
+  }, [initialCenter, mode, wantsLocation]);
 
   const injectedCenterJs = useMemo(() => {
     if (!center) return null;

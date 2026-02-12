@@ -2,56 +2,56 @@ import { ViewStyle, TextStyle, Platform } from 'react-native';
 
 export const theme = {
   colors: {
-    // 品牌色 - 更加鲜活且具有食欲的颜色
-    primary: '#FF5E57', // 珊瑚红，比之前的 #FF6B6B 更具活力
-    primaryLight: '#FF8A84',
-    primaryDark: '#D93B3B',
+    // 品牌色 - 运动/竞技风格
+    primary: '#00C896', // 活力青 - 主色调
+    primaryLight: '#5FE8C2',
+    primaryDark: '#00A87E', // 深青色 - 点击态
     
-    secondary: '#FFC048', // 暖阳黄，用于强调
-    secondaryLight: '#FFD480',
+    secondary: '#EBFF00', // 霓虹黄 - 高亮/强调
+    secondaryLight: '#F5FF7A',
     
-    accent: '#0BE881', // 薄荷绿，用于健康/素食标签
+    accent: '#2DCCFF', // 电光蓝 - 辅助色
     
     // 背景色体系
-    background: '#F9F9F9', // 温暖、明亮的灰白
-    surface: '#FFFFFF',
-    surfaceVariant: '#F2F3F5', // 用于次级容器
+    background: '#F5F7FA', // 冷调灰白背景，更具科技/运动感
+    surface: '#FFFFFF', // 卡片背景
+    surfaceVariant: '#E8ECEF', // 次级容器
+    surfaceDark: '#1E1E1E', // 深色模式/深色卡片背景
     
     // 文本色体系
-    text: '#1E272E', // 深炭灰，比纯黑柔和
+    text: '#121212', // 纯黑，高对比度
     textSecondary: '#57606F', // 次级文本
     textTertiary: '#A4B0BE', // 辅助文本/占位符
-    textInvert: '#FFFFFF',
+    textInvert: '#FFFFFF', // 反色文本
     
     // 功能色
     border: '#E2E7EA',
-    success: '#05C46B',
+    success: '#00C896', // 与主色一致
     error: '#FF3F34',
     warning: '#FFA801',
-    info: '#0FB9B1',
+    info: '#2DCCFF',
     
     white: '#FFFFFF',
-    overlay: 'rgba(30, 39, 46, 0.4)', // 偏蓝的遮罩层
+    overlay: 'rgba(18, 18, 18, 0.6)', // 深色遮罩
   },
   
   spacing: {
     xs: 4,
     sm: 8,
-    p10: 10, // 兼容旧代码
+    p10: 10,
     md: 16,
     lg: 24,
     xl: 32,
     xxl: 48,
-    // 增加一些特定的间距常量
-    screenHorizontal: 20, // 屏幕两侧统一间距
-    cardInner: 16, // 卡片内部间距
+    screenHorizontal: 20,
+    cardInner: 16,
   },
   
   borderRadius: {
     xs: 4,
     sm: 8,
-    md: 12, // 稍微减小中等圆角，显得更精致
-    lg: 20, // 大圆角用于卡片
+    md: 12,
+    lg: 20, // 大圆角，符合新风格
     xl: 32,
     round: 9999,
   },
@@ -60,39 +60,40 @@ export const theme = {
     display: {
       fontSize: 32,
       fontWeight: '800',
-      color: '#1E272E',
+      color: '#121212',
       lineHeight: 40,
-      letterSpacing: -0.5,
+      letterSpacing: -1, // 更紧凑的字间距，体现速度感
+      fontStyle: 'italic', // 标题斜体，增强动感
     } as TextStyle,
     h1: {
       fontSize: 24,
       fontWeight: '700',
-      color: '#1E272E',
+      color: '#121212',
       lineHeight: 32,
-      letterSpacing: -0.2,
+      letterSpacing: -0.5,
     } as TextStyle,
     h2: {
       fontSize: 20,
       fontWeight: '700',
-      color: '#1E272E',
+      color: '#121212',
       lineHeight: 28,
     } as TextStyle,
     h3: {
       fontSize: 18,
       fontWeight: '600',
-      color: '#1E272E',
+      color: '#121212',
       lineHeight: 24,
     } as TextStyle,
     subtitle: {
       fontSize: 16,
       fontWeight: '600',
-      color: '#1E272E',
+      color: '#121212',
       lineHeight: 24,
     } as TextStyle,
     body: {
       fontSize: 15,
       color: '#57606F',
-      lineHeight: 24, // 增加行高提升可读性
+      lineHeight: 24,
     } as TextStyle,
     bodySmall: {
       fontSize: 14,
@@ -104,43 +105,44 @@ export const theme = {
       color: '#A4B0BE',
       lineHeight: 16,
       fontWeight: '500',
+      textTransform: 'uppercase', // 标签大写，增加力量感
     } as TextStyle,
     button: {
       fontSize: 16,
-      fontWeight: '600',
+      fontWeight: '700', // 按钮文字加粗
       color: '#FFFFFF',
     } as TextStyle,
   },
   
   shadows: {
     sm: {
-      shadowColor: '#1E272E',
+      shadowColor: '#121212',
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.04,
+      shadowOpacity: 0.05,
       shadowRadius: 3,
       elevation: 2,
     } as ViewStyle,
     md: {
-      shadowColor: '#1E272E',
+      shadowColor: '#121212',
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.08,
-      shadowRadius: 8,
+      shadowOpacity: 0.1,
+      shadowRadius: 10,
       elevation: 4,
     } as ViewStyle,
     lg: {
-      shadowColor: '#1E272E',
+      shadowColor: '#121212',
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.15,
+      shadowRadius: 20,
+      elevation: 10,
+    } as ViewStyle,
+    // 特殊阴影：霓虹发光效果
+    primaryGlow: {
+      shadowColor: '#00C896',
       shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.12,
+      shadowOpacity: 0.3,
       shadowRadius: 16,
       elevation: 8,
-    } as ViewStyle,
-    // 特殊阴影：彩色发光效果（主要在 iOS 上有效）
-    primaryGlow: {
-      shadowColor: '#FF5E57',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 12,
-      elevation: 6,
     } as ViewStyle,
   },
   

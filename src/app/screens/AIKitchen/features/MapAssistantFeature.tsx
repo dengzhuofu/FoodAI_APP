@@ -45,8 +45,16 @@ const MapAssistantFeature = () => {
             return;
           }
 
-          let location = await Location.getCurrentPositionAsync({});
-          console.log('User location obtained:', location);
+          const lastKnown = await Location.getLastKnownPositionAsync();
+          if (lastKnown) {
+            setUserLocation(lastKnown);
+          }
+
+          const location = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+            timeout: 8000,
+            maximumAge: 10000,
+          });
           setUserLocation(location);
         } catch (error) {
           console.error('Error getting location:', error);
@@ -100,6 +108,8 @@ const MapAssistantFeature = () => {
 
       if (userLocation) {
         contextInfo.push(`User's current location: ${userLocation.coords.longitude},${userLocation.coords.latitude}`);
+      } else {
+        contextInfo.push(`User's current location: unavailable`);
       }
       
       if (destination) {
@@ -108,9 +118,6 @@ const MapAssistantFeature = () => {
 
       if (contextInfo.length > 0) {
         messageToSend = `[Context Info:\n${contextInfo.join('\n')}]\n\n${userMessage.text}`;
-      } else if (userLocation) {
-        // Always attach location if available, even if not explicitly contextualized yet
-        messageToSend = `[Context Info:\nUser's current location: ${userLocation.coords.longitude},${userLocation.coords.latitude}]\n\n${userMessage.text}`;
       }
 
       const response = await chatWithMapAgent(messageToSend, history);
@@ -238,6 +245,20 @@ const MapAssistantFeature = () => {
         _id: 1,
       },
     };
+    if (action.id === 'route' && !userLocation) {
+      const botMessage: IMessage = {
+        _id: Math.random().toString(),
+        text: '我暂时无法获取你的当前位置，请在系统设置中开启定位权限，或直接告诉我你的出发地（例如“从深圳北站出发”）。',
+        createdAt: new Date(),
+        user: {
+          _id: 2,
+          name: 'Map Assistant',
+          avatar: 'https://img.icons8.com/color/96/map-pin.png',
+        },
+      };
+      setMessages((previousMessages) => GiftedChat.append(previousMessages, [message, botMessage]));
+      return;
+    }
     onSend([message]);
   };
 
@@ -347,15 +368,14 @@ const MapAssistantFeature = () => {
                             <Text style={styles.routeInfo}>{duration} • {distance}</Text>
                         </View>
                         <View style={styles.mapPreview}>
-                            <AmapWebView
-                                {...mapData as any}
-                            />
-                             <TouchableOpacity 
-                                style={styles.fullScreenButton}
-                                onPress={() => setFullScreenMapData(mapData)}
-                             >
-                                <Ionicons name="expand" size={20} color="#666" />
-                             </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.mapPlaceholder}
+                            activeOpacity={0.85}
+                            onPress={() => setFullScreenMapData(mapData)}
+                          >
+                            <Ionicons name="map-outline" size={20} color="#666" />
+                            <Text style={styles.mapPlaceholderText}>查看路线地图</Text>
+                          </TouchableOpacity>
                         </View>
                     </View>
                 );
@@ -601,6 +621,18 @@ const styles = StyleSheet.create({
     height: 150,
     width: '100%',
     position: 'relative',
+  },
+  mapPlaceholder: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  mapPlaceholderText: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '600',
   },
   fullScreenButton: {
     position: 'absolute',

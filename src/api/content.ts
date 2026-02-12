@@ -38,6 +38,7 @@ export interface Recipe {
   title: string;
   cover_image: string;
   images: string[];
+  video?: string; // Video URL
   description?: string;
   cooking_time?: string;
   difficulty?: string;

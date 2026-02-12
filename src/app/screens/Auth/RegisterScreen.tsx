@@ -136,7 +136,7 @@ const RegisterScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
   },
   safeArea: {
     flex: 1,
@@ -155,19 +155,22 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   logo: {
-    width: 40,
-    height: 40,
+    width: 60,
+    height: 60,
+    tintColor: theme.colors.primary,
   },
   mainSection: {
     flex: 1,
     justifyContent: 'center',
   },
   title: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#0F1419',
+    fontSize: 32,
+    fontWeight: '900',
+    color: theme.colors.text,
     marginBottom: 32,
     textAlign: 'left',
+    fontStyle: 'italic',
+    letterSpacing: -1,
   },
   form: {
     width: '100%',
@@ -175,18 +178,23 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 4,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 16,
     marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#CFD9DE',
+    borderWidth: 0,
     height: 56,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   input: {
     flex: 1,
-    fontSize: 17,
-    color: '#0F1419',
+    fontSize: 16,
+    color: theme.colors.text,
+    fontWeight: '600',
   },
   eyeIcon: {
     padding: 8,
@@ -196,25 +204,27 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   registerButton: {
-    backgroundColor: '#0F1419',
-    borderRadius: 9999,
-    height: 50,
+    backgroundColor: theme.colors.primary,
+    borderRadius: 28,
+    height: 56,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
   },
   gradientButton: {
     // Deprecated
   },
   registerButtonText: {
     color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '900',
+    fontStyle: 'italic',
+    letterSpacing: 0.5,
   },
   footer: {
     flexDirection: 'row',
@@ -222,14 +232,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    color: '#536471',
+    color: theme.colors.textSecondary,
     fontSize: 15,
     marginRight: 4,
   },
   linkText: {
     color: theme.colors.primary,
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: '800',
+    fontStyle: 'italic',
   },
 });
 
