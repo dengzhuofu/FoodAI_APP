@@ -100,7 +100,7 @@ const FridgeToRecipeFeature = () => {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>冰箱管家</Text>
           <View style={{ width: 40 }} />
@@ -118,10 +118,10 @@ const FridgeToRecipeFeature = () => {
           </View>
           
           {loadingInventory ? (
-             <ActivityIndicator color="#00C896" style={{ marginVertical: 20 }} />
+             <ActivityIndicator color={theme.colors.primary} style={{ marginVertical: 20 }} />
           ) : inventory.length === 0 ? (
              <View style={styles.emptyState}>
-                 <Ionicons name="cube-outline" size={48} color="#999" />
+                 <Ionicons name="cube-outline" size={48} color={theme.colors.textTertiary} />
                  <Text style={styles.emptyStateText}>冰箱空空如也，快去添加食材吧</Text>
                  <TouchableOpacity 
                     style={styles.goToFridgeButton}
@@ -143,18 +143,30 @@ const FridgeToRecipeFeature = () => {
                     onPress={() => toggleSelection(item.name)}
                     activeOpacity={0.8}
                     >
-                    <Text style={styles.itemIcon}>{item.icon || '🥘'}</Text>
-                    <Text style={[styles.itemName, isSelected && styles.itemNameSelected]}>{item.name}</Text>
-                    
-                    {isUrgent && (
-                        <View style={styles.urgentBadge}>
-                        <Text style={styles.urgentText}>即将过期</Text>
-                        </View>
-                    )}
+                    <View style={styles.cardWatermarkContainer}>
+                        <Text style={styles.cardWatermarkIcon}>{item.icon || '🥘'}</Text>
+                    </View>
+
+                    <View style={styles.itemHeader}>
+                         <View style={styles.iconCircle}>
+                             <Text style={styles.itemIcon}>{item.icon || '🥘'}</Text>
+                         </View>
+                         
+                         {isUrgent && (
+                            <View style={[styles.statusBadge, styles.statusBadgeUrgent]}>
+                                <Text style={styles.statusText}>{item.daysLeft}天</Text>
+                            </View>
+                         )}
+                    </View>
+
+                    <View style={styles.itemContent}>
+                        <Text style={[styles.itemName, isSelected && styles.itemNameSelected]} numberOfLines={1}>{item.name}</Text>
+                        <Text style={styles.itemDetail}>{item.quantity} · {item.category || '食材'}</Text>
+                    </View>
                     
                     {isSelected && (
                         <View style={styles.checkIcon}>
-                        <Ionicons name="checkmark-circle" size={20} color="#00C896" />
+                        <Ionicons name="checkmark-circle" size={24} color="#00C896" />
                         </View>
                     )}
                     </TouchableOpacity>
@@ -170,7 +182,7 @@ const FridgeToRecipeFeature = () => {
                 <Text style={styles.historySectionTitle}>推荐记录</Text>
             </View>
             {loadingHistory ? (
-              <ActivityIndicator color="#00C896" style={{ marginTop: 20 }} />
+              <ActivityIndicator color={theme.colors.primary} style={{ marginTop: 20 }} />
             ) : history.length > 0 ? (
               <View style={styles.historyList}>
                 {history.map((item) => (
@@ -183,7 +195,7 @@ const FridgeToRecipeFeature = () => {
                       {item.output_result?.image_url ? (
                         <Image source={{ uri: item.output_result.image_url }} style={styles.historyImage} />
                       ) : (
-                        <Ionicons name="nutrition-outline" size={20} color="#999" />
+                        <Ionicons name="nutrition-outline" size={20} color={theme.colors.textTertiary} />
                       )}
                     </View>
                     <View style={styles.historyContent}>
@@ -194,7 +206,7 @@ const FridgeToRecipeFeature = () => {
                         {new Date(item.created_at).toLocaleDateString()}
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={16} color="#999" />
+                    <Ionicons name="chevron-forward" size={16} color={theme.colors.textTertiary} />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -210,10 +222,17 @@ const FridgeToRecipeFeature = () => {
             onPress={handleGenerate}
             disabled={loading}
           >
-             <View style={styles.buttonContent}>
-               <Text style={styles.buttonText}>生成推荐 ({selectedItems.length})</Text>
-               <Ionicons name="flash" size={18} color="#FFFFFF" style={{ marginLeft: 8 }} />
-             </View>
+             <LinearGradient
+               colors={[theme.colors.primary, theme.colors.primaryDark]}
+               start={{ x: 0, y: 0 }}
+               end={{ x: 1, y: 1 }}
+               style={styles.generateButtonGradient}
+             >
+               <View style={styles.buttonContent}>
+                 <Text style={styles.buttonText}>生成推荐 ({selectedItems.length})</Text>
+                 <Ionicons name="flash" size={18} color={theme.colors.textInvert} style={{ marginLeft: 8 }} />
+               </View>
+             </LinearGradient>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -225,7 +244,7 @@ const FridgeToRecipeFeature = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.background,
   },
   safeArea: {
     flex: 1,
@@ -234,7 +253,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: theme.spacing.screenHorizontal,
     paddingVertical: 16,
   },
   backButton: {
@@ -246,11 +265,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#1A1A1A',
+    color: theme.colors.text,
     fontStyle: 'italic',
   },
   content: {
-    padding: 20,
+    padding: theme.spacing.screenHorizontal,
     paddingBottom: 100,
   },
   sectionHeader: {
@@ -266,18 +285,18 @@ const styles = StyleSheet.create({
   sectionDecor: {
     width: 4,
     height: 16,
-    backgroundColor: '#00C896',
+    backgroundColor: theme.colors.primary,
     marginRight: 8,
     transform: [{ skewX: '-12deg' }],
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#1A1A1A',
+    color: theme.colors.text,
     fontStyle: 'italic',
   },
   actionText: {
-    color: '#00C896',
+    color: theme.colors.primary,
     fontSize: 14,
     fontWeight: 'bold',
   },
@@ -289,60 +308,113 @@ const styles = StyleSheet.create({
   itemCard: {
     width: '48%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
+    borderRadius: 20,
+    padding: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: 'rgba(0,0,0,0.05)',
+    height: 140,
+    justifyContent: 'space-between',
+    position: 'relative',
+    overflow: 'hidden',
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
   },
   itemCardSelected: {
-    borderColor: '#00C896',
-    backgroundColor: 'rgba(0,200,150,0.05)',
+    borderColor: theme.colors.primary,
+    backgroundColor: 'rgba(0,200,150,0.04)',
+    ...theme.shadows.primaryGlow,
+  },
+  cardWatermarkContainer: {
+      position: 'absolute',
+      right: -20,
+      bottom: -20,
+      opacity: 0.08,
+      transform: [{ rotate: '-15deg' }],
+      zIndex: 0,
+  },
+  cardWatermarkIcon: {
+      fontSize: 100,
+  },
+  itemHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      zIndex: 1,
+  },
+  iconCircle: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: '#F5F7FA',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: '#EFEFEF',
   },
   itemIcon: {
-    fontSize: 32,
-    marginBottom: 8,
+    fontSize: 28,
+  },
+  itemContent: {
+      zIndex: 1,
+      paddingLeft: 4,
   },
   itemName: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '600',
-    marginBottom: 4,
+    fontSize: 16,
+    color: theme.colors.text,
+    fontWeight: '800',
+    marginBottom: 2,
+    fontStyle: 'italic',
   },
   itemNameSelected: {
-    color: '#1A1A1A',
-    fontWeight: 'bold',
+    color: theme.colors.primaryDark,
   },
-  urgentBadge: {
-    backgroundColor: 'rgba(255,77,77,0.1)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginTop: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(255,77,77,0.3)',
+  itemDetail: {
+    fontSize: 12,
+    color: '#888',
+    fontWeight: '600',
   },
-  urgentText: {
-    color: '#FF4D4D',
-    fontSize: 10,
-    fontWeight: '700',
+  statusBadge: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 8,
+      backgroundColor: '#333', 
+      zIndex: 1,
+      transform: [{ skewX: '-12deg' }],
+  },
+  statusBadgeUrgent: {
+      backgroundColor: '#FF5252',
+      shadowColor: '#FF5252',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.4,
+      shadowRadius: 4,
+      elevation: 2,
+  },
+  statusText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '800',
+    fontStyle: 'italic',
   },
   checkIcon: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: -8,
+    right: -8,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    zIndex: 2,
   },
   footer: {
-    padding: 20,
-    backgroundColor: '#FFFFFF',
+    padding: theme.spacing.screenHorizontal,
+    backgroundColor: theme.colors.surface,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: theme.colors.border,
     position: 'absolute',
     bottom: 0,
     left: 0,
@@ -351,12 +423,10 @@ const styles = StyleSheet.create({
   generateButton: {
     borderRadius: 24,
     overflow: 'hidden',
-    backgroundColor: '#00C896',
-    shadowColor: '#00C896',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    ...theme.shadows.primaryGlow,
+  },
+  generateButtonGradient: {
+    width: '100%',
   },
   buttonContent: {
     flexDirection: 'row',
@@ -365,7 +435,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: theme.colors.textInvert,
     fontSize: 16,
     fontWeight: 'bold',
     fontStyle: 'italic',
@@ -380,7 +450,7 @@ const styles = StyleSheet.create({
   historySectionTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#1A1A1A',
+    color: theme.colors.text,
     fontStyle: 'italic',
   },
   historyList: {
@@ -391,22 +461,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     gap: 16,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
+    borderColor: theme.colors.border,
+    ...theme.shadows.sm,
   },
   historyIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.background,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -422,16 +488,16 @@ const styles = StyleSheet.create({
   historyTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1A1A1A',
+    color: theme.colors.text,
     marginBottom: 4,
   },
   historyDate: {
     fontSize: 12,
-    color: '#999',
+    color: theme.colors.textTertiary,
   },
   emptyHistoryText: {
     textAlign: 'center',
-    color: '#999',
+    color: theme.colors.textTertiary,
     fontSize: 14,
     marginTop: 20,
     marginBottom: 40,
@@ -439,28 +505,29 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     padding: 40,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     marginTop: 10,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: theme.colors.border,
+    ...theme.shadows.sm,
   },
   emptyStateText: {
     marginTop: 16,
     marginBottom: 24,
-    color: '#999',
+    color: theme.colors.textSecondary,
     fontSize: 14,
   },
   goToFridgeButton: {
-    backgroundColor: 'rgba(0,200,150,0.1)',
+    backgroundColor: 'rgba(0,200,150,0.12)',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#00C896',
+    borderColor: theme.colors.primary,
   },
   goToFridgeText: {
-    color: '#00C896',
+    color: theme.colors.primary,
     fontWeight: 'bold',
     fontSize: 14,
   },

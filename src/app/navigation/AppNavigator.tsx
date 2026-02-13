@@ -36,6 +36,7 @@ import MealPlanFeature from '../screens/AIKitchen/features/MealPlanFeature';
 import GeneratedRecipeResult from '../screens/AIKitchen/GeneratedRecipeResult';
 import AIGenerationHistoryScreen from '../screens/AIKitchen/AIGenerationHistoryScreen';
 import McDonaldsAssistantFeature from '../screens/AIKitchen/features/McDonaldsAssistantFeature';
+import Fridge3DScreen from '../screens/AIKitchen/Fridge3DScreen';
 
 import ToolResultScreen from '../screens/AIKitchen/ToolResultScreen';
 
@@ -258,6 +259,7 @@ const AppNavigator = () => {
             <Stack.Screen name="TextToRecipe" component={TextToRecipeFeature} options={{ title: '文 → 菜谱' }} />
             <Stack.Screen name="FridgeToRecipe" component={FridgeToRecipeFeature} options={{ title: '冰箱 → 菜谱' }} />
             <Stack.Screen name="MealPlan" component={MealPlanFeature} options={{ title: '膳食计划', headerShown: false }} />
+            <Stack.Screen name="Fridge3D" component={Fridge3DScreen} options={{ headerShown: false }} />
             <Stack.Screen name="VoiceAssistant" component={VoiceAssistantFeature} options={{ title: '语音助手' }} />
             <Stack.Screen name="GeneratedRecipeResult" component={GeneratedRecipeResult} options={{ title: 'AI 生成结果', headerShown: false }} />
             <Stack.Screen name="AIGenerationHistory" component={AIGenerationHistoryScreen} options={{ title: '生成记录', headerShown: false }} />

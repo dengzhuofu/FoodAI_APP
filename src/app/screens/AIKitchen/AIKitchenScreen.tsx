@@ -205,6 +205,24 @@ const AIKitchenScreen = () => {
             </TouchableOpacity>
           </View>
 
+          {/* 3D Fridge */}
+          <TouchableOpacity 
+             style={[styles.card, styles.wideCard]}
+             onPress={() => navigation.navigate('Fridge3D')}
+             activeOpacity={0.8}
+          >
+             <View style={styles.wideCardContent}>
+                <View style={[styles.iconContainer, { backgroundColor: '#E0F7F1' }]}>
+                  <Ionicons name="cube" size={24} color="#00C896" />
+                </View>
+                <View style={styles.wideCardText}>
+                  <Text style={styles.cardTitle}>3D 冰箱</Text>
+                  <Text style={styles.cardDesc}>旋转/缩放/开门/点选食材</Text>
+                </View>
+                <Ionicons name="arrow-forward" size={20} color="#E0E0E0" />
+             </View>
+          </TouchableOpacity>
+
           {/* Bottom Full Width Card */}
           <TouchableOpacity 
              style={[styles.card, styles.wideCard]}

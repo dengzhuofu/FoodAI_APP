@@ -252,7 +252,7 @@ const MyKitchenPage = () => {
 
       <View style={styles.statsCard}>
         <LinearGradient
-          colors={['#1A1A1A', '#333333']}
+          colors={['#0E1513', '#121212']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.statsGradient}
@@ -263,7 +263,7 @@ const MyKitchenPage = () => {
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={[styles.statNumber, {color: '#FF5252'}]}>{inventory.filter(i => (i.daysLeft || 0) <= 3).length}</Text>
+            <Text style={[styles.statNumber, { color: theme.colors.error }]}>{inventory.filter(i => (i.daysLeft || 0) <= 3).length}</Text>
             <Text style={styles.statLabel}>即将过期</Text>
           </View>
           <View style={styles.statDivider} />
@@ -297,15 +297,25 @@ const MyKitchenPage = () => {
                     key={item.id} 
                     style={styles.inventoryItem}
                     onPress={() => handleOpenModal(item)}
+                    activeOpacity={0.8}
                 >
+                    <View style={styles.cardWatermarkContainer}>
+                        <Text style={styles.cardWatermarkIcon}>{item.icon || '🥘'}</Text>
+                    </View>
+                    
                     <View style={styles.itemHeader}>
-                        <Text style={styles.itemIcon}>{item.icon || '🥘'}</Text>
-                        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.daysLeft || 0) }]}>
+                        <View style={styles.iconCircle}>
+                            <Text style={styles.itemIcon}>{item.icon || '🥘'}</Text>
+                        </View>
+                        <View style={[styles.statusBadge, (item.daysLeft || 0) <= 3 && styles.statusBadgeUrgent]}>
                             <Text style={styles.statusText}>{item.daysLeft}天</Text>
                         </View>
                     </View>
-                    <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-                    <Text style={styles.itemDetail}>{item.quantity} · {item.category}</Text>
+                    
+                    <View style={styles.itemContent}>
+                        <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
+                        <Text style={styles.itemDetail}>{item.quantity} · {item.category}</Text>
+                    </View>
                 </TouchableOpacity>
                 ))}
             </View>
@@ -329,7 +339,7 @@ const MyKitchenPage = () => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{editingItem ? '编辑食材' : '添加食材'}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#666" />
+                <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
@@ -340,6 +350,8 @@ const MyKitchenPage = () => {
                 value={itemName} 
                 onChangeText={setItemName}
                 placeholder="例如：西红柿"
+                placeholderTextColor={theme.colors.textTertiary}
+                selectionColor={theme.colors.primary}
               />
             </View>
 
@@ -351,6 +363,8 @@ const MyKitchenPage = () => {
                         value={itemAmount} 
                         onChangeText={setItemAmount}
                         placeholder="例如：3个"
+                        placeholderTextColor={theme.colors.textTertiary}
+                        selectionColor={theme.colors.primary}
                     />
                 </View>
                 <View style={[styles.formItem, { flex: 1 }]}>
@@ -361,6 +375,8 @@ const MyKitchenPage = () => {
                         onChangeText={setItemDaysLeft}
                         keyboardType="numeric"
                         placeholder="7"
+                        placeholderTextColor={theme.colors.textTertiary}
+                        selectionColor={theme.colors.primary}
                     />
                 </View>
             </View>
@@ -405,7 +421,7 @@ const MyKitchenPage = () => {
           <SafeAreaView style={styles.scanModalContainer}>
               <View style={styles.scanHeader}>
                   <TouchableOpacity onPress={() => setScanModalVisible(false)}>
-                      <Ionicons name="close" size={24} color="#1A1A1A" />
+                      <Ionicons name="close" size={24} color={theme.colors.text} />
                   </TouchableOpacity>
                   <Text style={styles.scanTitle}>AI 识别结果</Text>
                   <View style={{ width: 24 }} />
@@ -434,7 +450,7 @@ const MyKitchenPage = () => {
                                       <Text style={styles.scanItemName}>{item.name}</Text>
                                       <Text style={styles.scanItemDetail}>{item.quantity} · 约{item.expiry_days}天过期</Text>
                                   </View>
-                                  <Ionicons name="checkmark-circle" size={24} color={theme.colors.success} />
+                                  <Ionicons name="checkmark-circle" size={24} color={theme.colors.primary} />
                               </View>
                           ))}
                       </ScrollView>
@@ -454,19 +470,20 @@ const MyKitchenPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: theme.spacing.screenHorizontal,
     paddingVertical: 16,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#1A1A1A',
+    color: theme.colors.text,
+    fontStyle: 'italic',
   },
   headerActions: {
       flexDirection: 'row',
@@ -477,15 +494,17 @@ const styles = StyleSheet.create({
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: '#FFF',
+      backgroundColor: theme.colors.surface,
       justifyContent: 'center',
       alignItems: 'center',
       borderWidth: 1,
-      borderColor: '#EEE',
+      borderColor: theme.colors.border,
+      ...theme.shadows.sm,
   },
   addButton: {
-      backgroundColor: '#1A1A1A',
-      borderColor: '#1A1A1A',
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
+      ...theme.shadows.primaryGlow,
   },
   backButton: {
     width: 40,
@@ -494,20 +513,18 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   statsCard: {
-    marginHorizontal: 20,
+    marginHorizontal: theme.spacing.screenHorizontal,
     marginBottom: 24,
     borderRadius: 20,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
+    ...theme.shadows.primaryGlow,
   },
   statsGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(0,200,150,0.22)',
   },
   statItem: {
     flex: 1,
@@ -516,7 +533,7 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 24,
     fontWeight: '800',
-    color: 'white',
+    color: theme.colors.textInvert,
     marginBottom: 4,
   },
   statLabel: {
@@ -533,7 +550,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(0,200,150,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,200,150,0.32)',
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 12,
@@ -549,31 +568,31 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   categoryList: {
-    paddingHorizontal: 20,
+    paddingHorizontal: theme.spacing.screenHorizontal,
   },
   categoryChip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#FFF',
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     marginRight: 10,
     borderWidth: 1,
-    borderColor: '#EEEEEE',
+    borderColor: theme.colors.border,
   },
   categoryChipActive: {
-    backgroundColor: '#1A1A1A',
-    borderColor: '#1A1A1A',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primaryDark,
   },
   categoryText: {
     fontSize: 14,
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontWeight: '600',
   },
   categoryTextActive: {
-    color: 'white',
+    color: theme.colors.textInvert,
   },
   inventoryList: {
-    paddingHorizontal: 20,
+    paddingHorizontal: theme.spacing.screenHorizontal,
     paddingBottom: 40,
   },
   grid: {
@@ -583,44 +602,92 @@ const styles = StyleSheet.create({
   },
   inventoryItem: {
     width: '48%',
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderRadius: 20,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+    height: 140,
+    justifyContent: 'space-between',
+    position: 'relative',
+    overflow: 'hidden',
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  cardWatermarkContainer: {
+      position: 'absolute',
+      right: -20,
+      bottom: -20,
+      opacity: 0.08,
+      transform: [{ rotate: '-15deg' }],
+      zIndex: 0,
+  },
+  cardWatermarkIcon: {
+      fontSize: 100,
   },
   itemHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'flex-start',
-      marginBottom: 12,
+      zIndex: 1,
+  },
+  iconCircle: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: '#F5F7FA',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: '#EFEFEF',
   },
   itemIcon: {
-    fontSize: 32,
+    fontSize: 28,
   },
   statusBadge: {
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      borderRadius: 6,
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 8,
+      backgroundColor: '#333', 
+      zIndex: 1,
+      transform: [{ skewX: '-12deg' }],
+  },
+  statusBadgeUrgent: {
+      backgroundColor: '#FF5252',
+      shadowColor: '#FF5252',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.4,
+      shadowRadius: 4,
+      elevation: 2,
   },
   statusText: {
       color: 'white',
-      fontSize: 10,
-      fontWeight: '700',
+      fontSize: 12,
+      fontWeight: '800',
+      fontStyle: 'italic',
+  },
+  itemContent: {
+      zIndex: 1,
+      paddingLeft: 4,
   },
   itemName: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#1A1A1A',
-    marginBottom: 4,
+    fontWeight: '800',
+    color: theme.colors.text,
+    marginBottom: 2,
+    fontStyle: 'italic',
   },
   itemDetail: {
     fontSize: 12,
-    color: '#999',
+    color: '#888',
+    fontWeight: '600',
   },
   emptyState: {
       alignItems: 'center',
@@ -628,18 +695,18 @@ const styles = StyleSheet.create({
   },
   emptyText: {
       marginTop: 16,
-      color: '#CCC',
+      color: theme.colors.textTertiary,
       fontSize: 14,
   },
   
   // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -654,7 +721,8 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#1A1A1A',
+    color: theme.colors.text,
+    fontStyle: 'italic',
   },
   formItem: {
       marginBottom: 20,
@@ -666,15 +734,17 @@ const styles = StyleSheet.create({
   label: {
       fontSize: 14,
       fontWeight: '600',
-      color: '#666',
+      color: theme.colors.textSecondary,
       marginBottom: 8,
   },
   input: {
-      backgroundColor: '#F9F9F9',
+      backgroundColor: theme.colors.background,
       padding: 16,
       borderRadius: 12,
       fontSize: 16,
-      color: '#1A1A1A',
+      color: theme.colors.text,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
   },
   categorySelect: {
       flexDirection: 'row',
@@ -683,18 +753,21 @@ const styles = StyleSheet.create({
       paddingHorizontal: 16,
       paddingVertical: 10,
       borderRadius: 12,
-      backgroundColor: '#F5F5F5',
+      backgroundColor: theme.colors.surfaceVariant,
       marginRight: 10,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
   },
   categoryOptionActive: {
-      backgroundColor: '#1A1A1A',
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primaryDark,
   },
   categoryOptionText: {
-      color: '#666',
+      color: theme.colors.textSecondary,
       fontWeight: '600',
   },
   categoryOptionTextActive: {
-      color: 'white',
+      color: theme.colors.textInvert,
   },
   modalFooter: {
       flexDirection: 'row',
@@ -705,20 +778,23 @@ const styles = StyleSheet.create({
       width: 56,
       height: 56,
       borderRadius: 16,
-      backgroundColor: '#FFEBEE',
+      backgroundColor: 'rgba(255,63,52,0.12)',
       justifyContent: 'center',
       alignItems: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(255,63,52,0.35)',
   },
   saveButton: {
       flex: 1,
       height: 56,
       borderRadius: 16,
-      backgroundColor: '#1A1A1A',
+      backgroundColor: theme.colors.primary,
       justifyContent: 'center',
       alignItems: 'center',
+      ...theme.shadows.primaryGlow,
   },
   saveButtonText: {
-      color: 'white',
+      color: theme.colors.textInvert,
       fontSize: 16,
       fontWeight: '700',
   },
@@ -726,7 +802,7 @@ const styles = StyleSheet.create({
   // Scan Modal
   scanModalContainer: {
       flex: 1,
-      backgroundColor: '#FFF',
+      backgroundColor: theme.colors.background,
   },
   scanHeader: {
       flexDirection: 'row',
@@ -734,11 +810,13 @@ const styles = StyleSheet.create({
       justifyContent: 'space-between',
       padding: 20,
       borderBottomWidth: 1,
-      borderBottomColor: '#F5F5F5',
+      borderBottomColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
   },
   scanTitle: {
       fontSize: 18,
       fontWeight: '700',
+      color: theme.colors.text,
   },
   scanningContainer: {
       flex: 1,
@@ -750,7 +828,7 @@ const styles = StyleSheet.create({
       width: '100%',
       height: '100%',
       resizeMode: 'cover',
-      opacity: 0.5,
+      opacity: 0.35,
   },
   scanningOverlay: {
       position: 'absolute',
@@ -760,7 +838,7 @@ const styles = StyleSheet.create({
       marginTop: 16,
       fontSize: 16,
       fontWeight: '600',
-      color: '#333',
+      color: theme.colors.textInvert,
   },
   scanResultContainer: {
       flex: 1,
@@ -770,9 +848,11 @@ const styles = StyleSheet.create({
       flexDirection: 'row',
       alignItems: 'center',
       marginBottom: 20,
-      backgroundColor: '#F9F9F9',
+      backgroundColor: theme.colors.surface,
       padding: 12,
       borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
   },
   scanImageSmall: {
       width: 60,
@@ -783,7 +863,7 @@ const styles = StyleSheet.create({
   scanSummary: {
       fontSize: 16,
       fontWeight: '600',
-      color: '#1A1A1A',
+      color: theme.colors.text,
   },
   scanList: {
       flex: 1,
@@ -792,11 +872,11 @@ const styles = StyleSheet.create({
       flexDirection: 'row',
       alignItems: 'center',
       padding: 16,
-      backgroundColor: '#FFF',
+      backgroundColor: theme.colors.surface,
       borderRadius: 12,
       marginBottom: 12,
       borderWidth: 1,
-      borderColor: '#EEE',
+      borderColor: theme.colors.border,
   },
   scanItemIcon: {
       fontSize: 24,
@@ -808,22 +888,23 @@ const styles = StyleSheet.create({
   scanItemName: {
       fontSize: 16,
       fontWeight: '700',
-      color: '#1A1A1A',
+      color: theme.colors.text,
       marginBottom: 4,
   },
   scanItemDetail: {
       fontSize: 14,
-      color: '#999',
+      color: theme.colors.textSecondary,
   },
   confirmScanButton: {
-      backgroundColor: '#1A1A1A',
+      backgroundColor: theme.colors.primary,
       padding: 16,
       borderRadius: 16,
       alignItems: 'center',
       marginTop: 20,
+      ...theme.shadows.primaryGlow,
   },
   confirmScanText: {
-      color: 'white',
+      color: theme.colors.textInvert,
       fontSize: 16,
       fontWeight: '700',
   },

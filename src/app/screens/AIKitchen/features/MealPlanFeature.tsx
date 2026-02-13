@@ -5,6 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { generateMealPlan, MealPlanResult, getHistory, AILog } from '../../../../api/ai';
 import AIGeneratingModal from '../../../components/AIGeneratingModal';
+import { LinearGradient } from 'expo-linear-gradient';
+import { theme } from '../../../styles/theme';
 
 const MealPlanFeature = () => {
   const navigation = useNavigation<any>();
@@ -76,25 +78,61 @@ const MealPlanFeature = () => {
 
     return (
       <View style={styles.resultContainer}>
-        <Text style={styles.resultTitle}>{result.title}</Text>
-        <Text style={styles.resultOverview}>{result.overview}</Text>
+        <View style={styles.resultHero}>
+          <LinearGradient
+            colors={[theme.colors.primary, theme.colors.primaryDark]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.resultHeroGradient}
+          />
+          <View style={styles.resultHeroContent}>
+            <View style={styles.resultBadge}>
+              <Ionicons name="sparkles" size={14} color={theme.colors.text} />
+              <Text style={styles.resultBadgeText}>AI PLAN</Text>
+            </View>
+            <Text style={styles.resultTitle}>{result.title}</Text>
+            <Text style={styles.resultOverview}>{result.overview}</Text>
+          </View>
+        </View>
         
         {result.daily_plans.map((dayPlan, index) => (
           <View key={index} style={styles.dayCard}>
             <View style={styles.dayHeader}>
-              <Text style={styles.dayTitle}>Day {dayPlan.day}</Text>
-              <Text style={styles.dayCalories}>{dayPlan.total_calories} kcal</Text>
+              <View style={styles.dayHeaderLeft}>
+                <View style={styles.dayDecor} />
+                <View>
+                  <Text style={styles.dayKicker}>DAY {dayPlan.day}</Text>
+                  <Text style={styles.dayTitle}>今日菜单</Text>
+                </View>
+              </View>
+              <View style={styles.dayCaloriesPill}>
+                <Ionicons name="flash" size={14} color={theme.colors.secondary} />
+                <Text style={styles.dayCalories}>{dayPlan.total_calories} kcal</Text>
+              </View>
             </View>
             {dayPlan.meals.map((meal, mIndex) => (
-              <View key={mIndex} style={styles.mealRow}>
-                <View style={styles.mealTypeTag}>
-                  <Text style={styles.mealTypeText}>{meal.type}</Text>
+              <View key={mIndex} style={styles.mealCard}>
+                <View style={styles.mealLeft}>
+                  <View style={styles.mealTypeTag}>
+                    <Text style={styles.mealTypeText}>{meal.type}</Text>
+                  </View>
+                  <View style={styles.mealIndexBubble}>
+                    <Text style={styles.mealIndexText}>{mIndex + 1}</Text>
+                  </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.mealName}>{meal.name}</Text>
-                  <Text style={styles.mealDesc}>{meal.description}</Text>
+
+                <View style={styles.mealMain}>
+                  <Text style={styles.mealName} numberOfLines={1}>{meal.name}</Text>
+                  <Text style={styles.mealDesc} numberOfLines={2}>{meal.description}</Text>
                 </View>
-                <Text style={styles.mealCalories}>{meal.calories}</Text>
+
+                <View style={styles.mealRight}>
+                  <View style={styles.mealCaloriesChip}>
+                    <Text style={styles.mealCalories}>{meal.calories}</Text>
+                    <Text style={styles.mealCaloriesUnit}>kcal</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={theme.colors.textTertiary} />
+                </View>
               </View>
             ))}
           </View>
@@ -115,7 +153,7 @@ const MealPlanFeature = () => {
         <SafeAreaView style={styles.safeArea} edges={['top']}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => setResult(null)} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+              <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>您的膳食计划</Text>
             <View style={{ width: 40 }} />
@@ -133,7 +171,7 @@ const MealPlanFeature = () => {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>膳食计划推荐</Text>
           <View style={{ width: 40 }} />
@@ -145,18 +183,20 @@ const MealPlanFeature = () => {
             <TextInput
               style={styles.input}
               placeholder="例如：不吃香菜、海鲜过敏..."
-              placeholderTextColor="#999"
+              placeholderTextColor={theme.colors.textTertiary}
               value={restrictions}
               onChangeText={setRestrictions}
+              selectionColor={theme.colors.primary}
             />
 
             <Text style={styles.label}>口味 / 喜好</Text>
             <TextInput
               style={styles.input}
               placeholder="例如：喜欢川菜、低脂..."
-              placeholderTextColor="#999"
+              placeholderTextColor={theme.colors.textTertiary}
               value={preferences}
               onChangeText={setPreferences}
+              selectionColor={theme.colors.primary}
             />
 
             <View style={styles.row}>
@@ -167,8 +207,8 @@ const MealPlanFeature = () => {
                   value={headcount}
                   onChangeText={setHeadcount}
                   keyboardType="numeric"
-                  placeholderTextColor="#999"
-                  color="#1A1A1A"
+                  placeholderTextColor={theme.colors.textTertiary}
+                  selectionColor={theme.colors.primary}
                 />
               </View>
               <View style={{ flex: 1, marginLeft: 10 }}>
@@ -178,8 +218,8 @@ const MealPlanFeature = () => {
                   value={days}
                   onChangeText={setDays}
                   keyboardType="numeric"
-                  placeholderTextColor="#999"
-                  color="#1A1A1A"
+                  placeholderTextColor={theme.colors.textTertiary}
+                  selectionColor={theme.colors.primary}
                 />
               </View>
             </View>
@@ -201,10 +241,11 @@ const MealPlanFeature = () => {
             <TextInput
               style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
               placeholder="例如：周三中午需要在公司吃便当，晚餐想吃鱼..."
-              placeholderTextColor="#999"
+              placeholderTextColor={theme.colors.textTertiary}
               value={notes}
               onChangeText={setNotes}
               multiline
+              selectionColor={theme.colors.primary}
             />
 
             <TouchableOpacity 
@@ -220,7 +261,7 @@ const MealPlanFeature = () => {
           <View style={styles.historySection}>
             <Text style={styles.historySectionTitle}>历史记录</Text>
             {loadingHistory ? (
-              <ActivityIndicator color="#00C896" style={{ marginTop: 20 }} />
+              <ActivityIndicator color={theme.colors.primary} style={{ marginTop: 20 }} />
             ) : history.length > 0 ? (
               <View style={styles.historyList}>
                 {history.map((item) => (
@@ -230,7 +271,7 @@ const MealPlanFeature = () => {
                     onPress={() => handleHistoryPress(item)}
                   >
                     <View style={styles.historyIcon}>
-                       <Ionicons name="calendar-outline" size={20} color="#999" />
+                       <Ionicons name="calendar-outline" size={20} color={theme.colors.textTertiary} />
                     </View>
                     <View style={styles.historyContent}>
                       <Text style={styles.historyTitle} numberOfLines={1}>
@@ -240,7 +281,7 @@ const MealPlanFeature = () => {
                         {new Date(item.created_at).toLocaleDateString()}
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={16} color="#999" />
+                    <Ionicons name="chevron-forward" size={16} color={theme.colors.textTertiary} />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -260,7 +301,7 @@ const MealPlanFeature = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.background,
   },
   safeArea: {
     flex: 1,
@@ -269,7 +310,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: theme.spacing.screenHorizontal,
     paddingVertical: 16,
   },
   backButton: {
@@ -281,40 +322,36 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1A1A1A',
+    color: theme.colors.text,
     fontStyle: 'italic',
   },
   content: {
-    padding: 20,
+    padding: theme.spacing.screenHorizontal,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     borderRadius: 24,
     padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: theme.colors.border,
+    ...theme.shadows.sm,
   },
   label: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1A1A1A',
+    color: theme.colors.text,
     marginBottom: 8,
     marginTop: 16,
     fontStyle: 'italic',
   },
   input: {
-    backgroundColor: '#F9F9F9',
+    backgroundColor: theme.colors.background,
     borderRadius: 12,
     padding: 16,
     fontSize: 15,
-    color: '#1A1A1A',
+    color: theme.colors.text,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: theme.colors.border,
   },
   row: {
     flexDirection: 'row',
@@ -326,42 +363,38 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   tag: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: theme.colors.surfaceVariant,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
     marginRight: 10,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: theme.colors.border,
   },
   tagActive: {
-    backgroundColor: 'rgba(0,200,150,0.1)',
-    borderColor: '#00C896',
+    backgroundColor: 'rgba(0,200,150,0.12)',
+    borderColor: theme.colors.primary,
   },
   tagText: {
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontSize: 14,
   },
   tagTextActive: {
-    color: '#00C896',
+    color: theme.colors.primary,
     fontWeight: '600',
   },
   generateButton: {
-    backgroundColor: '#00C896',
+    backgroundColor: theme.colors.primary,
     paddingVertical: 16,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 24,
-    shadowColor: '#00C896',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    ...theme.shadows.primaryGlow,
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: theme.colors.textInvert,
     fontSize: 16,
     fontWeight: 'bold',
     fontStyle: 'italic',
@@ -373,105 +406,201 @@ const styles = StyleSheet.create({
   resultContainer: {
     paddingBottom: 40,
   },
+  resultHero: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(0,200,150,0.22)',
+    ...theme.shadows.primaryGlow,
+    marginBottom: 16,
+  },
+  resultHeroGradient: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  resultHeroContent: {
+    padding: 18,
+  },
+  resultBadge: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: theme.colors.secondary,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    marginBottom: 10,
+  },
+  resultBadgeText: {
+    color: theme.colors.text,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
   resultTitle: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#1A1A1A',
+    color: theme.colors.textInvert,
     marginBottom: 8,
     fontStyle: 'italic',
   },
   resultOverview: {
     fontSize: 15,
-    color: '#666',
-    marginBottom: 24,
+    color: 'rgba(255,255,255,0.82)',
+    marginBottom: 0,
     lineHeight: 22,
   },
   dayCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 20,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: theme.colors.border,
+    ...theme.shadows.sm,
   },
   dayHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-    paddingBottom: 12,
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  dayHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  dayDecor: {
+    width: 5,
+    height: 28,
+    borderRadius: 4,
+    backgroundColor: theme.colors.primary,
+    transform: [{ skewX: '-10deg' }],
+  },
+  dayKicker: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: theme.colors.primary,
   },
   dayTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1A1A1A',
+    fontSize: 16,
+    fontWeight: '800',
+    color: theme.colors.text,
     fontStyle: 'italic',
   },
-  dayCalories: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#00C896',
-  },
-  mealRow: {
+  dayCaloriesPill: {
     flexDirection: 'row',
-    marginBottom: 16,
-    alignItems: 'flex-start',
-  },
-  mealTypeTag: {
-    backgroundColor: '#F0F0F0',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginRight: 12,
-    width: 60,
     alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#121212',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: 'rgba(235,255,0,0.35)',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 999,
+  },
+  dayCalories: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: theme.colors.textInvert,
+  },
+  mealCard: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 12,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: theme.colors.background,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    marginBottom: 12,
+  },
+  mealLeft: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  mealIndexBubble: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mealIndexText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: theme.colors.text,
   },
   mealTypeText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#666',
+    fontWeight: '800',
+    color: theme.colors.text,
   },
   mealName: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#1A1A1A',
+    fontWeight: '800',
+    color: theme.colors.text,
     marginBottom: 4,
   },
   mealDesc: {
     fontSize: 13,
-    color: '#666',
+    color: theme.colors.textSecondary,
+  },
+  mealMain: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  mealRight: {
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  mealCaloriesChip: {
+    alignItems: 'flex-end',
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: 'rgba(0,200,150,0.25)',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 14,
   },
   mealCalories: {
-    fontSize: 12,
-    color: '#999',
-    marginLeft: 8,
-    marginTop: 2,
+    fontSize: 14,
+    fontWeight: '900',
+    color: theme.colors.primary,
+    lineHeight: 16,
+  },
+  mealCaloriesUnit: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: theme.colors.textTertiary,
+  },
+  mealTypeTag: {
+    backgroundColor: theme.colors.secondary,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(18,18,18,0.14)',
   },
   closeBtn: {
     marginTop: 24,
     alignSelf: 'center',
     paddingVertical: 12,
     paddingHorizontal: 32,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
+    borderColor: theme.colors.border,
+    ...theme.shadows.sm,
   },
   closeBtnText: {
-    color: '#1A1A1A',
+    color: theme.colors.text,
     fontWeight: '600',
   },
   // History Styles
@@ -481,7 +610,7 @@ const styles = StyleSheet.create({
   historySectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1A1A1A',
+    color: theme.colors.text,
     marginBottom: 16,
     paddingHorizontal: 4,
     fontStyle: 'italic',
@@ -493,22 +622,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     gap: 16,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
+    borderColor: theme.colors.border,
+    ...theme.shadows.sm,
   },
   historyIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -518,16 +643,16 @@ const styles = StyleSheet.create({
   historyTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1A1A1A',
+    color: theme.colors.text,
     marginBottom: 4,
   },
   historyDate: {
     fontSize: 12,
-    color: '#999',
+    color: theme.colors.textTertiary,
   },
   emptyHistoryText: {
     textAlign: 'center',
-    color: '#999',
+    color: theme.colors.textTertiary,
     fontSize: 14,
     marginTop: 10,
     marginBottom: 20,
