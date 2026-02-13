@@ -215,19 +215,31 @@ const ProfilePage = () => {
     },
   ];
 
+  const myToolItems = menuGroups[0]?.items || [];
+  const getFeatureSubtitle = (item: { route: string; icon?: string; name?: string }) => {
+    if (item.icon === 'diamond') return '会员权益与升级';
+    if (item.icon === 'help-circle') return '问题与使用指南';
+    switch (item.route) {
+      case 'Collections':
+        return '你喜欢的都在这里';
+      case 'ShoppingList':
+        return '把采购计划整理成清单';
+      case 'MyComments':
+        return '回看与管理你的评价';
+      case 'FlavorProfile':
+        return '让推荐更懂你';
+      case 'HealthProfile':
+        return '健康数据与建议';
+      case 'Settings':
+        return '隐私、语言与偏好设置';
+      default:
+        return '快速入口';
+    }
+  };
+
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Messages')}>
-            <Ionicons name="notifications-outline" size={24} color={theme.colors.text} />
-            <View style={styles.notificationBadge} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Settings')}>
-            <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
-          </TouchableOpacity>
-        </View>
-
         <ScrollView 
           contentContainerStyle={styles.scrollContent} 
           showsVerticalScrollIndicator={false}
@@ -235,62 +247,114 @@ const ProfilePage = () => {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
-          <View style={styles.profileHeader}>
-            <View style={styles.avatarContainer}>
-              <Image 
-                source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&auto=format&fit=crop&q=60' }} 
-                style={styles.avatar as any} 
-              />
-              <TouchableOpacity style={styles.editAvatarButton} onPress={handleEditAvatar} disabled={uploading}>
-                {uploading ? (
-                  <ActivityIndicator size="small" color="white" />
-                ) : (
-                  <Ionicons name="camera" size={14} color="white" />
-                )}
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.userInfoContainer}>
-              <Text style={styles.userName}>{user?.nickname || t('auth.notLoggedIn')}</Text>
-              <TouchableOpacity 
-                style={styles.editProfileIcon}
-                onPress={() => setEditModalVisible(true)}
-              >
-                <Ionicons name="pencil" size={16} color={theme.colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-            
-            <Text style={styles.userBio}>{user?.bio || t('profile.defaultBio')}</Text>
-            
-            <View style={styles.tagsRow}>
-               {profile?.preferences?.slice(0, 3).map((pref: string, index: number) => (
-                  <View key={index} style={styles.tag}>
-                    <Text style={styles.tagText}>{pref}</Text>
-                  </View>
-               ))}
-               <TouchableOpacity style={[styles.tag, styles.addTag]}>
-                 <Ionicons name="add" size={12} color={theme.colors.textSecondary} />
-               </TouchableOpacity>
+          <View style={styles.hero}>
+            <LinearGradient
+              colors={['#00C896', '#00A87E']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.heroDecorOne} />
+            <View style={styles.heroDecorTwo} />
+
+            <View style={styles.heroTopRow}>
+              <View style={styles.heroActions}>
+                <TouchableOpacity style={styles.heroIconButton} onPress={() => navigation.navigate('Messages')}>
+                  <Ionicons name="notifications-outline" size={22} color="#FFFFFF" />
+                  <View style={styles.notificationBadge} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.heroIconButton} onPress={() => navigation.navigate('Settings')}>
+                  <Ionicons name="settings-outline" size={22} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
             </View>
 
-            <View style={styles.statsContainer}>
-              {statsList.map((stat, index) => (
-                <TouchableOpacity 
-                  key={stat.label} 
-                  style={[styles.statItem, index === statsList.length - 1 && styles.statItemLast]} 
-                  activeOpacity={0.7}
-                  onPress={stat.onPress}
-                >
-                  <Text style={styles.statValue}>{stat.value}</Text>
-                  <Text style={styles.statLabel}>{stat.label}</Text>
+            <View style={styles.heroMain}>
+              <View style={styles.avatarContainer}>
+                <Image 
+                  source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&auto=format&fit=crop&q=60' }} 
+                  style={styles.avatar as any} 
+                />
+                <TouchableOpacity style={styles.editAvatarButton} onPress={handleEditAvatar} disabled={uploading}>
+                  {uploading ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Ionicons name="camera" size={14} color="#FFFFFF" />
+                  )}
                 </TouchableOpacity>
-              ))}
+              </View>
+              
+              <View style={styles.userInfoContainer}>
+                <View style={styles.nameRow}>
+                  <Text style={styles.userName}>{user?.nickname || t('auth.notLoggedIn')}</Text>
+                  <TouchableOpacity style={styles.editProfileIcon} onPress={() => setEditModalVisible(true)} activeOpacity={0.75}>
+                    <Ionicons name="pencil" size={14} color="rgba(255,255,255,0.9)" />
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.userBio} numberOfLines={2}>{user?.bio || t('profile.defaultBio')}</Text>
+
+                {(profile?.preferences?.length || 0) > 0 && (
+                  <View style={styles.tagsRow}>
+                    {profile?.preferences?.slice(0, 3).map((pref: string, index: number) => (
+                      <View key={index} style={styles.tag}>
+                        <Text style={styles.tagText} numberOfLines={1}>{pref}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
             </View>
+          </View>
+
+          <View style={styles.statsCard}>
+            {statsList.map((stat, index) => (
+              <TouchableOpacity 
+                key={stat.label} 
+                style={[styles.statItem, index === statsList.length - 1 && styles.statItemLast]} 
+                activeOpacity={0.7}
+                onPress={stat.onPress}
+              >
+                <Text style={styles.statValue}>{stat.value}</Text>
+                <Text style={styles.statLabel}>{stat.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>常用功能</Text>
+          </View>
+          <View style={styles.featureList}>
+            {[...myToolItems, ...(menuGroups[1]?.items || [])].map((item: any, idx: number) => (
+              <TouchableOpacity
+                key={`${item.route}:${item.name}:${idx}`}
+                style={styles.featureCard}
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate(item.route as any)}
+              >
+                <View style={[styles.featureTint, { backgroundColor: item.color + '10' }]} />
+                <View style={[styles.featureIconPill, { backgroundColor: item.color + '15' }]}>
+                  <Ionicons name={item.icon as any} size={20} color={item.color} />
+                </View>
+                <View style={styles.featureTexts}>
+                  <Text style={styles.featureTitle} numberOfLines={1}>{item.name}</Text>
+                  <Text style={styles.featureSubtitle} numberOfLines={1}>{getFeatureSubtitle(item)}</Text>
+                </View>
+                {item.badge ? (
+                  <View style={styles.featureBadge}>
+                    <Text style={styles.featureBadgeText} numberOfLines={1}>{item.badge}</Text>
+                  </View>
+                ) : (
+                  <Ionicons name="chevron-forward" size={18} color="#C7C7C7" />
+                )}
+                <View style={[styles.featureDot, { backgroundColor: item.color }]} />
+                <Ionicons name={item.icon as any} size={96} color={item.color + '12'} style={styles.featureBgIcon} />
+              </TouchableOpacity>
+            ))}
           </View>
 
           <View style={styles.proCardContainer}>
             <LinearGradient
-              colors={['#2c3e50', '#000000']}
+              colors={['#00C896', '#0E5E4D']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.proGradient}
@@ -306,46 +370,44 @@ const ProfilePage = () => {
               </View>
               <TouchableOpacity style={styles.proButton}>
                 <Text style={styles.proButtonText}>{t('profile.upgradeNow')}</Text>
-                <Ionicons name="chevron-forward" size={12} color="#333" />
+                <Ionicons name="chevron-forward" size={12} color="#1A1A1A" />
               </TouchableOpacity>
             </LinearGradient>
           </View>
 
-          {menuGroups.map((group, groupIndex) => (
-            <View key={groupIndex} style={styles.menuGroup}>
-              <Text style={styles.groupTitle}>{group.title}</Text>
-              <View style={styles.menuCard}>
-                {group.items.map((item, index) => (
-                  <TouchableOpacity 
-                    key={index} 
-                    style={[
-                      styles.menuItem,
-                      index === group.items.length - 1 && styles.menuItemLast
-                    ]}
-                    onPress={() => navigation.navigate(item.route as any)}
-                  >
-                    <View style={[styles.iconBox, { backgroundColor: item.color + '15' }]}>
-                      <Ionicons name={item.icon as any} size={22} color={item.color} />
-                    </View>
-                    <Text style={styles.menuName}>{item.name}</Text>
-                    <View style={styles.menuRight}>
-                      {item.badge && (
-                        <LinearGradient
-                          colors={[theme.colors.primary, theme.colors.primaryDark]}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
-                          style={styles.badge}
-                        >
-                          <Text style={styles.badgeText}>{item.badge}</Text>
-                        </LinearGradient>
-                      )}
-                      <Ionicons name="chevron-forward" size={18} color={theme.colors.border} />
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          ))}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>更多服务</Text>
+          </View>
+          <View style={styles.featureList}>
+            {menuGroups.slice(2).flatMap(g => g.items).map((item: any, idx: number) => (
+              <TouchableOpacity
+                key={`${item.route}:${item.name}:more:${idx}`}
+                style={styles.featureCard}
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate(item.route as any)}
+              >
+                <View style={[styles.featureTint, { backgroundColor: item.color + '10' }]} />
+                <View style={[styles.featureIconPill, { backgroundColor: item.color + '15' }]}>
+                  <Ionicons name={item.icon as any} size={20} color={item.color} />
+                </View>
+                <View style={styles.featureTexts}>
+                  <Text style={styles.featureTitle} numberOfLines={1}>{item.name}</Text>
+                  <Text style={styles.featureSubtitle} numberOfLines={1}>{getFeatureSubtitle(item)}</Text>
+                </View>
+                {item.badge ? (
+                  <View style={styles.featureBadge}>
+                    <Text style={styles.featureBadgeText} numberOfLines={1}>{item.badge}</Text>
+                  </View>
+                ) : (
+                  <Ionicons name="chevron-forward" size={18} color="#C7C7C7" />
+                )}
+                <View style={[styles.featureDot, { backgroundColor: item.color }]} />
+                <Ionicons name={item.icon as any} size={96} color={item.color + '12'} style={styles.featureBgIcon} />
+              </TouchableOpacity>
+            ))}
+          </View>
+          
+          <View style={{ height: 10 }} />
           
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Text style={styles.logoutText}>{t('auth.logout')}</Text>
@@ -444,141 +506,163 @@ const ProfilePage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F8FA',
+    backgroundColor: '#F6F7FB',
   },
   safeArea: {
     flex: 1,
-    backgroundColor: theme.colors.white,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.white,
-  },
-  iconButton: {
-    padding: 8,
-    marginLeft: 8,
+    backgroundColor: '#F6F7FB',
   },
   notificationBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 8,
-    height: 8,
+    top: 10,
+    right: 10,
+    width: 7,
+    height: 7,
     borderRadius: 4,
-    backgroundColor: theme.colors.error,
-    borderWidth: 1,
-    borderColor: theme.colors.white,
+    backgroundColor: '#EBFF00',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.9)',
   },
   scrollContent: {
     paddingBottom: 100,
-    backgroundColor: '#F7F8FA',
+    backgroundColor: '#F6F7FB',
   },
-  profileHeader: {
-    backgroundColor: theme.colors.white,
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.xl,
-    borderBottomLeftRadius: 40, // Larger curve
-    borderBottomRightRadius: 40,
+  hero: {
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    overflow: 'hidden',
+    paddingHorizontal: 20,
+    paddingBottom: 28, // Reduced padding
+  },
+  heroDecorOne: {
+    position: 'absolute',
+    width: 200, // Reduced size
+    height: 200,
+    borderRadius: 100,
+    top: -100,
+    right: -100,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+  },
+  heroDecorTwo: {
+    position: 'absolute',
+    width: 150, // Reduced size
+    height: 150,
+    borderRadius: 75,
+    bottom: -75,
+    left: -50,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+  },
+  heroTopRow: {
+    paddingTop: 10,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 10,
-    marginBottom: theme.spacing.lg,
-    zIndex: 10,
+  },
+  heroActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  heroIconButton: {
+    width: 38, // Slightly smaller
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  heroMain: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    marginTop: 4, // Reduced margin
   },
   avatarContainer: {
     position: 'relative',
-    marginBottom: theme.spacing.md,
+    marginBottom: 8, // Reduced margin
   },
   avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    borderWidth: 4,
-    borderColor: theme.colors.primary, // Brand color border
-    ...theme.shadows.md,
+    width: 76, // Smaller avatar
+    height: 76,
+    borderRadius: 38,
+    borderWidth: 2, // Thinner border
+    borderColor: 'rgba(255,255,255,0.95)',
   },
   editAvatarButton: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: theme.colors.secondary, // Neon yellow
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    width: 26, // Smaller button
+    height: 26,
+    borderRadius: 13,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#FFF',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.9)',
   },
   userInfoContainer: {
+    alignItems: 'center',
+  },
+  nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 2, // Reduced margin
   },
   userName: {
-    fontSize: 26,
-    fontWeight: '800', // Bolder
-    color: theme.colors.text,
-    marginRight: 8,
+    fontSize: 20, // Smaller font
+    fontWeight: '900',
+    color: '#FFFFFF',
+    marginRight: 6,
     fontStyle: 'italic',
   },
   editProfileIcon: {
-    padding: 4,
+    width: 24, // Smaller icon
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   userBio: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    marginBottom: 16,
+    fontSize: 12, // Smaller font
+    color: 'rgba(255,255,255,0.92)',
+    marginTop: 0, // Removed margin
+    lineHeight: 16,
     textAlign: 'center',
-    paddingHorizontal: 20,
+    maxWidth: '85%',
   },
   tagsRow: {
     flexDirection: 'row',
-    marginBottom: 24,
+    marginTop: 8, // Reduced margin
     flexWrap: 'wrap',
     justifyContent: 'center',
   },
   tag: {
-    backgroundColor: theme.colors.surfaceVariant,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    marginHorizontal: 4,
-    marginBottom: 4,
-    transform: [{ skewX: '-10deg' }],
-  },
-  addTag: {
-    backgroundColor: theme.colors.surfaceVariant,
-    paddingHorizontal: 8,
-    justifyContent: 'center',
-    borderStyle: 'solid',
-    borderWidth: 0,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    paddingHorizontal: 8, // Reduced padding
+    paddingVertical: 4,
+    borderRadius: 10,
+    marginRight: 6,
+    marginBottom: 6,
   },
   tagText: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    fontWeight: '700',
+    fontSize: 11, // Smaller font
+    color: 'rgba(255,255,255,0.92)',
+    fontWeight: '600',
   },
-  statsContainer: {
+  statsCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '100%',
-    paddingHorizontal: 10,
-    backgroundColor: '#FFFFFF', // Clean White
-    borderRadius: 20,
-    paddingVertical: 20,
-    marginTop: 12,
+    marginHorizontal: 16,
+    paddingHorizontal: 6,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    paddingVertical: 12, // Reduced padding
+    marginTop: -24, // Adjusted overlap
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    elevation: 6,
     borderWidth: 1,
     borderColor: '#F0F0F0',
   },
@@ -587,12 +671,13 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRightWidth: 1,
     borderRightColor: '#F0F0F0',
+    paddingVertical: 6,
   },
   statItemLast: {
     borderRightWidth: 0,
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '900',
     color: '#1A1A1A', // Dark Bold
     marginBottom: 4,
@@ -600,17 +685,105 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 11,
-    color: '#888888', // Grey Text
+    color: '#8C8C8C',
+    fontWeight: '600',
+  },
+  sectionHeader: {
+    marginTop: 18,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#1A1A1A',
+    letterSpacing: 0.6,
+    fontStyle: 'italic',
+  },
+  featureList: {
+    marginHorizontal: 16,
+    gap: 12,
+  },
+  featureCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 82,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.06,
+    shadowRadius: 22,
+    elevation: 3,
+  },
+  featureTint: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: 120,
+    height: 120,
+    borderBottomRightRadius: 44,
+  },
+  featureIconPill: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  featureTexts: {
+    flex: 1,
+    marginLeft: 12,
+    marginRight: 12,
+  },
+  featureTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#1A1A1A',
+    fontStyle: 'italic',
+  },
+  featureSubtitle: {
+    marginTop: 6,
+    fontSize: 12,
     fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    color: '#8C8C8C',
+  },
+  featureBadge: {
+    backgroundColor: '#EBFF00',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  featureBadgeText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#1A1A1A',
+    letterSpacing: 0.2,
+  },
+  featureDot: {
+    position: 'absolute',
+    bottom: 14,
+    right: 14,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  featureBgIcon: {
+    position: 'absolute',
+    right: -14,
+    bottom: -22,
   },
   proCardContainer: {
-    marginHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.lg,
-    borderRadius: 20,
-    ...theme.shadows.primaryGlow, // Use glow
-    marginTop: -20, 
+    marginHorizontal: 16,
+    marginBottom: 16,
+    marginTop: 16,
   },
   proGradient: {
     flexDirection: 'row',
@@ -639,7 +812,7 @@ const styles = StyleSheet.create({
   proTitle: {
     fontSize: 18,
     fontWeight: '900',
-    color: theme.colors.secondary,
+    color: '#FFFFFF',
     marginBottom: 2,
     fontStyle: 'italic',
   },
@@ -648,7 +821,56 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.8)',
   },
   proButton: {
-    backgroundColor: theme.colors.secondary,
+    backgroundColor: '#EBFF00',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  proButtonText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+    marginRight: 2,
+  },
+  proGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+    borderRadius: 20,
+  },
+  proContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  proIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  proTexts: {
+    flex: 1,
+  },
+  proTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    marginBottom: 2,
+    fontStyle: 'italic',
+  },
+  proSubtitle: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+  },
+  proButton: {
+    backgroundColor: '#EBFF00',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
@@ -666,31 +888,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
   },
   groupTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
-    color: theme.colors.textSecondary,
+    color: '#8C8C8C',
     marginBottom: 10,
     marginLeft: 4,
-    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   menuCard: {
     backgroundColor: theme.colors.white,
-    borderRadius: 20,
+    borderRadius: 22,
     padding: 8,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 3,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
   },
   menuItemLast: {
     marginBottom: 0,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: '#F3F3F3',
+    marginLeft: 66,
+    marginRight: 12,
   },
   iconBox: {
     width: 40,
@@ -704,7 +936,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: theme.colors.text,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   menuRight: {
     flexDirection: 'row',
@@ -725,15 +957,16 @@ const styles = StyleSheet.create({
     marginHorizontal: theme.spacing.lg,
     padding: 18,
     alignItems: 'center',
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    borderWidth: 0,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 77, 77, 0.25)',
     marginBottom: theme.spacing.lg,
-    shadowColor: theme.colors.error,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 2,
   },
   logoutText: {
     color: theme.colors.error,

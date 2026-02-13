@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { theme } from '../../styles/theme';
 import { getCollections, Recipe, Restaurant } from '../../../api/content';
+import ScreenHeader from '../../components/ScreenHeader';
 
 const { width } = Dimensions.get('window');
 const COLUMN_WIDTH = (width - theme.spacing.lg * 2 - theme.spacing.md) / 2;
@@ -54,13 +55,7 @@ const CollectionsPage = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-        <Text style={theme.typography.h2}>我的收藏</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <ScreenHeader title="我的收藏" />
 
       {renderTabs()}
 
@@ -123,48 +118,41 @@ const CollectionsPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.background,
-  },
-  backButton: {
-    padding: theme.spacing.sm,
+    backgroundColor: '#F6F7FB',
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.lg,
-    borderBottomWidth: 0,
-    gap: 24,
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginTop: 14,
+    borderRadius: 999,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   tab: {
-    paddingVertical: theme.spacing.md,
-    marginRight: 0,
-    borderBottomWidth: 0,
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 999,
+    alignItems: 'center',
   },
   activeTab: {
-    borderBottomWidth: 3,
-    borderBottomColor: theme.colors.primary,
+    backgroundColor: '#00C896',
   },
   tabText: {
-    fontSize: 16,
-    color: theme.colors.textSecondary,
-    fontWeight: '600',
+    fontSize: 13,
+    color: '#6F6F6F',
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
   activeTabText: {
-    color: theme.colors.text,
+    color: '#FFFFFF',
     fontWeight: '900',
-    fontSize: 18,
     fontStyle: 'italic',
   },
   content: {
-    padding: theme.spacing.lg,
+    padding: 16,
+    paddingTop: 14,
   },
   masonryContainer: {
     flexDirection: 'row',
@@ -173,28 +161,30 @@ const styles = StyleSheet.create({
   },
   recipeCard: {
     width: COLUMN_WIDTH,
-    backgroundColor: theme.colors.surface,
-    borderRadius: 16,
-    marginBottom: theme.spacing.md,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    marginBottom: 12,
     overflow: 'hidden',
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    elevation: 3,
   },
   recipeImage: {
     width: '100%',
     height: 160,
   },
   cardContent: {
-    padding: theme.spacing.sm,
+    padding: 12,
   },
   cardTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: theme.colors.text,
-    marginBottom: theme.spacing.xs,
+    color: '#1A1A1A',
+    marginBottom: 6,
   },
   cardFooter: {
     flexDirection: 'row',
@@ -203,7 +193,7 @@ const styles = StyleSheet.create({
   },
   cardAuthor: {
     fontSize: 10,
-    color: theme.colors.textSecondary,
+    color: '#8C8C8C',
   },
   likeInfo: {
     flexDirection: 'row',
@@ -211,7 +201,7 @@ const styles = StyleSheet.create({
   },
   likeCount: {
     fontSize: 10,
-    color: theme.colors.textSecondary,
+    color: '#8C8C8C',
     marginLeft: 2,
   },
   listContainer: {
@@ -219,22 +209,24 @@ const styles = StyleSheet.create({
   },
   restaurantCard: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.surface,
-    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
     padding: 12,
-    marginBottom: theme.spacing.md,
+    marginBottom: 12,
     alignItems: 'center',
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 18,
+    elevation: 2,
   },
   restaurantImage: {
     width: 80,
     height: 80,
-    borderRadius: theme.borderRadius.md,
-    marginRight: theme.spacing.md,
+    borderRadius: 18,
+    marginRight: 12,
   },
   restaurantInfo: {
     flex: 1,
@@ -242,13 +234,13 @@ const styles = StyleSheet.create({
   restaurantName: {
     fontSize: 16,
     fontWeight: '800',
-    color: theme.colors.text,
+    color: '#1A1A1A',
     marginBottom: 4,
     fontStyle: 'italic',
   },
   restaurantType: {
     fontSize: 12,
-    color: theme.colors.textSecondary,
+    color: '#8C8C8C',
     marginBottom: 4,
   },
   ratingContainer: {
@@ -259,11 +251,11 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontSize: 12,
     fontWeight: '800',
-    color: theme.colors.text,
+    color: '#1A1A1A',
     fontStyle: 'italic',
   },
   moreButton: {
-    padding: theme.spacing.sm,
+    padding: 8,
   },
 });
 

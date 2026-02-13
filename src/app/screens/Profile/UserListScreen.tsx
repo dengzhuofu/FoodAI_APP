@@ -3,8 +3,9 @@ import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndi
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { getFollowers, getFollowing, followUser, unfollowUser } from '../../../api/users';
+import { getFollowers, getFollowing } from '../../../api/users';
 import { theme } from '../../styles/theme';
+import ScreenHeader from '../../components/ScreenHeader';
 
 const UserListScreen = () => {
   const navigation = useNavigation();
@@ -62,13 +63,7 @@ const UserListScreen = () => {
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.title}>{title}</Text>
-          <View style={{ width: 40 }} />
-        </View>
+        <ScreenHeader title={title} />
 
         {loading ? (
           <ActivityIndicator style={{ marginTop: 20 }} color={theme.colors.primary} />
@@ -93,37 +88,25 @@ const UserListScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: '#F6F7FB',
   },
   safeArea: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  backButton: {
-    padding: 4,
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#333',
+    backgroundColor: '#F6F7FB',
   },
   listContent: {
     padding: 16,
+    paddingTop: 14,
   },
   userItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F9F9F9',
+    padding: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    marginBottom: 12,
   },
   avatar: {
     width: 50,
@@ -137,32 +120,35 @@ const styles = StyleSheet.create({
   },
   username: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '900',
+    color: '#1A1A1A',
     marginBottom: 4,
+    fontStyle: 'italic',
   },
   bio: {
     fontSize: 13,
-    color: '#999',
+    color: '#8C8C8C',
+    fontWeight: '600',
   },
   actionButton: {
     paddingHorizontal: 16,
     paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#F5F5F5',
+    borderRadius: 999,
+    backgroundColor: '#1A1A1A',
   },
   actionText: {
     fontSize: 13,
-    color: '#666',
-    fontWeight: '500',
+    color: '#FFFFFF',
+    fontWeight: '900',
   },
   emptyContainer: {
     alignItems: 'center',
     marginTop: 50,
   },
   emptyText: {
-    color: '#999',
-    fontSize: 14,
+    color: '#9A9A9A',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
 

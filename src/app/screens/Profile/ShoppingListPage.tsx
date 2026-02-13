@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { theme } from '../../styles/theme';
 import { getShoppingList, addShoppingItem, updateShoppingItem, deleteShoppingItem, ShoppingItem } from '../../../api/inventory';
+import ScreenHeader from '../../components/ScreenHeader';
 
 const ShoppingListPage = () => {
   const navigation = useNavigation();
@@ -88,21 +89,13 @@ const ShoppingListPage = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-        <Text style={theme.typography.h2}>购物清单</Text>
-        <TouchableOpacity style={styles.clearButton} onPress={() => {}}>
-          {/* Clear function could be implemented to delete all checked items */}
-          <Text style={styles.clearText}></Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader title="购物清单" />
 
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
           placeholder="添加需要购买的食材..."
+          placeholderTextColor="#A0A0A0"
           value={newItem}
           onChangeText={setNewItem}
           onSubmitEditing={addItem}
@@ -142,104 +135,109 @@ const ShoppingListPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.white,
-  },
-  backButton: {
-    padding: theme.spacing.sm,
-  },
-  clearButton: {
-    padding: theme.spacing.sm,
-  },
-  clearText: {
-    color: theme.colors.textSecondary,
-    fontSize: 14,
+    backgroundColor: '#F6F7FB',
   },
   inputContainer: {
     flexDirection: 'row',
-    padding: theme.spacing.lg,
-    backgroundColor: theme.colors.white,
-    ...theme.shadows.sm,
+    padding: 16,
+    margin: 16,
+    marginTop: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    elevation: 3,
   },
   input: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.md,
-    paddingHorizontal: theme.spacing.md,
+    backgroundColor: '#F6F7FB',
+    borderRadius: 16,
+    paddingHorizontal: 14,
     height: 44,
-    marginRight: theme.spacing.md,
+    marginRight: 12,
+    color: '#1A1A1A',
+    fontWeight: '600',
   },
   addButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#00C896',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#00C896',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    elevation: 4,
   },
   content: {
-    padding: theme.spacing.lg,
+    padding: 16,
   },
   section: {
-    marginBottom: theme.spacing.xl,
+    marginBottom: 18,
   },
   sectionTitle: {
-    ...theme.typography.h3,
-    marginBottom: theme.spacing.md,
-    fontSize: 16,
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#1A1A1A',
+    letterSpacing: 0.6,
+    fontStyle: 'italic',
+    marginBottom: 12,
   },
   listCard: {
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.md,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
     overflow: 'hidden',
-    ...theme.shadows.sm,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   listCardCompleted: {
     opacity: 0.8,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FAFAFA',
   },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: theme.spacing.md,
+    padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: '#F3F3F3',
   },
   checkbox: {
-    marginRight: theme.spacing.md,
+    marginRight: 10,
   },
   itemInfo: {
     flex: 1,
   },
   itemName: {
     fontSize: 16,
-    color: theme.colors.text,
+    color: '#1A1A1A',
     marginBottom: 2,
+    fontWeight: '700',
   },
   itemNameChecked: {
     textDecorationLine: 'line-through',
-    color: theme.colors.textSecondary,
+    color: '#9A9A9A',
   },
   itemCategory: {
     fontSize: 12,
-    color: theme.colors.textSecondary,
+    color: '#9A9A9A',
+    fontWeight: '600',
   },
   deleteButton: {
-    padding: theme.spacing.sm,
+    padding: 8,
   },
   emptyState: {
     alignItems: 'center',
-    padding: theme.spacing.xl,
+    padding: 18,
   },
   emptyText: {
-    color: theme.colors.textSecondary,
+    color: '#9A9A9A',
+    fontWeight: '600',
   },
 });
 

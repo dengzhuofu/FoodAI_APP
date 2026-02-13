@@ -5,6 +5,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../styles/theme';
 import { getUserPosts } from '../../../api/users';
+import ScreenHeader from '../../components/ScreenHeader';
 
 const UserPostsScreen = () => {
   const navigation = useNavigation<any>();
@@ -86,34 +87,27 @@ const UserPostsScreen = () => {
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={28} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{title || '我的发布'}</Text>
-          <View style={{ width: 28 }} />
-        </View>
+        <ScreenHeader title={title || '我的发布'} />
 
         {/* Tabs */}
         <View style={styles.tabsContainer}>
           <TouchableOpacity 
             style={[styles.tabItem, activeTab === 'recipe' && styles.activeTabItem]}
             onPress={() => setActiveTab('recipe')}
+            activeOpacity={0.85}
           >
             <Text style={[styles.tabText, activeTab === 'recipe' && styles.activeTabText]}>
               菜谱
             </Text>
-            {activeTab === 'recipe' && <View style={styles.activeTabIndicator} />}
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.tabItem, activeTab === 'restaurant' && styles.activeTabItem]}
             onPress={() => setActiveTab('restaurant')}
+            activeOpacity={0.85}
           >
             <Text style={[styles.tabText, activeTab === 'restaurant' && styles.activeTabText]}>
               探店
             </Text>
-            {activeTab === 'restaurant' && <View style={styles.activeTabIndicator} />}
           </TouchableOpacity>
         </View>
 
@@ -145,60 +139,45 @@ const UserPostsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: '#F6F7FB',
   },
   safeArea: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#333',
+    backgroundColor: '#F6F7FB',
   },
   tabsContainer: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginTop: 14,
+    borderRadius: 999,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 14,
-    position: 'relative',
+    paddingVertical: 10,
+    borderRadius: 999,
   },
-  activeTabItem: {},
+  activeTabItem: {
+    backgroundColor: '#00C896',
+  },
   tabText: {
-    fontSize: 15,
-    color: theme.colors.textSecondary,
-    fontWeight: '500',
+    fontSize: 13,
+    color: '#6F6F6F',
+    fontWeight: '900',
+    letterSpacing: 0.3,
   },
   activeTabText: {
-    color: theme.colors.primary,
-    fontWeight: 'bold',
-  },
-  activeTabIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    width: 20,
-    height: 3,
-    backgroundColor: theme.colors.primary,
-    borderRadius: 1.5,
+    color: '#FFFFFF',
+    fontWeight: '900',
+    fontStyle: 'italic',
   },
   listContent: {
-    padding: 12,
+    padding: 16,
+    paddingTop: 14,
   },
   columnWrapper: {
     justifyContent: 'space-between',
@@ -206,7 +185,7 @@ const styles = StyleSheet.create({
   postCard: {
     width: '48%',
     backgroundColor: '#FFF',
-    borderRadius: 12,
+    borderRadius: 22,
     marginBottom: 12,
     overflow: 'hidden',
     borderWidth: 1,
@@ -218,15 +197,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   postContent: {
-    padding: 10,
+    padding: 12,
   },
   postTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '800',
+    color: '#1A1A1A',
     marginBottom: 8,
     lineHeight: 20,
     height: 40, 
+    fontStyle: 'italic',
   },
   postMeta: {
     flexDirection: 'row',
@@ -247,7 +227,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 11,
-    color: '#666',
+    color: '#6F6F6F',
     flex: 1,
   },
   likesInfo: {
@@ -257,7 +237,7 @@ const styles = StyleSheet.create({
   },
   likesCount: {
     fontSize: 11,
-    color: '#999',
+    color: '#9A9A9A',
   },
   emptyContainer: {
     alignItems: 'center',
@@ -266,8 +246,9 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     marginTop: 16,
-    color: '#999',
-    fontSize: 14,
+    color: '#9A9A9A',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
 

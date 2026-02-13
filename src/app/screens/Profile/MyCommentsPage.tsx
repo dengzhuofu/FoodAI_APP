@@ -7,6 +7,7 @@ import { theme } from '../../styles/theme';
 import { getUserComments } from '../../../api/users';
 import { Comment } from '../../../api/content';
 import { getMe } from '../../../api/auth';
+import ScreenHeader from '../../components/ScreenHeader';
 
 const MyCommentsPage = () => {
   const navigation = useNavigation();
@@ -35,13 +36,7 @@ const MyCommentsPage = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-        <Text style={theme.typography.h2}>我的评价</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <ScreenHeader title="我的评价" />
 
       <ScrollView contentContainerStyle={styles.content}>
         {loading ? (
@@ -76,33 +71,27 @@ const MyCommentsPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.white,
-    ...theme.shadows.sm,
-  },
-  backButton: {
-    padding: theme.spacing.sm,
+    backgroundColor: '#F6F7FB',
   },
   content: {
-    padding: theme.spacing.lg,
+    padding: 16,
   },
   centerContent: {
     alignItems: 'center',
-    padding: theme.spacing.xl,
+    padding: 18,
   },
   commentCard: {
-    backgroundColor: theme.colors.white,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.md,
-    ...theme.shadows.sm,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 18,
+    elevation: 2,
   },
   commentHeader: {
     flexDirection: 'row',
@@ -111,7 +100,8 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 12,
-    color: theme.colors.textSecondary,
+    color: '#8C8C8C',
+    fontWeight: '600',
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -119,20 +109,23 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     fontSize: 12,
-    color: theme.colors.textSecondary,
+    color: '#8C8C8C',
     marginLeft: 4,
+    fontWeight: '700',
   },
   commentText: {
     fontSize: 14,
-    color: theme.colors.text,
+    color: '#1A1A1A',
     lineHeight: 20,
+    fontWeight: '600',
   },
   emptyState: {
     alignItems: 'center',
-    padding: theme.spacing.xl,
+    padding: 18,
   },
   emptyText: {
-    color: theme.colors.textSecondary,
+    color: '#9A9A9A',
+    fontWeight: '600',
   },
 });
 

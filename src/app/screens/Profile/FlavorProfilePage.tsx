@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { theme } from '../../styles/theme';
 import { getProfile, updateProfile } from '../../../api/profile';
+import ScreenHeader from '../../components/ScreenHeader';
 
 const FlavorProfilePage = () => {
   const navigation = useNavigation();
@@ -80,15 +81,14 @@ const FlavorProfilePage = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-        <Text style={theme.typography.h2}>风味画像</Text>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveText}>保存</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="风味画像"
+        right={
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave} activeOpacity={0.8}>
+            <Text style={styles.saveText}>保存</Text>
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.card}>
@@ -132,95 +132,102 @@ const FlavorProfilePage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.white,
-    ...theme.shadows.sm,
-  },
-  backButton: {
-    padding: theme.spacing.sm,
+    backgroundColor: '#F6F7FB',
   },
   saveButton: {
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: 6,
-    backgroundColor: theme.colors.primary,
-    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: '#00C896',
+    borderRadius: 999,
+    shadowColor: '#00C896',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    elevation: 3,
   },
   saveText: {
     color: 'white',
-    fontWeight: 'bold',
-    fontSize: 14,
+    fontWeight: '900',
+    fontSize: 12,
+    letterSpacing: 0.4,
   },
   content: {
-    padding: theme.spacing.lg,
+    padding: 16,
   },
   card: {
-    backgroundColor: theme.colors.white,
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.md,
-    marginBottom: theme.spacing.xl,
-    ...theme.shadows.sm,
+    backgroundColor: '#FFFFFF',
+    padding: 18,
+    borderRadius: 24,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.06,
+    shadowRadius: 22,
+    elevation: 3,
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.colors.text,
+    fontWeight: '900',
+    color: '#1A1A1A',
     marginBottom: 8,
+    fontStyle: 'italic',
   },
   cardDesc: {
     fontSize: 14,
-    color: theme.colors.textSecondary,
+    color: '#8C8C8C',
+    fontWeight: '600',
   },
   section: {
-    marginBottom: theme.spacing.xl,
+    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-    marginBottom: theme.spacing.md,
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#1A1A1A',
+    marginBottom: 12,
+    letterSpacing: 0.6,
+    fontStyle: 'italic',
   },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    gap: 10,
   },
   tag: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.white,
-    marginRight: theme.spacing.sm,
-    marginBottom: theme.spacing.sm,
+    borderColor: '#F0F0F0',
+    backgroundColor: '#FFFFFF',
   },
   tagText: {
-    fontSize: 14,
-    color: theme.colors.text,
+    fontSize: 13,
+    color: '#1A1A1A',
+    fontWeight: '800',
   },
   tagTextSelected: {
     color: 'white',
-    fontWeight: 'bold',
+    fontWeight: '900',
   },
   infoBox: {
     flexDirection: 'row',
-    backgroundColor: '#F5F5F5',
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-    marginTop: theme.spacing.lg,
+    backgroundColor: '#FFFFFF',
+    padding: 14,
+    borderRadius: 20,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   infoText: {
     flex: 1,
-    marginLeft: theme.spacing.sm,
+    marginLeft: 10,
     fontSize: 12,
-    color: theme.colors.textSecondary,
+    color: '#8C8C8C',
     lineHeight: 18,
+    fontWeight: '600',
   },
 });
 

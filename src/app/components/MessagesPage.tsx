@@ -8,6 +8,7 @@ import { getNotifications, markAsRead, Notification } from '../../api/notificati
 import { listConversations, DirectConversation } from '../../api/chats';
 import { connectChatSocket } from '../../utils/chatSocket';
 import { useUserStore } from '../../store/useUserStore';
+import ScreenHeader from './ScreenHeader';
 
 const MessagesPage = () => {
   const navigation = useNavigation();
@@ -135,13 +136,7 @@ const MessagesPage = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-        <Text style={theme.typography.h2}>消息中心</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <ScreenHeader title="消息中心" />
 
       {renderTabs()}
 
@@ -213,51 +208,34 @@ const MessagesPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAF7',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.background,
-    borderBottomWidth: 0,
-  },
-  backButton: {
-    padding: theme.spacing.sm,
+    backgroundColor: '#F6F7FB',
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.sm,
-    paddingBottom: theme.spacing.sm,
-    gap: 16,
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginTop: 14,
+    borderRadius: 999,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   tab: {
     flex: 1,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 0,
+    height: 42,
+    borderRadius: 999,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
   },
   activeTab: {
-    backgroundColor: theme.colors.primary,
-    shadowOpacity: 0.2,
+    backgroundColor: '#00C896',
   },
   tabRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   tabText: {
     fontSize: 14,
-    color: theme.colors.textSecondary,
-    fontWeight: '700',
+    color: '#6F6F6F',
+    fontWeight: '900',
     fontStyle: 'italic',
   },
   activeTabText: {
@@ -268,31 +246,26 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: theme.colors.secondary, // Neon
+    backgroundColor: '#EBFF00',
     marginLeft: 6,
   },
   content: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.sm,
-    paddingBottom: theme.spacing.lg,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 16,
   },
   notificationCard: {
     flexDirection: 'row',
-    padding: theme.spacing.md,
-    backgroundColor: theme.colors.surface,
-    borderRadius: 20,
-    marginBottom: theme.spacing.sm,
-    borderWidth: 0,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
+    padding: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   unreadCard: {
-    backgroundColor: theme.colors.surface,
     borderLeftWidth: 4,
-    borderLeftColor: theme.colors.primary,
+    borderLeftColor: '#00C896',
   },
   iconContainer: {
     width: 48,
@@ -318,27 +291,24 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 12,
-    color: theme.colors.textTertiary,
+    color: '#9A9A9A',
     fontWeight: '600',
   },
   notificationText: {
     fontSize: 14,
-    color: theme.colors.textSecondary,
+    color: '#6F6F6F',
     lineHeight: 20,
+    fontWeight: '600',
   },
   interactionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: theme.spacing.md,
-    backgroundColor: theme.colors.surface,
-    borderRadius: 20,
-    marginBottom: theme.spacing.sm,
-    borderWidth: 0,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
+    padding: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   chatBadge: {
     minWidth: 22,
@@ -359,9 +329,9 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    marginRight: theme.spacing.md,
+    marginRight: 12,
     borderWidth: 2,
-    borderColor: theme.colors.surfaceVariant,
+    borderColor: '#F0F0F0',
   },
   interactionContent: {
     flex: 1,
@@ -374,7 +344,7 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: '900',
-    color: theme.colors.text,
+    color: '#1A1A1A',
     fontStyle: 'italic',
   },
   actionText: {

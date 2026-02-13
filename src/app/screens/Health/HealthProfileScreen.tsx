@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../styles/theme';
 import { getHealthProfile, createOrUpdateHealthProfile, HealthProfile } from '../../../api/health';
+import ScreenHeader from '../../components/ScreenHeader';
 
 const HealthProfileScreen = () => {
   const navigation = useNavigation<any>();
@@ -45,13 +46,7 @@ const HealthProfileScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.title}>个人健康档案</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <ScreenHeader title="个人健康档案" />
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.formCard}>
@@ -62,6 +57,7 @@ const HealthProfileScreen = () => {
             onChangeText={setHeight}
             keyboardType="numeric"
             placeholder="例如: 175"
+            placeholderTextColor="#A0A0A0"
           />
           
           <Text style={styles.label}>体重 (kg)</Text>
@@ -71,6 +67,7 @@ const HealthProfileScreen = () => {
             onChangeText={setWeight}
             keyboardType="numeric"
             placeholder="例如: 65"
+            placeholderTextColor="#A0A0A0"
           />
           
           <TouchableOpacity 
@@ -114,25 +111,69 @@ const HealthProfileScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F7F8FA' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', padding: 16, alignItems: 'center', backgroundColor: '#FFF' },
-  title: { fontSize: 18, fontWeight: 'bold' },
+  container: { flex: 1, backgroundColor: '#F6F7FB' },
   content: { padding: 16 },
-  formCard: { backgroundColor: '#FFF', padding: 20, borderRadius: 12, marginBottom: 20 },
-  label: { fontSize: 14, color: '#666', marginBottom: 8 },
-  input: { backgroundColor: '#F5F5F5', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 16 },
-  button: { backgroundColor: theme.colors.primary, padding: 16, borderRadius: 8, alignItems: 'center' },
-  buttonText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
-  resultCard: { backgroundColor: '#FFF', padding: 20, borderRadius: 12 },
-  resultTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
-  statRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: 20 },
+  formCard: {
+    backgroundColor: '#FFF',
+    padding: 18,
+    borderRadius: 24,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.06,
+    shadowRadius: 22,
+    elevation: 3,
+  },
+  label: { fontSize: 12, color: '#8C8C8C', marginBottom: 8, fontWeight: '800', letterSpacing: 0.4 },
+  input: {
+    backgroundColor: '#F6F7FB',
+    padding: 12,
+    borderRadius: 16,
+    marginBottom: 14,
+    fontSize: 16,
+    color: '#1A1A1A',
+    fontWeight: '700',
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  button: {
+    backgroundColor: '#00C896',
+    padding: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#00C896',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    elevation: 4,
+  },
+  buttonText: { color: '#FFF', fontWeight: '900', fontSize: 15, letterSpacing: 0.2 },
+  resultCard: {
+    backgroundColor: '#FFF',
+    padding: 18,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  resultTitle: { fontSize: 18, fontWeight: '900', marginBottom: 16, textAlign: 'center', fontStyle: 'italic', color: '#1A1A1A' },
+  statRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: 14 },
   statItem: { alignItems: 'center' },
-  statValue: { fontSize: 32, fontWeight: 'bold', color: theme.colors.primary },
-  statLabel: { fontSize: 12, color: '#999' },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginTop: 16, marginBottom: 8 },
-  adviceText: { fontSize: 14, color: '#444', lineHeight: 22 },
-  linkButton: { marginTop: 24, backgroundColor: '#20C997', padding: 16, borderRadius: 8, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-  linkButtonText: { color: '#FFF', fontWeight: 'bold', marginRight: 8 }
+  statValue: { fontSize: 34, fontWeight: '900', color: '#00C896', fontStyle: 'italic' },
+  statLabel: { fontSize: 12, color: '#9A9A9A', fontWeight: '700', marginTop: 4 },
+  sectionTitle: { fontSize: 13, fontWeight: '900', marginTop: 14, marginBottom: 8, letterSpacing: 0.6, fontStyle: 'italic', color: '#1A1A1A' },
+  adviceText: { fontSize: 14, color: '#3A3A3A', lineHeight: 22, fontWeight: '600' },
+  linkButton: {
+    marginTop: 18,
+    backgroundColor: '#1A1A1A',
+    padding: 16,
+    borderRadius: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  linkButtonText: { color: '#FFF', fontWeight: '900', marginRight: 8, letterSpacing: 0.2 },
 });
 
 export default HealthProfileScreen;

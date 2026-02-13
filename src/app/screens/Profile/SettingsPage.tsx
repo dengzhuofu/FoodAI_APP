@@ -8,6 +8,7 @@ import { theme } from '../../styles/theme';
 import { logout } from '../../../api/auth';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../navigation/types';
+import ScreenHeader from '../../components/ScreenHeader';
 
 const SettingsPage = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -98,13 +99,7 @@ const SettingsPage = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-        <Text style={theme.typography.h2}>{t('common.settings')}</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <ScreenHeader title={t('common.settings')} />
 
       <ScrollView contentContainerStyle={styles.content}>
         {renderSection('通用', (
@@ -160,50 +155,42 @@ const SettingsPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.background,
-  },
-  backButton: {
-    padding: theme.spacing.sm,
+    backgroundColor: '#F6F7FB',
   },
   content: {
-    padding: theme.spacing.lg,
+    padding: 16,
     paddingBottom: 40,
   },
   section: {
-    marginBottom: theme.spacing.lg,
+    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.sm,
-    marginLeft: theme.spacing.xs,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontSize: 13,
+    color: '#8C8C8C',
+    marginBottom: 10,
+    marginLeft: 4,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+    fontStyle: 'italic',
   },
   sectionContent: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: 20,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowRadius: 22,
+    elevation: 3,
     overflow: 'hidden',
   },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
   },
   itemLeft: {
     flexDirection: 'row',
@@ -213,15 +200,15 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: theme.colors.surfaceVariant,
+    backgroundColor: '#F6F7FB',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
   itemTitle: {
     fontSize: 16,
-    color: theme.colors.text,
-    fontWeight: '600',
+    color: '#1A1A1A',
+    fontWeight: '700',
   },
   itemRight: {
     flexDirection: 'row',
@@ -229,27 +216,29 @@ const styles = StyleSheet.create({
   },
   itemValue: {
     fontSize: 14,
-    color: theme.colors.primary,
+    color: '#00C896',
     marginRight: 8,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   divider: {
     height: 1,
-    backgroundColor: theme.colors.surfaceVariant,
+    backgroundColor: '#F3F3F3',
     marginLeft: 66,
   },
   logoutButton: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#FFFFFF',
     padding: 18,
-    borderRadius: 20,
+    borderRadius: 22,
     alignItems: 'center',
     marginTop: theme.spacing.lg,
     marginBottom: theme.spacing.lg,
-    shadowColor: theme.colors.error,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 77, 77, 0.25)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 18,
+    elevation: 2,
   },
   logoutText: {
     color: theme.colors.error,
@@ -259,7 +248,7 @@ const styles = StyleSheet.create({
   },
   copyright: {
     textAlign: 'center',
-    color: theme.colors.textSecondary,
+    color: '#9A9A9A',
     fontSize: 12,
   },
 });
