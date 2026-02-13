@@ -276,8 +276,8 @@ const ProfilePage = () => {
             <View style={styles.statsContainer}>
               {statsList.map((stat, index) => (
                 <TouchableOpacity 
-                  key={index} 
-                  style={styles.statItem} 
+                  key={stat.label} 
+                  style={[styles.statItem, index === statsList.length - 1 && styles.statItemLast]} 
                   activeOpacity={0.7}
                   onPress={stat.onPress}
                 >
@@ -569,24 +569,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
+    backgroundColor: '#FFFFFF', // Clean White
+    borderRadius: 20,
+    paddingVertical: 20,
+    marginTop: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   statItem: {
     alignItems: 'center',
     flex: 1,
+    borderRightWidth: 1,
+    borderRightColor: '#F0F0F0',
+  },
+  statItemLast: {
+    borderRightWidth: 0,
   },
   statValue: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '900',
-    color: theme.colors.text,
-    marginBottom: 2,
+    color: '#1A1A1A', // Dark Bold
+    marginBottom: 4,
     fontStyle: 'italic',
   },
   statLabel: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    fontWeight: '600',
+    fontSize: 11,
+    color: '#888888', // Grey Text
+    fontWeight: '700',
     textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   proCardContainer: {
     marginHorizontal: theme.spacing.lg,
@@ -706,18 +723,23 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     marginHorizontal: theme.spacing.lg,
-    padding: theme.spacing.md,
+    padding: 18,
     alignItems: 'center',
-    backgroundColor: theme.colors.white,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
+    backgroundColor: theme.colors.surface,
+    borderRadius: 20,
+    borderWidth: 0,
     marginBottom: theme.spacing.lg,
+    shadowColor: theme.colors.error,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
   },
   logoutText: {
     color: theme.colors.error,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '800',
+    fontStyle: 'italic',
   },
   versionInfo: {
     alignItems: 'center',

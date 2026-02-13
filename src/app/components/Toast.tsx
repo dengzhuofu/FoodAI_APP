@@ -116,26 +116,27 @@ const styles = StyleSheet.create({
   toast: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 30,
-    shadowColor: "#000",
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 30, // Full pill
+    shadowColor: theme.colors.primary,
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 8,
     },
-    shadowOpacity: 0.30,
-    shadowRadius: 4.65,
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
     elevation: 8,
-    minWidth: width * 0.8,
-    maxWidth: width * 0.9,
+    minWidth: width * 0.85,
+    maxWidth: width * 0.95,
   },
   message: {
     color: '#FFF',
     fontSize: 15,
-    fontWeight: '600',
-    marginLeft: 10,
+    fontWeight: '700',
+    marginLeft: 12,
     flex: 1,
+    fontStyle: 'italic',
   }
 });
 

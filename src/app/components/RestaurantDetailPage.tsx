@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { Video, ResizeMode } from 'expo-av';
+import VideoDisplay from './VideoDisplay';
 import { theme } from '../styles/theme';
 import { RootStackParamList } from '../navigation/types';
 import { getRestaurant, getComments, toggleCollection, Restaurant, Comment, toggleLike, recordView } from '../../api/content';
@@ -257,14 +257,16 @@ const RestaurantDetailPage = () => {
       >
         {displayMedia.map((item, index) =>
           item.type === 'video' ? (
-            <Video
-              key={`video-${index}`}
-              source={{ uri: item.uri }}
-              style={styles.heroImage}
-              useNativeControls
-              resizeMode={ResizeMode.COVER}
-              shouldPlay={false}
-            />
+            <View key={`video-${index}`} style={styles.heroImage}>
+                <VideoDisplay
+                  uri={item.uri}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.videoBadge}>
+                    <Ionicons name="videocam" size={14} color="#FFF" />
+                    <Text style={styles.videoBadgeText}>Video</Text>
+                </View>
+            </View>
           ) : (
             <Image 
               key={`img-${index}`}
@@ -374,7 +376,7 @@ const RestaurantDetailPage = () => {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.topBar, { paddingTop: insets.top + 10 }]}>
+      <View style={[styles.topBar, { paddingTop: insets.top + 10 }]} pointerEvents="box-none">
         <TouchableOpacity 
           style={styles.backButton} 
           onPress={() => navigation.goBack()}
@@ -418,7 +420,7 @@ const RestaurantDetailPage = () => {
       </View>
 
       <ScrollView 
-        style={{ flex: 1 }}
+        style={{ flex: 1, marginTop: insets.top + 60 }}
         contentContainerStyle={styles.scrollContent} 
         showsVerticalScrollIndicator={false}
       >
@@ -453,20 +455,20 @@ const RestaurantDetailPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9F9F9',
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.white,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(17,17,17,0.08)',
   },
   backButton: {
-    padding: theme.spacing.sm,
+    padding: 8,
   },
   scrollContent: {
     paddingBottom: 120,
@@ -477,108 +479,120 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   imageContainer: {
-    height: 400,
+    height: width, // 1:1
     width: '100%',
     position: 'relative',
+    backgroundColor: '#000',
   },
   heroImage: {
     width: width,
-    height: 400,
+    height: width, // Match container
+    justifyContent: 'center',
+  },
+  videoBadge: {
+    position: 'absolute',
+    bottom: 16,
+    right: 16,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+    zIndex: 5,
+  },
+  videoBadgeText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: '600',
   },
   paginationContainer: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 16,
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 8,
+    zIndex: 2,
   },
   paginationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    transform: [{ skewX: '-10deg' }],
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.4)',
   },
   paginationDotActive: {
-    backgroundColor: theme.colors.primary,
-    width: 24,
+    backgroundColor: '#FFF',
+    width: 16,
   },
   paginationDotInactive: {
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.4)',
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingBottom: 12,
-    backgroundColor: 'transparent',
-    borderBottomWidth: 0,
-    zIndex: 100,
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
+    zIndex: 100,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   topBarAuthor: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 8,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    marginLeft: 12,
+    backgroundColor: 'rgba(255,255,255,0.95)',
     padding: 4,
     paddingRight: 12,
     borderRadius: 20,
-    alignSelf: 'center',
-    maxWidth: 180,
+    maxWidth: 160,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   topBarAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     marginRight: 8,
-    backgroundColor: '#EEE',
-    borderWidth: 2,
-    borderColor: theme.colors.primary,
   },
   topBarAuthorName: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '600',
     color: '#333',
-    maxWidth: 120,
+    flex: 1,
   },
   topBarActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   followButton: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 18,
+    borderRadius: 16,
     backgroundColor: theme.colors.primary,
-    borderWidth: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
   followingButton: {
-    backgroundColor: theme.colors.surfaceVariant,
-    shadowOpacity: 0,
-    elevation: 0,
+    backgroundColor: '#E0E0E0',
   },
   followButtonText: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#FFF',
-    fontStyle: 'italic',
   },
   followingButtonText: {
-    color: theme.colors.textSecondary,
+    color: '#666',
   },
   shareButton: {
     width: 40,
@@ -587,140 +601,119 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.9)',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   headerContent: {
-    paddingBottom: 24,
+    marginBottom: 24,
   },
   tagContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 8,
     marginBottom: 24,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: theme.colors.text,
-    marginBottom: 12,
-    lineHeight: 38,
-    fontStyle: 'italic',
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    marginBottom: 8,
+    lineHeight: 34,
   },
   content: {
-    padding: 24,
-    marginTop: -40,
-    backgroundColor: theme.colors.background,
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
+    marginTop: -24,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 24,
+    minHeight: 500,
   },
   description: {
-    fontSize: 16,
-    color: theme.colors.textSecondary,
-    marginBottom: 36,
-    lineHeight: 26,
-    fontWeight: '400',
-    letterSpacing: 0.2,
+    fontSize: 15,
+    color: '#666',
+    lineHeight: 24,
+    marginBottom: 16,
   },
   tagChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surfaceVariant,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 0,
+    backgroundColor: '#F5F7FA',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
     gap: 6,
-    transform: [{ skewX: '-10deg' }],
     marginRight: 0,
   },
   tagChipText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: theme.colors.text,
-    fontStyle: 'italic',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#555',
   },
   section: {
-    marginBottom: 40,
+    marginBottom: 32,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: theme.colors.text,
-    marginBottom: 20,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 16,
     letterSpacing: 0.5,
-    fontStyle: 'italic',
-    textTransform: 'uppercase',
   },
   infoCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 0,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 6,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 12,
     gap: 16,
   },
   iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 16,
-    backgroundColor: theme.colors.surfaceVariant,
-    borderWidth: 0,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   infoText: {
     flex: 1,
-    fontSize: 16,
-    color: theme.colors.text,
-    fontWeight: '600',
-    lineHeight: 24,
+    fontSize: 15,
+    color: '#374151',
+    fontWeight: '500',
+    lineHeight: 22,
   },
   actionIcon: {
-    width: 32,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  navButton: {
+    paddingHorizontal: 14,
     height: 32,
     borderRadius: 16,
     backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    transform: [{ rotate: '-45deg' }],
-  },
-  navButton: {
-    paddingHorizontal: 16,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
   navButtonText: {
     color: '#FFF',
     fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    fontStyle: 'italic',
+    fontWeight: '700',
   },
   divider: {
     height: 1,
-    backgroundColor: theme.colors.surfaceVariant,
-    marginLeft: 60,
+    backgroundColor: '#E5E7EB',
+    marginLeft: 56,
   },
   mapContainer: {
     height: 150,
@@ -730,6 +723,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 16,
     position: 'relative',
+    backgroundColor: '#E5E7EB',
   },
   mapFallback: {
     flex: 1,

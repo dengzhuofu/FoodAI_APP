@@ -7,6 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../../../styles/theme';
 import { uploadFile } from '../../../../api/upload';
 import { imageToCalorie, CalorieResult, getHistory, AILog } from '../../../../api/ai';
+import AIGeneratingModal from '../../../components/AIGeneratingModal';
 
 const ImageToCalorieFeature = () => {
   const navigation = useNavigation();
@@ -144,7 +145,7 @@ const ImageToCalorieFeature = () => {
               ) : (
                 <View style={styles.uploadPlaceholder}>
                   <View style={styles.iconCircle}>
-                    <Ionicons name="camera" size={32} color="#1A1A1A" />
+                    <Ionicons name="camera" size={32} color="#00C896" />
                   </View>
                   <Text style={styles.uploadText}>上传食物照片</Text>
                 </View>
@@ -157,11 +158,7 @@ const ImageToCalorieFeature = () => {
                 onPress={handleAnalyze}
                 disabled={loading}
               >
-                {loading ? (
-                  <ActivityIndicator color="white" />
-                ) : (
-                  <Text style={styles.buttonText}>开始分析</Text>
-                )}
+                <Text style={styles.buttonText}>开始分析</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -172,7 +169,7 @@ const ImageToCalorieFeature = () => {
           <View style={styles.historySection}>
             <Text style={styles.historySectionTitle}>分析记录</Text>
             {loadingHistory ? (
-              <ActivityIndicator color="#1A1A1A" style={{ marginTop: 20 }} />
+              <ActivityIndicator color="#00C896" style={{ marginTop: 20 }} />
             ) : history.length > 0 ? (
               <View style={styles.historyList}>
                 {history.map((item) => (
@@ -182,7 +179,7 @@ const ImageToCalorieFeature = () => {
                     onPress={() => handleHistoryPress(item)}
                   >
                     <View style={styles.historyIcon}>
-                      <Ionicons name="flame-outline" size={20} color="#666" />
+                      <Ionicons name="flame-outline" size={20} color="#999" />
                     </View>
                     <View style={styles.historyContent}>
                       <Text style={styles.historyTitle} numberOfLines={1}>
@@ -192,7 +189,7 @@ const ImageToCalorieFeature = () => {
                         {new Date(item.created_at).toLocaleDateString()}
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={16} color="#CCC" />
+                    <Ionicons name="chevron-forward" size={16} color="#999" />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -202,6 +199,7 @@ const ImageToCalorieFeature = () => {
           </View>
         </ScrollView>
       </SafeAreaView>
+      <AIGeneratingModal visible={loading} />
     </View>
   );
 };
@@ -231,20 +229,23 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#1A1A1A',
+    fontStyle: 'italic',
   },
   content: {
     padding: 20,
   },
   card: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 24,
     padding: 20,
     marginBottom: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   uploadArea: {
     width: '100%',
@@ -252,7 +253,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9F9F9',
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#EEEEEE',
+    borderColor: '#E0E0E0',
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
@@ -266,10 +267,17 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#EEEEEE',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   uploadText: {
     fontSize: 14,
@@ -281,29 +289,37 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   analyzeButton: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: '#00C896',
     paddingVertical: 16,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#00C896',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+    fontStyle: 'italic',
   },
   buttonDisabled: {
     opacity: 0.7,
   },
   resultCard: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 24,
     padding: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   resultHeader: {
     flexDirection: 'row',
@@ -315,15 +331,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#1A1A1A',
+    fontStyle: 'italic',
   },
   tag: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: 'rgba(0,200,150,0.1)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(0,200,150,0.3)',
   },
   tagText: {
-    color: '#4CAF50',
+    color: '#00C896',
     fontSize: 10,
     fontWeight: '700',
   },
@@ -344,7 +363,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#EEEEEE',
+    backgroundColor: '#E0E0E0',
     marginBottom: 24,
   },
   macrosGrid: {
@@ -375,6 +394,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1A1A1A',
     marginBottom: 16,
+    fontStyle: 'italic',
   },
   historyList: {
     gap: 12,
@@ -383,13 +403,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     gap: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
     elevation: 1,
   },
   historyIcon: {

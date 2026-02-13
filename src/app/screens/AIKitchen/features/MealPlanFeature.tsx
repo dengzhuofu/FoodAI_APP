@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { generateMealPlan, MealPlanResult, getHistory, AILog } from '../../../../api/ai';
+import AIGeneratingModal from '../../../components/AIGeneratingModal';
 
 const MealPlanFeature = () => {
   const navigation = useNavigation<any>();
@@ -144,6 +145,7 @@ const MealPlanFeature = () => {
             <TextInput
               style={styles.input}
               placeholder="例如：不吃香菜、海鲜过敏..."
+              placeholderTextColor="#999"
               value={restrictions}
               onChangeText={setRestrictions}
             />
@@ -152,6 +154,7 @@ const MealPlanFeature = () => {
             <TextInput
               style={styles.input}
               placeholder="例如：喜欢川菜、低脂..."
+              placeholderTextColor="#999"
               value={preferences}
               onChangeText={setPreferences}
             />
@@ -164,6 +167,8 @@ const MealPlanFeature = () => {
                   value={headcount}
                   onChangeText={setHeadcount}
                   keyboardType="numeric"
+                  placeholderTextColor="#999"
+                  color="#1A1A1A"
                 />
               </View>
               <View style={{ flex: 1, marginLeft: 10 }}>
@@ -173,6 +178,8 @@ const MealPlanFeature = () => {
                   value={days}
                   onChangeText={setDays}
                   keyboardType="numeric"
+                  placeholderTextColor="#999"
+                  color="#1A1A1A"
                 />
               </View>
             </View>
@@ -194,6 +201,7 @@ const MealPlanFeature = () => {
             <TextInput
               style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
               placeholder="例如：周三中午需要在公司吃便当，晚餐想吃鱼..."
+              placeholderTextColor="#999"
               value={notes}
               onChangeText={setNotes}
               multiline
@@ -204,11 +212,7 @@ const MealPlanFeature = () => {
               onPress={handleGenerate}
               disabled={loading}
             >
-              {loading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text style={styles.buttonText}>生成计划</Text>
-              )}
+              <Text style={styles.buttonText}>生成计划</Text>
             </TouchableOpacity>
           </View>
 
@@ -216,7 +220,7 @@ const MealPlanFeature = () => {
           <View style={styles.historySection}>
             <Text style={styles.historySectionTitle}>历史记录</Text>
             {loadingHistory ? (
-              <ActivityIndicator color="#1A1A1A" style={{ marginTop: 20 }} />
+              <ActivityIndicator color="#00C896" style={{ marginTop: 20 }} />
             ) : history.length > 0 ? (
               <View style={styles.historyList}>
                 {history.map((item) => (
@@ -226,7 +230,7 @@ const MealPlanFeature = () => {
                     onPress={() => handleHistoryPress(item)}
                   >
                     <View style={styles.historyIcon}>
-                       <Ionicons name="calendar-outline" size={20} color="#666" />
+                       <Ionicons name="calendar-outline" size={20} color="#999" />
                     </View>
                     <View style={styles.historyContent}>
                       <Text style={styles.historyTitle} numberOfLines={1}>
@@ -236,7 +240,7 @@ const MealPlanFeature = () => {
                         {new Date(item.created_at).toLocaleDateString()}
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={16} color="#CCC" />
+                    <Ionicons name="chevron-forward" size={16} color="#999" />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -248,6 +252,7 @@ const MealPlanFeature = () => {
           <View style={{ height: 40 }} />
         </ScrollView>
       </SafeAreaView>
+      <AIGeneratingModal visible={loading} />
     </View>
   );
 };
@@ -277,19 +282,22 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#1A1A1A',
+    fontStyle: 'italic',
   },
   content: {
     padding: 20,
   },
   card: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 24,
     padding: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   label: {
     fontSize: 14,
@@ -297,6 +305,7 @@ const styles = StyleSheet.create({
     color: '#1A1A1A',
     marginBottom: 8,
     marginTop: 16,
+    fontStyle: 'italic',
   },
   input: {
     backgroundColor: '#F9F9F9',
@@ -305,7 +314,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#1A1A1A',
     borderWidth: 1,
-    borderColor: '#EEEEEE',
+    borderColor: '#E0E0E0',
   },
   row: {
     flexDirection: 'row',
@@ -317,39 +326,45 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   tag: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F0F0F0',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
     marginRight: 10,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#EEEEEE',
+    borderColor: '#E0E0E0',
   },
   tagActive: {
-    backgroundColor: '#1A1A1A',
-    borderColor: '#1A1A1A',
+    backgroundColor: 'rgba(0,200,150,0.1)',
+    borderColor: '#00C896',
   },
   tagText: {
     color: '#666',
     fontSize: 14,
   },
   tagTextActive: {
-    color: 'white',
+    color: '#00C896',
     fontWeight: '600',
   },
   generateButton: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: '#00C896',
     paddingVertical: 16,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 24,
+    shadowColor: '#00C896',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+    fontStyle: 'italic',
   },
   buttonDisabled: {
     opacity: 0.7,
@@ -363,6 +378,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#1A1A1A',
     marginBottom: 8,
+    fontStyle: 'italic',
   },
   resultOverview: {
     fontSize: 15,
@@ -371,28 +387,36 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   dayCard: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   dayHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: '#E0E0E0',
     paddingBottom: 12,
   },
   dayTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#1A1A1A',
+    fontStyle: 'italic',
   },
   dayCalories: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: '#00C896',
   },
   mealRow: {
     flexDirection: 'row',
@@ -407,6 +431,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
     width: 60,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   mealTypeText: {
     fontSize: 12,
@@ -421,7 +447,7 @@ const styles = StyleSheet.create({
   },
   mealDesc: {
     fontSize: 13,
-    color: '#999',
+    color: '#666',
   },
   mealCalories: {
     fontSize: 12,
@@ -434,8 +460,15 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingVertical: 12,
     paddingHorizontal: 32,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#FFFFFF',
     borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   closeBtnText: {
     color: '#1A1A1A',
@@ -451,6 +484,7 @@ const styles = StyleSheet.create({
     color: '#1A1A1A',
     marginBottom: 16,
     paddingHorizontal: 4,
+    fontStyle: 'italic',
   },
   historyList: {
     gap: 12,
@@ -459,13 +493,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     gap: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
     elevation: 1,
   },
   historyIcon: {

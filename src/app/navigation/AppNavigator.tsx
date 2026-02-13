@@ -48,6 +48,7 @@ import FlavorProfilePage from '../screens/Profile/FlavorProfilePage';
 
 import PublishRecipeScreen from '../screens/Publish/PublishRecipeScreen';
 import PublishStoreScreen from '../screens/Publish/PublishStoreScreen';
+import DraftBoxScreen from '../screens/Publish/DraftBoxScreen';
 
 import MapSelectorScreen from '../screens/Map/MapSelectorScreen';
 import RoutePlanScreen from '../screens/Map/RoutePlanScreen';
@@ -73,42 +74,81 @@ const MainTabs = () => {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.textSecondary,
+        tabBarActiveTintColor: '#1A1A1A', // Active: Dark Bold
+        tabBarInactiveTintColor: '#BDBDBD', // Inactive: Grey
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: keyof typeof Ionicons.glyphMap = 'home';
-
+          
           if (route.name === 'Recommend') {
-            iconName = focused ? 'home' : 'home-outline';
+            iconName = 'home'; // Classic & Clean
           } else if (route.name === 'Explore') {
-            iconName = focused ? 'compass' : 'compass-outline';
+            iconName = 'compass'; // Discovery
           } else if (route.name === 'AIKitchen') {
-            iconName = focused ? 'restaurant' : 'restaurant-outline';
+            iconName = 'sparkles'; // Keep this one
           } else if (route.name === 'Profile') {
-            iconName = focused ? 'person' : 'person-outline';
+            iconName = 'person-circle'; // Avatar style
           } else if (route.name === 'PublishTab') {
-            iconName = 'add-circle';
-            size = 55;
-            color = theme.colors.primary;
+            // Special handling for Publish button, kept separate
+            return (
+              <View style={{
+                width: 50,
+                height: 50,
+                borderRadius: 28,
+                backgroundColor: '#00C896', 
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: 0,
+                shadowColor: '#00C896',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.4,
+                shadowRadius: 8,
+                elevation: 8,
+              }}>
+                <Ionicons name="add" size={32} color="#FFF" />
+              </View>
+            );
           }
 
-          return <Ionicons name={iconName} size={size} color={color} />;
+          // Custom Icon Renderer for standard tabs
+          return (
+            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+               {/* Decorative background for focused state */}
+               {focused && (
+                 <View style={{
+                   position: 'absolute',
+                   top: -2,
+                   right: -6,
+                   width: 6,
+                   height: 6,
+                   borderRadius: 3,
+                   backgroundColor: '#00C896', // The "Green Dot" accent
+                 }} />
+               )}
+               
+               {/* Icon */}
+               <Ionicons 
+                 name={focused ? iconName as any : `${iconName}-outline` as any} 
+                 size={24} 
+                 color={focused ? '#1A1A1A' : '#BDBDBD'} 
+               />
+            </View>
+          );
         },
         tabBarStyle: {
           borderTopWidth: 0,
-          height: Platform.OS === 'ios' ? 108 : 78,
+          height: Platform.OS === 'ios' ? 90 : 80, 
           paddingBottom: Platform.OS === 'ios' ? 28 : 12,
-          paddingTop: 8,
+          paddingTop: 12,
           backgroundColor: '#FFFFFF',
-          elevation: 8,
+          elevation: 10,
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.05,
-          shadowRadius: 8,
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.08,
+          shadowRadius: 12,
         },
         tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '600',
+          fontSize: 11,
+          fontWeight: '700', // Bold text for that strong look
           marginTop: 4,
         },
       })}
@@ -129,24 +169,7 @@ const MainTabs = () => {
         options={{ 
           title: 'Publish',
           tabBarLabel: () => null,
-          tabBarIcon: ({ focused }) => (
-            <View style={{
-              width: 50,
-              height: 50,
-              borderRadius: 28,
-              backgroundColor: '#1A1A1A',
-              justifyContent: 'center',
-              alignItems: 'center',
-              marginBottom: 0,
-              shadowColor: '#1A1A1A',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
-              elevation: 4,
-            }}>
-              <Ionicons name="add" size={32} color="#FFF" />
-            </View>
-          ),
+          // icon renderer is handled in screenOptions
         }}
         listeners={({ navigation }) => ({
           tabPress: (e) => {
@@ -259,6 +282,7 @@ const AppNavigator = () => {
             
             <Stack.Screen name="PublishRecipe" component={PublishRecipeScreen} options={{ title: '发布菜谱', headerShown: false }} />
             <Stack.Screen name="PublishStore" component={PublishStoreScreen} options={{ title: '发布探店', headerShown: false }} />
+            <Stack.Screen name="DraftBox" component={DraftBoxScreen} options={{ title: '草稿箱', headerShown: false }} />
 
             <Stack.Screen name="MapSelector" component={MapSelectorScreen} options={{ headerShown: false }} />
             <Stack.Screen name="RoutePlan" component={RoutePlanScreen} options={{ headerShown: false }} />

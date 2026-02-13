@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { saveToken, getTokenStatus, listTools, callTool, chatWithMCP, MCPTool } from '../../../../api/mcdonalds';
 import Markdown, { ASTNode } from 'react-native-markdown-display';
+import AIGeneratingModal from '../../../components/AIGeneratingModal';
 
 // ...
 
@@ -202,9 +203,12 @@ const McDonaldsAssistantFeature = () => {
         style={{
           body: { color: '#1A1A1A', fontSize: 15, lineHeight: 22 },
           // image style is now handled by custom rule
-          link: { color: '#007AFF' },
+          link: { color: '#00C896' },
           paragraph: { marginVertical: 8 }, // Increased spacing
           list_item: { marginBottom: 10 }, // Increased list item spacing
+          heading1: { color: '#00C896', fontWeight: 'bold' },
+          heading2: { color: '#00C896', fontWeight: 'bold' },
+          strong: { color: '#000000', fontWeight: 'bold' },
         }}
       >
         {content}
@@ -232,10 +236,11 @@ const McDonaldsAssistantFeature = () => {
             placeholderTextColor="#999"
           />
           <TouchableOpacity style={styles.button} onPress={handleSaveToken} disabled={loading}>
-            {loading ? <ActivityIndicator color="white" /> : <Text style={styles.buttonText}>保存 Token</Text>}
+            <Text style={styles.buttonText}>保存 Token</Text>
           </TouchableOpacity>
           <Text style={styles.hint}>Token 将安全保存在您的账户中。</Text>
         </View>
+        <AIGeneratingModal visible={loading} />
       </SafeAreaView>
     );
   }
@@ -268,17 +273,16 @@ const McDonaldsAssistantFeature = () => {
       {activeTab === 'tools' ? (
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.sectionTitle}>可用工具</Text>
-          {loading && <ActivityIndicator />}
           {tools.map((tool, index) => (
             <TouchableOpacity key={index} style={styles.toolCard} onPress={() => handleCallTool(tool)}>
               <View style={styles.toolIcon}>
-                <Ionicons name="construct-outline" size={24} color="#1A1A1A" />
+                <Ionicons name="construct-outline" size={24} color="#FFFFFF" />
               </View>
               <View style={styles.toolInfo}>
                 <Text style={styles.toolName}>{tool.name}</Text>
                 <Text style={styles.toolDesc}>{tool.description}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#CCC" />
+              <Ionicons name="chevron-forward" size={20} color="#999" />
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -301,7 +305,6 @@ const McDonaldsAssistantFeature = () => {
                 )}
               </View>
             ))}
-            {chatLoading && <ActivityIndicator style={{ marginTop: 10 }} />}
           </ScrollView>
           <View style={styles.inputBar}>
             <TextInput
@@ -312,11 +315,13 @@ const McDonaldsAssistantFeature = () => {
               placeholderTextColor="#999"
             />
             <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
-              <Ionicons name="send" size={20} color="white" />
+              <Ionicons name="send" size={20} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
       )}
+      
+      <AIGeneratingModal visible={loading || chatLoading} />
     </SafeAreaView>
   );
 };
@@ -332,7 +337,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
   },
   backButton: {
     width: 40,
@@ -344,9 +351,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#1A1A1A',
+    fontStyle: 'italic',
   },
   content: {
     padding: 20,
+    backgroundColor: '#F5F5F5',
+    flex: 1,
   },
   label: {
     fontSize: 16,
@@ -354,25 +364,36 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     color: '#1A1A1A',
   },
+  link: {
+      color: '#00C896',
+      textDecorationLine: 'underline',
+  },
   input: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     padding: 16,
     borderRadius: 12,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#EEEEEE',
+    borderColor: '#E0E0E0',
     marginBottom: 20,
+    color: '#1A1A1A',
   },
   button: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: '#00C896',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
+    shadowColor: '#00C896',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+    fontStyle: 'italic',
   },
   hint: {
     marginTop: 10,
@@ -382,10 +403,10 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+    borderBottomColor: '#E0E0E0',
   },
   tab: {
     flex: 1,
@@ -395,7 +416,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   activeTab: {
-    borderBottomColor: '#1A1A1A',
+    borderBottomColor: '#00C896',
   },
   tabText: {
     fontSize: 16,
@@ -403,32 +424,35 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   activeTabText: {
-    color: '#1A1A1A',
+    color: '#00C896',
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 16,
     color: '#1A1A1A',
+    fontStyle: 'italic',
   },
   toolCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     padding: 16,
     borderRadius: 16,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
+    shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 1,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   toolIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FFF5E6', // Light orange for food/mcdonalds vibe
+    backgroundColor: '#00C896', 
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -444,11 +468,12 @@ const styles = StyleSheet.create({
   },
   toolDesc: {
     fontSize: 12,
-    color: '#666',
+    color: '#999',
   },
   chatContainer: {
     flex: 1,
     padding: 20,
+    backgroundColor: '#F5F5F5',
   },
   messageBubble: {
     maxWidth: '85%',
@@ -457,12 +482,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   userBubble: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: '#E0F2F1',
     alignSelf: 'flex-end',
     borderBottomRightRadius: 4,
+    borderWidth: 1,
+    borderColor: '#B2DFDB',
   },
   assistantBubble: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     alignSelf: 'flex-start',
     borderBottomLeftRadius: 4,
     shadowColor: '#000',
@@ -470,13 +497,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   messageText: {
     fontSize: 15,
     lineHeight: 22,
   },
   userText: {
-    color: 'white',
+    color: '#004D40',
+    fontWeight: '600',
   },
   assistantText: {
     color: '#1A1A1A',
@@ -484,32 +514,38 @@ const styles = StyleSheet.create({
   inputBar: {
     flexDirection: 'row',
     padding: 16,
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
+    borderTopColor: '#E0E0E0',
     alignItems: 'center',
   },
   chatInput: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F0F0F0',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 24,
     marginRight: 12,
     fontSize: 15,
+    color: '#1A1A1A',
   },
   sendButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: '#00C896',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#00C896',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   toolCallsContainer: {
       marginTop: 8,
       padding: 8,
-      backgroundColor: '#F9F9F9',
+      backgroundColor: '#F0F0F0',
       borderRadius: 8,
   },
   toolCallsTitle: {
@@ -523,7 +559,7 @@ const styles = StyleSheet.create({
   },
   toolCallName: {
       fontSize: 12,
-      color: '#1A1A1A',
+      color: '#333',
       fontWeight: '600',
   },
   toolCallResult: {

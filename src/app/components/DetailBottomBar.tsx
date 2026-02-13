@@ -243,13 +243,17 @@ const DetailBottomBar: React.FC<DetailBottomBarProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    ...theme.shadows.sm,
+    backgroundColor: theme.colors.surface,
+    borderTopWidth: 0,
+    borderTopColor: 'transparent',
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
   },
   safeArea: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
   },
   barContent: {
     flexDirection: 'row',
@@ -259,26 +263,29 @@ const styles = StyleSheet.create({
     height: 60,
   },
   userAvatarSmall: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginRight: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
   },
   inputPlaceholder: {
     flex: 1,
-    height: 36,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 18,
+    height: 40,
+    backgroundColor: theme.colors.surfaceVariant,
+    borderRadius: 20, // Full pill
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     justifyContent: 'space-between',
-    marginRight: 12,
+    marginRight: 16,
   },
   placeholderText: {
     fontSize: 13,
-    color: '#999',
-    includeFontPadding: false, // Android fix
+    color: theme.colors.textTertiary,
+    includeFontPadding: false,
+    fontWeight: '500',
   },
   placeholderIcons: {
     flexDirection: 'row',
@@ -286,7 +293,7 @@ const styles = StyleSheet.create({
   actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 16,
   },
   actionItem: {
     flexDirection: 'row',
@@ -295,23 +302,28 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 12,
-    color: '#333',
-    fontWeight: '500',
+    color: theme.colors.text,
+    fontWeight: '700',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(18,18,18,0.6)',
     justifyContent: 'flex-end',
   },
   keyboardAvoidingView: {
     width: '100%',
   },
   inputArea: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    backgroundColor: theme.colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     padding: 16,
     paddingBottom: Platform.OS === 'ios' ? 16 : 16,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 10,
   },
   replyBar: {
     flexDirection: 'row',
@@ -320,11 +332,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: theme.colors.surfaceVariant,
   },
   replyText: {
     fontSize: 12,
-    color: '#666',
+    color: theme.colors.textSecondary,
+    fontWeight: '600',
   },
   imagePreviewContainer: {
     marginBottom: 12,
@@ -343,7 +356,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -6,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 10,
   },
   inputRow: {
@@ -353,14 +366,15 @@ const styles = StyleSheet.create({
   },
   realInput: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 18,
+    backgroundColor: theme.colors.surfaceVariant,
+    borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    minHeight: 40,
+    minHeight: 44,
     maxHeight: 120,
     fontSize: 16,
-    textAlignVertical: 'center', // Android fix
+    textAlignVertical: 'center',
+    color: theme.colors.text,
   },
   iconButton: {
     padding: 8,
@@ -371,19 +385,27 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 18,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     minWidth: 60,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   sendButtonDisabled: {
-    backgroundColor: '#E0E0E0',
+    backgroundColor: theme.colors.surfaceVariant,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   sendButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: '800',
     fontSize: 14,
-    includeFontPadding: false, // Android fix
+    includeFontPadding: false,
+    fontStyle: 'italic',
   },
 });
 

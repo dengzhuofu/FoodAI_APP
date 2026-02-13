@@ -4,7 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Video, ResizeMode } from 'expo-av';
+import VideoDisplay from './VideoDisplay';
 import { theme } from '../styles/theme';
 import { RootStackParamList } from '../navigation/types';
 import { getRecipe, getComments, toggleCollection, Recipe, Comment, toggleLike, recordView } from '../../api/content';
@@ -183,14 +183,17 @@ const RecipeDetailPage = () => {
         >
           {displayMedia.map((item, index) =>
             item.type === 'video' ? (
-              <Video
-                key={`video-${index}`}
-                source={{ uri: item.uri }}
-                style={styles.heroImage}
-                useNativeControls
-                resizeMode={ResizeMode.COVER}
-                shouldPlay={false}
-              />
+              <View key={`video-${index}`} style={styles.heroImage}>
+                <VideoDisplay
+                  uri={item.uri}
+                  style={StyleSheet.absoluteFill}
+                />
+                 {/* Video Indicator Badge - Moved to bottom right to avoid overlap */}
+                 <View style={styles.videoBadge}>
+                     <Ionicons name="videocam" size={14} color="#FFF" />
+                     <Text style={styles.videoBadgeText}>Video</Text>
+                 </View>
+              </View>
             ) : (
               <Image key={`img-${index}`} source={{ uri: item.uri }} style={styles.heroImage} resizeMode="cover" />
             )
@@ -211,9 +214,6 @@ const RecipeDetailPage = () => {
             ))}
           </View>
         )}
-        
-    
-
       </View>
     );
   };
@@ -370,7 +370,7 @@ const RecipeDetailPage = () => {
   return (
     <View style={styles.container}>
       {/* Fixed Top Bar */}
-      <View style={[styles.topBar, { paddingTop: insets.top + 10 }]}>
+      <View style={[styles.topBar, { paddingTop: insets.top + 20 }]} pointerEvents="box-none">
         <TouchableOpacity 
           style={styles.backButton} 
           onPress={() => navigation.goBack()}
@@ -378,6 +378,12 @@ const RecipeDetailPage = () => {
           <Ionicons name="chevron-back" size={28} color="#333" />
         </TouchableOpacity>
         
+        {/* Author info removed from left, kept in bottom or separate area if needed, 
+            but for now user wants Follow/Share on right. 
+            We can keep author here but maybe simplify or move Follow button to right explicitly.
+            Actually user said "Top bar fixed, follow and share on right".
+            Let's keep author on left but ensure Follow is on right. 
+        */}
         <TouchableOpacity
           style={styles.topBarAuthor}
           activeOpacity={0.85}
@@ -413,7 +419,7 @@ const RecipeDetailPage = () => {
       </View>
 
       <ScrollView 
-        style={{ flex: 1 }}
+        style={{ flex: 1, marginTop: insets.top + 4 }} // Add margin to scrollview content so it starts below fixed header
         contentContainerStyle={styles.scrollContent} 
         showsVerticalScrollIndicator={false}
       >
@@ -451,7 +457,7 @@ const RecipeDetailPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9F9F9',
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     paddingBottom: 100,
@@ -462,66 +468,72 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   imageContainer: {
-    height: 400,
+    height: width, // 1:1 Aspect Ratio
     width: '100%',
     position: 'relative',
-    marginTop: 0, 
-  },
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: '#000',
+    marginTop: 60, // Push below Top Bar (approx height)
   },
   paginationContainer: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 16,
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 8,
+    zIndex: 2,
   },
   paginationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    transform: [{ skewX: '-10deg' }],
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.4)',
   },
   paginationDotActive: {
-    backgroundColor: theme.colors.primary,
-    width: 24,
+    backgroundColor: '#FFF',
+    width: 16,
   },
   paginationDotInactive: {
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.4)',
   },
   heroImage: {
     width: width,
-    height: 400,
+    height: width, // Match container
+    justifyContent: 'center',
   },
-  gradient: {
+  videoBadge: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 240,
+    bottom: 16,
+    right: 16,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+    zIndex: 5,
+  },
+  videoBadgeText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: '600',
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingBottom: 12,
-    backgroundColor: 'transparent',
-    borderBottomWidth: 0,
-    zIndex: 100,
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
+    zIndex: 100,
+    backgroundColor: '#FFFFFF', // Solid background
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   backButton: {
     width: 40,
@@ -530,7 +542,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.9)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -541,167 +552,121 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 8,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    marginLeft: 12,
+    backgroundColor: 'rgba(255,255,255,0.95)',
     padding: 4,
     paddingRight: 12,
     borderRadius: 20,
-    alignSelf: 'center',
-    maxWidth: 180,
-  },
-  topBarAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginRight: 8,
-    backgroundColor: '#EEE',
-    borderWidth: 2,
-    borderColor: theme.colors.primary,
-  },
-  topBarAuthorName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#333',
-    maxWidth: 120,
-  },
-  topBarActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  followButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 18,
-    backgroundColor: theme.colors.primary,
-    borderWidth: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  followingButton: {
-    backgroundColor: theme.colors.surfaceVariant,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  followButtonText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#FFF',
-    fontStyle: 'italic',
-  },
-  followingButtonText: {
-    color: theme.colors.textSecondary,
-  },
-  shareButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    maxWidth: 160,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
-  headerContent: {
+  topBarAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    marginRight: 8,
+  },
+  topBarAuthorName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+    flex: 1,
+  },
+  topBarActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  followButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: theme.colors.primary,
+  },
+  followingButton: {
+    backgroundColor: '#E0E0E0',
+  },
+  followButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  followingButtonText: {
+    color: '#666',
+  },
+  shareButton: {
+    width: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  content: {
+    marginTop: 16, // Positive spacing
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 24,
     paddingBottom: 24,
+    minHeight: 500,
+  },
+  headerContent: {
+    marginBottom: 24,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: theme.colors.text,
-    marginBottom: 12,
-    lineHeight: 38,
-    fontStyle: 'italic',
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    marginBottom: 8,
+    lineHeight: 34,
+  },
+  description: {
+    fontSize: 15,
+    color: '#666',
+    lineHeight: 24,
+    marginBottom: 16,
   },
   tagsSection: {
     marginBottom: 24,
   },
   tagsScroll: {
-    gap: 10,
+    gap: 8,
   },
   tagChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surfaceVariant,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 0,
+    backgroundColor: '#F5F7FA',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8, // Soft rounded
     gap: 6,
-    transform: [{ skewX: '-10deg' }],
   },
   tagChipText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: theme.colors.text,
-    fontStyle: 'italic',
-  },
-  authorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#FFF',
-    marginRight: 12,
-  },
-  authorName: {
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  content: {
-    padding: 24,
-    marginTop: -40,
-    backgroundColor: theme.colors.background,
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-  },
-  description: {
-    fontSize: 16,
-    color: theme.colors.textSecondary,
-    marginBottom: 36,
-    lineHeight: 26,
-    fontWeight: '400',
-    letterSpacing: 0.2,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#555',
   },
   section: {
-    marginBottom: 40,
+    marginBottom: 32,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: theme.colors.text,
-    marginBottom: 20,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 16,
     letterSpacing: 0.5,
-    fontStyle: 'italic',
-    textTransform: 'uppercase',
   },
   nutritionGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: theme.colors.surface,
-    padding: 24,
-    borderRadius: 24,
-    borderWidth: 0,
-    alignItems: 'center',
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 6,
+    backgroundColor: '#F9FAFB',
+    padding: 16,
+    borderRadius: 16,
   },
   nutritionItem: {
     flex: 1,
@@ -709,52 +674,39 @@ const styles = StyleSheet.create({
   },
   verticalDivider: {
     width: 1,
-    height: 32,
-    backgroundColor: theme.colors.surfaceVariant,
+    height: 24,
+    backgroundColor: '#E5E7EB',
   },
   nutritionValue: {
-    fontSize: 20,
-    fontWeight: '900',
-    marginBottom: 6,
-    color: theme.colors.primary,
-    fontStyle: 'italic',
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    marginBottom: 4,
   },
   nutritionLabel: {
     fontSize: 11,
-    color: theme.colors.textSecondary,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    color: '#9CA3AF',
+    fontWeight: '600',
   },
   listContainer: {
-    gap: 16,
+    gap: 12,
   },
   ingredientItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: theme.colors.surface,
-    borderRadius: 16,
-    marginBottom: 12,
-    borderWidth: 0,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
   ingredientItemChecked: {
-    backgroundColor: theme.colors.surfaceVariant,
     opacity: 0.5,
-    shadowOpacity: 0,
-    elevation: 0,
   },
   checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 22,
+    height: 22,
+    borderRadius: 11, // Circle
     borderWidth: 2,
-    borderColor: theme.colors.primary,
+    borderColor: '#D1D5DB',
     marginRight: 16,
     justifyContent: 'center',
     alignItems: 'center',
@@ -765,90 +717,67 @@ const styles = StyleSheet.create({
   },
   ingredientText: {
     fontSize: 16,
-    color: theme.colors.text,
+    color: '#374151',
     flex: 1,
-    fontWeight: '600',
-  },
-  ingredientAmount: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
     fontWeight: '500',
   },
   ingredientTextChecked: {
-    color: theme.colors.textTertiary,
     textDecorationLine: 'line-through',
+    color: '#9CA3AF',
+  },
+  ingredientAmount: {
+    fontSize: 15,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.primary,
-    padding: 18,
-    borderRadius: 24,
-    marginTop: 12,
-    gap: 10,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
+    backgroundColor: '#F3F4F6',
+    padding: 16,
+    borderRadius: 16,
+    marginTop: 8,
+    gap: 8,
   },
   addButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    fontStyle: 'italic',
+    color: theme.colors.primary,
+    fontSize: 14,
+    fontWeight: '700',
   },
   stepItem: {
     flexDirection: 'row',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   stepNumberContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 20,
-    marginTop: 4,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    marginRight: 16,
+    marginTop: 2,
   },
   stepNumber: {
     color: '#FFF',
-    fontSize: 16,
-    fontWeight: '900',
-    fontStyle: 'italic',
+    fontSize: 14,
+    fontWeight: '700',
   },
   stepContent: {
     flex: 1,
-    backgroundColor: theme.colors.surface,
-    padding: 20,
-    borderRadius: 20,
-    borderWidth: 0,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
   },
   stepText: {
     fontSize: 16,
-    color: theme.colors.text,
+    color: '#374151',
     lineHeight: 26,
-    fontWeight: '500',
     marginBottom: 12,
   },
   stepImage: {
     width: '100%',
-    height: 200,
+    height: 180,
     borderRadius: 12,
-    marginTop: 8,
+    backgroundColor: '#F3F4F6',
   },
 });
 

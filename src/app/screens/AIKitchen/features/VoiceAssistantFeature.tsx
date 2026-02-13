@@ -406,24 +406,24 @@ const VoiceAssistantFeature = () => {
         <View style={{ paddingHorizontal: 12, paddingVertical: 8 }}>
           <Markdown
             style={{
-              body: { color: '#333', fontSize: 15, lineHeight: 24 },
-              heading1: { color: '#1A1A1A', fontWeight: 'bold', fontSize: 20, marginBottom: 8, marginTop: 8 },
-              heading2: { color: '#1A1A1A', fontWeight: 'bold', fontSize: 18, marginBottom: 8, marginTop: 8 },
-              heading3: { color: '#1A1A1A', fontWeight: 'bold', fontSize: 16, marginBottom: 6, marginTop: 6 },
+              body: { color: '#1A1A1A', fontSize: 15, lineHeight: 24 },
+              heading1: { color: '#00C896', fontWeight: 'bold', fontSize: 20, marginBottom: 8, marginTop: 8 },
+              heading2: { color: '#00C896', fontWeight: 'bold', fontSize: 18, marginBottom: 8, marginTop: 8 },
+              heading3: { color: '#00C896', fontWeight: 'bold', fontSize: 16, marginBottom: 6, marginTop: 6 },
               strong: { fontWeight: 'bold', color: '#1A1A1A' },
-              em: { fontStyle: 'italic', color: '#333' },
-              link: { color: '#2196F3', textDecorationLine: 'underline' },
+              em: { fontStyle: 'italic', color: '#666' },
+              link: { color: '#2DCCFF', textDecorationLine: 'underline' },
               blockquote: { 
                 borderLeftWidth: 4, 
-                borderLeftColor: '#DDD', 
+                borderLeftColor: '#00C896', 
                 paddingLeft: 10, 
                 opacity: 0.9,
                 backgroundColor: '#F5F5F5',
                 marginVertical: 4
               },
               code_inline: { 
-                backgroundColor: '#F0F0F0', 
-                color: '#E91E63', 
+                backgroundColor: '#F5F5F5', 
+                color: '#EBFF00', 
                 borderRadius: 4, 
                 paddingHorizontal: 4,
                 fontFamily: 'monospace'
@@ -454,13 +454,13 @@ const VoiceAssistantFeature = () => {
               },
               // Fix for react-native-markdown-display list bullets color
               bullet_list_icon: { 
-                color: '#333', 
+                color: '#00C896', 
                 marginRight: 8,
                 fontSize: 20,
                 lineHeight: 24
               },
               ordered_list_icon: { 
-                color: '#333', 
+                color: '#00C896', 
                 marginRight: 8,
                 fontSize: 15,
                 lineHeight: 24
@@ -474,7 +474,7 @@ const VoiceAssistantFeature = () => {
                 justifyContent: 'flex-start',
               },
               text: {
-                color: '#333'
+                color: '#1A1A1A'
               }
             }}
           >
@@ -488,8 +488,8 @@ const VoiceAssistantFeature = () => {
       <MessageText 
         {...props}
         textStyle={{
-          left: { color: '#333', fontSize: 15, lineHeight: 22 },
-          right: { color: 'white', fontSize: 15, lineHeight: 22 },
+          left: { color: '#1A1A1A', fontSize: 15, lineHeight: 22 },
+          right: { color: '#121212', fontSize: 15, lineHeight: 22, fontWeight: '600' },
         }}
       />
     );
@@ -523,29 +523,35 @@ const VoiceAssistantFeature = () => {
             {...props}
             wrapperStyle={{
               left: {
-                backgroundColor: 'white',
+                backgroundColor: '#FFFFFF',
                 borderRadius: 18,
                 borderTopLeftRadius: 2,
                 padding: 2,
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
+                shadowOpacity: 0.1,
                 shadowRadius: 2,
                 elevation: 1,
                 maxWidth:width * 0.75,
                 marginLeft: 0,
+                borderWidth: 1,
+                borderColor: '#E0E0E0',
               },
               right: {
-                backgroundColor: '#1A1A1A',
+                backgroundColor: '#00C896',
                 borderRadius: 18,
                 borderTopRightRadius: 2,
                 padding: 2,
                 maxWidth: width * 0.75, 
+                shadowColor: "#00C896",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 4,
               },
             }}
             textStyle={{
               left: { 
-                color: '#333',
+                color: '#1A1A1A',
                 fontSize: 15,
                 lineHeight: 22,
                 marginTop: 6,
@@ -554,7 +560,7 @@ const VoiceAssistantFeature = () => {
                 marginRight: 8,
               },
               right: { 
-                color: 'white',
+                color: '#121212',
                 fontSize: 15,
                 lineHeight: 22,
                 marginTop: 6,
@@ -573,7 +579,7 @@ const VoiceAssistantFeature = () => {
     return (
       <Send {...props}>
         <View style={styles.sendButton}>
-          <Ionicons name="arrow-up" size={20} color="white" />
+          <Ionicons name="arrow-up" size={20} color="#121212" />
         </View>
       </Send>
     );
@@ -596,7 +602,7 @@ const VoiceAssistantFeature = () => {
                 {isProcessingAudio ? (
                    <ActivityIndicator color="#666" size="small" />
                 ) : (
-                   <Ionicons name={isRecording ? "mic" : "mic-outline"} size={24} color={isRecording ? "white" : "#666"} />
+                   <Ionicons name={isRecording ? "mic" : "mic-outline"} size={24} color={isRecording ? "#121212" : "#A0A0A0"} />
                 )}
               </TouchableOpacity>
             )}
@@ -636,7 +642,7 @@ const VoiceAssistantFeature = () => {
             renderAvatar={() => null}
             isTyping={isTyping}
             placeholder={isRecording ? "正在录音..." : "输入消息..."}
-            timeTextStyle={{ left: { color: '#999', fontSize: 10 }, right: { color: '#ccc', fontSize: 10 } }}
+            timeTextStyle={{ left: { color: '#999', fontSize: 10 }, right: { color: 'rgba(0,0,0,0.5)', fontSize: 10 } }}
             renderInputToolbar={renderInputToolbar}
             textInputStyle={styles.textInput}
             minInputToolbarHeight={60}
@@ -662,7 +668,7 @@ const VoiceAssistantFeature = () => {
               <View style={styles.sidebarHeader}>
                 <Text style={styles.sidebarTitle}>历史会话</Text>
                 <TouchableOpacity onPress={handleCreateNewChat} style={styles.newChatBtn}>
-                  <Ionicons name="add" size={20} color="white" />
+                  <Ionicons name="add" size={20} color="#121212" />
                   <Text style={styles.newChatText}>新对话</Text>
                 </TouchableOpacity>
               </View>
@@ -676,7 +682,7 @@ const VoiceAssistantFeature = () => {
                       style={{flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12}}
                       onPress={() => selectSession(item.id)}
                     >
-                      <Ionicons name="chatbubble-outline" size={20} color={item.id === currentSessionId ? "#1A1A1A" : "#666"} />
+                      <Ionicons name="chatbubble-outline" size={20} color={item.id === currentSessionId ? "#00C896" : "#666"} />
                       <Text style={[styles.sessionTitle, item.id === currentSessionId && styles.sessionTitleActive]} numberOfLines={1}>
                         {item.title}
                       </Text>
@@ -733,7 +739,7 @@ const VoiceAssistantFeature = () => {
             <View style={styles.presetModalHeader}>
               <Text style={styles.presetModalTitle}>选择智能体</Text>
               <TouchableOpacity onPress={() => setIsNewChatModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#333" />
+                <Ionicons name="close" size={24} color="#1A1A1A" />
               </TouchableOpacity>
             </View>
             
@@ -753,7 +759,7 @@ const VoiceAssistantFeature = () => {
                     onPress={() => setSelectedPresetId(item.id.toString())}
                   >
                     <View style={styles.presetIcon}>
-                       <Ionicons name="person" size={20} color={selectedPresetId === item.id.toString() ? "white" : "#666"} />
+                       <Ionicons name="person" size={20} color={selectedPresetId === item.id.toString() ? "#121212" : "#A0A0A0"} />
                     </View>
                     <View style={{flex: 1}}>
                       <Text style={[styles.presetName, selectedPresetId === item.id.toString() && styles.presetNameActive]}>
@@ -775,7 +781,7 @@ const VoiceAssistantFeature = () => {
                               handleEditPreset(item);
                             }}
                           >
-                            <Ionicons name="pencil" size={18} color="#666" />
+                            <Ionicons name="pencil" size={18} color="#A0A0A0" />
                           </TouchableOpacity>
                           <TouchableOpacity 
                             style={{padding: 8}}
@@ -790,7 +796,7 @@ const VoiceAssistantFeature = () => {
                       )}
                       
                       {selectedPresetId === item.id.toString() && (
-                        <Ionicons name="checkmark-circle" size={24} color="#1A1A1A" />
+                        <Ionicons name="checkmark-circle" size={24} color="#00C896" />
                       )}
                     </View>
                   </TouchableOpacity>
@@ -805,7 +811,7 @@ const VoiceAssistantFeature = () => {
                       setIsCreateAgentVisible(true);
                     }}
                   >
-                    <Ionicons name="add-circle-outline" size={20} color="#666" />
+                    <Ionicons name="add-circle-outline" size={20} color="#A0A0A0" />
                     <Text style={styles.createNewAgentText}>创建新智能体</Text>
                   </TouchableOpacity>
                 }
@@ -840,10 +846,9 @@ const VoiceAssistantFeature = () => {
 };
 
 const styles = StyleSheet.create({
-  // ... (keep existing styles)
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#F5F5F5',
   },
   safeArea: {
     flex: 1,
@@ -854,9 +859,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: '#E0E0E0',
   },
   backButton: {
     width: 40,
@@ -874,12 +879,16 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: '#1A1A1A',
+    fontStyle: 'italic',
   },
   content: {
     flex: 1,
+    backgroundColor: '#F5F5F5',
   },
   inputContainer: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
   },
   voiceButton: {
     width: 36,
@@ -892,7 +901,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   voiceButtonActive: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#EBFF00',
   },
   recordingOverlay: {
     position: 'absolute',
@@ -903,17 +912,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   recordingText: {
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    color: 'white',
+    backgroundColor: 'rgba(0,200,150,0.9)',
+    color: '#121212',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     fontSize: 14,
+    fontWeight: 'bold',
   },
   inputToolbar: {
-    backgroundColor: 'white',
-    borderTopColor: '#F0F0F0',
-    borderTopWidth: 1,
+    backgroundColor: '#FFFFFF',
+    borderTopColor: '#E0E0E0',
+    borderTopWidth: 0,
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
@@ -926,12 +936,13 @@ const styles = StyleSheet.create({
     marginRight: 10,
     fontSize: 15,
     lineHeight: 20,
+    color: '#1A1A1A',
   },
   sendButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: '#00C896',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
@@ -955,12 +966,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F7F7F7',
+    backgroundColor: '#F5F5F5',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#EFEFEF',
+    borderColor: '#E0E0E0',
   },
   thinkingHeaderExpanded: {
     borderBottomLeftRadius: 0,
@@ -975,7 +986,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#FFD700', 
+    backgroundColor: '#EBFF00', 
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
@@ -992,7 +1003,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 12,
     borderWidth: 1,
     borderTopWidth: 0,
-    borderColor: '#EFEFEF',
+    borderColor: '#E0E0E0',
   },
   thoughtItem: {
     flexDirection: 'row',
@@ -1014,7 +1025,7 @@ const styles = StyleSheet.create({
   thoughtLine: {
     flex: 1,
     width: 1,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#E0E0E0',
     marginTop: -2,
   },
   thoughtTextContainer: {
@@ -1023,12 +1034,12 @@ const styles = StyleSheet.create({
   },
   thoughtText: {
     fontSize: 12,
-    color: '#555',
+    color: '#666',
     lineHeight: 18,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     flexDirection: 'row',
   },
   modalBackdrop: {
@@ -1036,18 +1047,20 @@ const styles = StyleSheet.create({
   },
   sidebar: {
     width: '80%',
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     height: '100%',
     shadowColor: "#000",
     shadowOffset: { width: 2, height: 0 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.5,
     shadowRadius: 10,
     elevation: 16,
+    borderRightWidth: 1,
+    borderRightColor: '#E0E0E0',
   },
   sidebarHeader: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: '#E0E0E0',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -1056,18 +1069,19 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1A1A1A',
+    fontStyle: 'italic',
   },
   newChatBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1A1A1A',
+    backgroundColor: '#00C896',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
     gap: 4,
   },
   newChatText: {
-    color: 'white',
+    color: '#121212',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -1078,9 +1092,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 8,
     gap: 12,
+    backgroundColor: '#F5F5F5',
   },
   sessionItemActive: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#00C896',
   },
   sessionTitle: {
     fontSize: 15,
@@ -1094,17 +1111,19 @@ const styles = StyleSheet.create({
   // Preset Modal Styles
   modalOverlayCenter: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.8)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   presetModalContent: {
     width: '100%',
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 20,
     maxHeight: '80%',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   presetModalHeader: {
     flexDirection: 'row',
@@ -1116,6 +1135,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1A1A1A',
+    fontStyle: 'italic',
   },
   presetItem: {
     flexDirection: 'row',
@@ -1123,19 +1143,19 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#EFEFEF',
+    borderColor: '#E0E0E0',
     marginBottom: 12,
-    backgroundColor: 'white',
+    backgroundColor: '#F5F5F5',
   },
   presetItemActive: {
-    borderColor: '#1A1A1A',
-    backgroundColor: '#F9F9F9',
+    borderColor: '#00C896',
+    backgroundColor: '#E8F5E9',
   },
   presetIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#E0E0E0',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -1147,7 +1167,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   presetNameActive: {
-    color: '#1A1A1A',
+    color: '#00C896',
   },
   presetDesc: {
     fontSize: 13,
@@ -1155,16 +1175,17 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   startChatBtn: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: '#00C896',
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 12,
   },
   startChatText: {
-    color: 'white',
+    color: '#121212',
     fontSize: 16,
     fontWeight: '600',
+    fontStyle: 'italic',
   },
   createNewAgentBtn: {
     flexDirection: 'row',
@@ -1172,14 +1193,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 16,
     borderWidth: 1,
-    borderColor: '#DDD',
+    borderColor: '#E0E0E0',
     borderStyle: 'dashed',
     borderRadius: 12,
     marginTop: 8,
     gap: 8,
   },
   createNewAgentText: {
-    color: '#666',
+    color: '#A0A0A0',
     fontSize: 15,
     fontWeight: '500',
   },
@@ -1189,14 +1210,14 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'center',
     alignItems: 'flex-start',
     zIndex: 1000,
   },
   deleteConfirmBox: {
     width: '80%',
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
@@ -1205,6 +1226,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   deleteConfirmTitle: {
     fontSize: 18,
@@ -1238,7 +1261,7 @@ const styles = StyleSheet.create({
   deleteBtn: {
     flex: 1,
     paddingVertical: 12,
-    backgroundColor: '#000',
+    backgroundColor: '#FF6B6B',
     borderRadius: 12,
     alignItems: 'center',
   },

@@ -281,7 +281,7 @@ async def get_restaurants(
     q: Optional[str] = None,
     cuisine: Optional[str] = None,
     rating_min: Optional[float] = None,
-    sort_by: str = "created_at",
+    sort_by: str = "created_at", # Default sort by creation time
     desc: bool = True
 ):
     query = Restaurant.all()

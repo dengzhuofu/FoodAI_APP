@@ -146,8 +146,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.screenHorizontal,
     paddingVertical: theme.spacing.sm,
     backgroundColor: theme.colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    borderBottomWidth: 0,
   },
   backButton: {
     padding: 4,
@@ -158,15 +157,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.colors.surface,
-    paddingHorizontal: 12,
-    height: 36,
-    borderRadius: 18,
-    ...theme.shadows.sm,
+    paddingHorizontal: 16,
+    height: 44, // Taller pill
+    borderRadius: 22,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   searchText: {
-    marginLeft: 8,
+    marginLeft: 10,
     fontSize: 14,
     color: theme.colors.text,
+    fontWeight: '600',
   },
   listContent: {
     paddingVertical: theme.spacing.md,
@@ -192,6 +196,8 @@ const styles = StyleSheet.create({
   emptyText: {
     color: theme.colors.textSecondary,
     fontSize: 16,
+    fontWeight: '600',
+    fontStyle: 'italic',
   },
 });
 

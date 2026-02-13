@@ -7,6 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../../../styles/theme';
 import { uploadFile } from '../../../../api/upload';
 import { imageToRecipe, getHistory, AILog } from '../../../../api/ai';
+import AIGeneratingModal from '../../../components/AIGeneratingModal';
 
 const ImageToRecipeFeature = () => {
   const navigation = useNavigation<any>();
@@ -101,7 +102,7 @@ const ImageToRecipeFeature = () => {
               ) : (
                 <View style={styles.uploadPlaceholder}>
                   <View style={styles.iconCircle}>
-                    <Ionicons name="camera" size={32} color="#1A1A1A" />
+                    <Ionicons name="camera" size={32} color="#00C896" />
                   </View>
                   <Text style={styles.uploadText}>点击上传图片</Text>
                 </View>
@@ -114,14 +115,8 @@ const ImageToRecipeFeature = () => {
                 onPress={handleGenerate}
                 disabled={loading}
               >
-                {loading ? (
-                  <ActivityIndicator color="white" />
-                ) : (
-                  <>
-                    <Text style={styles.generateButtonText}>开始识别</Text>
-                    <Ionicons name="arrow-forward" size={20} color="white" style={{ marginLeft: 8 }} />
-                  </>
-                )}
+                <Text style={styles.generateButtonText}>开始识别</Text>
+                <Ionicons name="arrow-forward" size={20} color="#FFFFFF" style={{ marginLeft: 8 }} />
               </TouchableOpacity>
             )}
           </View>
@@ -140,7 +135,7 @@ const ImageToRecipeFeature = () => {
           <View style={styles.historySection}>
             <Text style={styles.historySectionTitle}>生成记录</Text>
             {loadingHistory ? (
-              <ActivityIndicator color="#1A1A1A" style={{ marginTop: 20 }} />
+              <ActivityIndicator color="#00C896" style={{ marginTop: 20 }} />
             ) : history.length > 0 ? (
               <View style={styles.historyList}>
                 {history.map((item) => (
@@ -153,7 +148,7 @@ const ImageToRecipeFeature = () => {
                       {item.output_result?.image_url ? (
                         <Image source={{ uri: item.output_result.image_url }} style={styles.historyImage} />
                       ) : (
-                        <Ionicons name="image-outline" size={20} color="#666" />
+                        <Ionicons name="image-outline" size={20} color="#999" />
                       )}
                     </View>
                     <View style={styles.historyContent}>
@@ -164,7 +159,7 @@ const ImageToRecipeFeature = () => {
                         {new Date(item.created_at).toLocaleDateString()}
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={16} color="#CCC" />
+                    <Ionicons name="chevron-forward" size={16} color="#999" />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -174,6 +169,8 @@ const ImageToRecipeFeature = () => {
           </View>
         </ScrollView>
       </SafeAreaView>
+      
+      <AIGeneratingModal visible={loading} />
     </View>
   );
 };
@@ -203,24 +200,27 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#1A1A1A',
+    fontStyle: 'italic',
   },
   content: {
     padding: 20,
   },
   card: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 24,
     padding: 24,
     marginBottom: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   description: {
     fontSize: 15,
-    color: '#666',
+    color: '#666666',
     marginBottom: 24,
     lineHeight: 22,
   },
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9F9F9',
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#EEEEEE',
+    borderColor: '#E0E0E0',
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
@@ -244,15 +244,22 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#EEEEEE',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   uploadText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#999',
+    color: '#999999',
   },
   previewImage: {
     width: '100%',
@@ -260,16 +267,22 @@ const styles = StyleSheet.create({
   },
   generateButton: {
     flexDirection: 'row',
-    backgroundColor: '#1A1A1A',
+    backgroundColor: '#00C896',
     paddingVertical: 16,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#00C896',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   generateButtonText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+    fontStyle: 'italic',
   },
   buttonDisabled: {
     opacity: 0.7,
@@ -303,6 +316,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1A1A1A',
     marginBottom: 16,
+    fontStyle: 'italic',
   },
   historyList: {
     gap: 12,
@@ -311,13 +325,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     gap: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
     elevation: 1,
   },
   historyIcon: {

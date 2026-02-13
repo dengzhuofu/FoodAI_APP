@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { theme } from '../../../styles/theme';
 import { textToImage, getHistory, AILog } from '../../../../api/ai';
+import AIGeneratingModal from '../../../components/AIGeneratingModal';
 
 const TextToImageFeature = () => {
   const navigation = useNavigation();
@@ -81,7 +82,7 @@ const TextToImageFeature = () => {
               />
               {prompt.length > 0 && (
                 <TouchableOpacity style={styles.clearButton} onPress={() => setPrompt('')}>
-                  <Ionicons name="close-circle" size={20} color="#CCC" />
+                  <Ionicons name="close-circle" size={20} color="#999" />
                 </TouchableOpacity>
               )}
             </View>
@@ -99,14 +100,8 @@ const TextToImageFeature = () => {
               onPress={handleGenerate}
               disabled={loading}
             >
-              {loading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <>
-                  <Text style={styles.buttonText}>开始绘制</Text>
-                  <Ionicons name="brush" size={18} color="white" style={{ marginLeft: 8 }} />
-                </>
-              )}
+              <Text style={styles.buttonText}>开始绘制</Text>
+              <Ionicons name="brush" size={18} color="#FFFFFF" style={{ marginLeft: 8 }} />
             </TouchableOpacity>
           </View>
 
@@ -130,7 +125,7 @@ const TextToImageFeature = () => {
           <View style={styles.historySection}>
             <Text style={styles.historySectionTitle}>绘图记录</Text>
             {loadingHistory ? (
-              <ActivityIndicator color="#1A1A1A" style={{ marginTop: 20 }} />
+              <ActivityIndicator color="#00C896" style={{ marginTop: 20 }} />
             ) : history.length > 0 ? (
               <View style={styles.historyList}>
                 {history.map((item) => (
@@ -140,7 +135,7 @@ const TextToImageFeature = () => {
                     onPress={() => handleHistoryPress(item)}
                   >
                     <View style={styles.historyIcon}>
-                      <Ionicons name="image-outline" size={20} color="#666" />
+                      <Ionicons name="image-outline" size={20} color="#999" />
                     </View>
                     <View style={styles.historyContent}>
                       <Text style={styles.historyTitle} numberOfLines={1}>
@@ -150,7 +145,7 @@ const TextToImageFeature = () => {
                         {new Date(item.created_at).toLocaleDateString()}
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={16} color="#CCC" />
+                    <Ionicons name="chevron-forward" size={16} color="#999" />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -160,6 +155,7 @@ const TextToImageFeature = () => {
           </View>
         </ScrollView>
       </SafeAreaView>
+      <AIGeneratingModal visible={loading} />
     </View>
   );
 };
@@ -189,26 +185,30 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#1A1A1A',
+    fontStyle: 'italic',
   },
   content: {
     padding: 20,
   },
   card: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 24,
     padding: 20,
     marginBottom: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   label: {
     fontSize: 14,
     fontWeight: '700',
     color: '#1A1A1A',
     marginBottom: 12,
+    fontStyle: 'italic',
   },
   inputContainer: {
     backgroundColor: '#F9F9F9',
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     minHeight: 120,
     borderWidth: 1,
-    borderColor: '#EEEEEE',
+    borderColor: '#E0E0E0',
   },
   input: {
     flex: 1,
@@ -236,12 +236,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   tag: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F0F0F0',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
     marginRight: 8,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   tagText: {
     fontSize: 12,
@@ -249,27 +251,35 @@ const styles = StyleSheet.create({
   },
   generateButton: {
     flexDirection: 'row',
-    backgroundColor: '#1A1A1A',
+    backgroundColor: '#00C896',
     paddingVertical: 16,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#00C896',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+    fontStyle: 'italic',
   },
   resultCard: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 24,
     padding: 16,
     marginBottom: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   resultImage: {
     width: '100%',
@@ -305,6 +315,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1A1A1A',
     marginBottom: 16,
+    fontStyle: 'italic',
   },
   historyList: {
     gap: 12,
@@ -313,13 +324,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     gap: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
     elevation: 1,
   },
   historyIcon: {

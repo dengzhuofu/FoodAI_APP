@@ -182,22 +182,24 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '900',
-    color: '#1A1A1A',
+    color: theme.colors.text,
     marginBottom: 24,
     paddingHorizontal: 16,
-    letterSpacing: 1.5,
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
+    fontStyle: 'italic',
   },
   emptyState: {
     padding: 10,
     alignItems: 'center',
   },
   emptyText: {
-    color: '#999',
+    color: theme.colors.textSecondary,
     fontSize: 14,
     fontStyle: 'italic',
+    fontWeight: '500',
   },
   commentRow: {
     flexDirection: 'row',
@@ -209,21 +211,21 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     marginRight: 16,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
+    borderWidth: 2,
+    borderColor: theme.colors.primary, // Brand border
   },
   contentColumn: {
     flex: 1,
   },
   username: {
     fontSize: 14,
-    color: '#1A1A1A',
-    fontWeight: '700',
+    color: theme.colors.text,
+    fontWeight: '800',
     marginBottom: 6,
   },
   commentText: {
     fontSize: 15,
-    color: '#444',
+    color: theme.colors.textSecondary,
     lineHeight: 24,
     marginBottom: 10,
   },
@@ -237,7 +239,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 12,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.surfaceVariant,
   },
   footerRow: {
     flexDirection: 'row',
@@ -246,14 +248,14 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 11,
-    color: '#999',
+    color: theme.colors.textTertiary,
     marginRight: 16,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   actionText: {
     fontSize: 11,
-    color: '#1A1A1A',
-    fontWeight: '700',
+    color: theme.colors.primary,
+    fontWeight: '800',
   },
   likeButton: {
     paddingLeft: 16,
@@ -261,7 +263,7 @@ const styles = StyleSheet.create({
   },
   // Replies
   repliesContainer: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.surfaceVariant,
     borderRadius: 16,
     padding: 16,
     marginTop: 8,
@@ -276,7 +278,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     marginRight: 12,
     borderWidth: 1,
-    borderColor: '#FFF',
+    borderColor: theme.colors.primary,
   },
   usernameRow: {
     flexDirection: 'row',
@@ -286,19 +288,20 @@ const styles = StyleSheet.create({
   },
   replyUsername: {
     fontSize: 12,
-    color: '#1A1A1A',
-    fontWeight: '700',
+    color: theme.colors.text,
+    fontWeight: '800',
   },
   replyArrow: {
     fontSize: 10,
-    color: '#999',
+    color: theme.colors.textTertiary,
     marginHorizontal: 6,
+    fontWeight: '700',
   },
   replyImage: {
     width: 60,
     height: 60,
     borderRadius: 8,
-    backgroundColor: '#FFF',
+    backgroundColor: theme.colors.surface,
     marginTop: 8,
   },
   expandButton: {
@@ -309,9 +312,9 @@ const styles = StyleSheet.create({
   },
   expandText: {
     fontSize: 12,
-    color: '#1A1A1A',
+    color: theme.colors.primary,
     marginRight: 4,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 });
 

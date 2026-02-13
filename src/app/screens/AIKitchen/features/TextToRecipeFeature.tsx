@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '../../../styles/theme';
 import { textToRecipe, getHistory, AILog } from '../../../../api/ai';
+import AIGeneratingModal from '../../../components/AIGeneratingModal';
 
 const TextToRecipeFeature = () => {
   const navigation = useNavigation<any>();
@@ -69,91 +71,105 @@ const TextToRecipeFeature = () => {
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.card}>
-            <Text style={styles.label}>核心食材</Text>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                placeholder="例如：鸡胸肉、西兰花、鸡蛋..."
-                placeholderTextColor="#999"
-                multiline
-                value={ingredients}
-                onChangeText={setIngredients}
-                textAlignVertical="top"
-              />
-            </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+        >
+          <ScrollView contentContainerStyle={styles.content}>
+            <View style={styles.card}>
+              <View style={styles.sectionHeaderRow}>
+                <View style={styles.sectionDecor} />
+                <Text style={styles.label}>核心食材</Text>
+              </View>
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="例如：鸡胸肉、西兰花、鸡蛋..."
+                  placeholderTextColor="#999"
+                  multiline
+                  value={ingredients}
+                  onChangeText={setIngredients}
+                  textAlignVertical="top"
+                />
+              </View>
 
-            <Text style={styles.label}>口味偏好</Text>
-            <View style={styles.tagsContainer}>
-              {preferences.map((item, index) => (
-                <TouchableOpacity 
-                  key={index} 
-                  style={[
-                    styles.tag, 
-                    preference === item && styles.tagActive
-                  ]} 
-                  onPress={() => setPreference(item)}
-                >
-                  <Text style={[
-                    styles.tagText,
-                    preference === item && styles.tagTextActive
-                  ]}>{item}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <TouchableOpacity 
-              style={[styles.generateButton, loading && styles.buttonDisabled]} 
-              onPress={handleGenerate}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text style={styles.buttonText}>生成创意菜谱</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* History Section */}
-          <View style={styles.historySection}>
-            <Text style={styles.historySectionTitle}>生成记录</Text>
-            {loadingHistory ? (
-              <ActivityIndicator color="#1A1A1A" style={{ marginTop: 20 }} />
-            ) : history.length > 0 ? (
-              <View style={styles.historyList}>
-                {history.map((item) => (
+              <View style={styles.sectionHeaderRow}>
+                <View style={styles.sectionDecor} />
+                <Text style={styles.label}>口味偏好</Text>
+              </View>
+              <View style={styles.tagsContainer}>
+                {preferences.map((item, index) => (
                   <TouchableOpacity 
-                    key={item.id} 
-                    style={styles.historyItem}
-                    onPress={() => handleHistoryPress(item)}
+                    key={index} 
+                    style={[
+                      styles.tag, 
+                      preference === item && styles.tagActive
+                    ]} 
+                    onPress={() => setPreference(item)}
                   >
-                    <View style={styles.historyIcon}>
-                      {item.output_result?.image_url ? (
-                        <Image source={{ uri: item.output_result.image_url }} style={styles.historyImage} />
-                      ) : (
-                        <Ionicons name="restaurant-outline" size={20} color="#666" />
-                      )}
-                    </View>
-                    <View style={styles.historyContent}>
-                      <Text style={styles.historyTitle} numberOfLines={1}>
-                        {item.output_result?.title || item.input_summary || '未命名菜谱'}
-                      </Text>
-                      <Text style={styles.historyDate}>
-                        {new Date(item.created_at).toLocaleDateString()}
-                      </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={16} color="#CCC" />
+                    <Text style={[
+                      styles.tagText,
+                      preference === item && styles.tagTextActive
+                    ]}>{item}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
-            ) : (
-              <Text style={styles.emptyHistoryText}>暂无生成记录</Text>
-            )}
-          </View>
-        </ScrollView>
+
+              <TouchableOpacity 
+                style={[styles.generateButton, loading && styles.buttonDisabled]} 
+                onPress={handleGenerate}
+                disabled={loading}
+              >
+                <View style={styles.buttonContent}>
+                  <Text style={styles.buttonText}>生成创意菜谱</Text>
+                  <Ionicons name="sparkles" size={18} color="#FFFFFF" style={{ marginLeft: 8 }} />
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {/* History Section */}
+            <View style={styles.historySection}>
+              <View style={styles.sectionHeaderRow}>
+                <View style={styles.sectionDecor} />
+                <Text style={styles.historySectionTitle}>生成记录</Text>
+              </View>
+              {loadingHistory ? (
+                <ActivityIndicator color="#00C896" style={{ marginTop: 20 }} />
+              ) : history.length > 0 ? (
+                <View style={styles.historyList}>
+                  {history.map((item) => (
+                    <TouchableOpacity 
+                      key={item.id} 
+                      style={styles.historyItem}
+                      onPress={() => handleHistoryPress(item)}
+                    >
+                      <View style={styles.historyIcon}>
+                        {item.output_result?.image_url ? (
+                          <Image source={{ uri: item.output_result.image_url }} style={styles.historyImage} />
+                        ) : (
+                          <Ionicons name="restaurant-outline" size={20} color="#999" />
+                        )}
+                      </View>
+                      <View style={styles.historyContent}>
+                        <Text style={styles.historyTitle} numberOfLines={1}>
+                          {item.output_result?.title || item.input_summary || '未命名菜谱'}
+                        </Text>
+                        <Text style={styles.historyDate}>
+                          {new Date(item.created_at).toLocaleDateString()}
+                        </Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={16} color="#999" />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : (
+                <Text style={styles.emptyHistoryText}>暂无生成记录</Text>
+              )}
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
+      <AIGeneratingModal visible={loading} />
     </View>
   );
 };
@@ -181,27 +197,42 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#1A1A1A',
+    fontStyle: 'italic',
   },
   content: {
     padding: 20,
   },
   card: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 24,
     padding: 24,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1A1A1A',
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 12,
+  },
+  sectionDecor: {
+    width: 4,
+    height: 16,
+    backgroundColor: '#00C896',
+    marginRight: 8,
+    transform: [{ skewX: '-12deg' }],
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    fontStyle: 'italic',
   },
   inputContainer: {
     backgroundColor: '#F9F9F9',
@@ -210,7 +241,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     minHeight: 100,
     borderWidth: 1,
-    borderColor: '#EEEEEE',
+    borderColor: '#E0E0E0',
   },
   input: {
     flex: 1,
@@ -224,66 +255,79 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   tag: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F0F0F0',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
     marginRight: 10,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#EEEEEE',
+    borderColor: '#E0E0E0',
   },
   tagActive: {
-    backgroundColor: '#1A1A1A',
-    borderColor: '#1A1A1A',
+    backgroundColor: 'rgba(0,200,150,0.1)',
+    borderColor: '#00C896',
   },
   tagText: {
     color: '#666',
     fontSize: 14,
   },
   tagTextActive: {
-    color: 'white',
-    fontWeight: '600',
+    color: '#00C896',
+    fontWeight: 'bold',
   },
   generateButton: {
-    backgroundColor: '#1A1A1A',
-    paddingVertical: 16,
     borderRadius: 12,
-    justifyContent: 'center',
+    overflow: 'hidden',
+    backgroundColor: '#00C896',
+    shadowColor: '#00C896',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  buttonContent: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
   },
   buttonText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+    fontStyle: 'italic',
   },
   buttonDisabled: {
     opacity: 0.7,
   },
   historySection: {
-    padding: 20,
-    paddingTop: 0,
+    padding: 0,
+    marginTop: 24,
   },
   historySectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: '#1A1A1A',
-    marginBottom: 16,
+    fontStyle: 'italic',
   },
   historyList: {
     gap: 12,
+    marginTop: 16,
   },
   historyItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     gap: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
     elevation: 1,
   },
   historyIcon: {
