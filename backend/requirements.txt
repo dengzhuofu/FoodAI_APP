@@ -15,5 +15,5 @@ langchain-openai
 langchain-community
 email-validator
 bcrypt==4.0.1
-cos-python-sdk-v5
+aliyun-oss2
 mcp

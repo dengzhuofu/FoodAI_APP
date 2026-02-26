@@ -4,7 +4,7 @@ echo      FoodAI Backend Deploy Script (Windows -> Linux)
 echo =======================================================
 
 :: 配置部分 (请修改这里)
-set SERVER_IP=159.75.135.120
+set SERVER_IP=8.148.212.184
 set USER=ubuntu
 set TARGET_DIR=/var/www/foodai
 set PROJECT_DIR=%CD%

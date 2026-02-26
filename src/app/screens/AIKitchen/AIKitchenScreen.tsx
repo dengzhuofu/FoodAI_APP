@@ -467,6 +467,7 @@ const styles = StyleSheet.create({
     padding: 16,
     height: 80,
     justifyContent: 'center',
+    marginTop: 12,
   },
   wideCardContent: {
     flexDirection: 'row',

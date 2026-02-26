@@ -382,7 +382,7 @@ async def generate_recipe_image(
 ):
     import httpx
     import uuid
-    from app.services.cos_service import cos_service
+    from app.services.oss_service import oss_service
     
     # Define a helper to download and upload
     async def process_and_upload(image_url: str, prefix: str = "ai_gen") -> str:
@@ -393,15 +393,11 @@ async def generate_recipe_image(
                 image_bytes = resp.content
                 
             filename = f"{prefix}_{uuid.uuid4().hex}.jpg"
-            # If COS is configured, upload to COS
-            if cos_service.is_configured():
-                return await cos_service.upload_bytes(image_bytes, filename)
-            else:
-                # Fallback to just returning the original URL if COS not ready (or handle local save)
-                # For now, just return original to ensure it works
-                return image_url
+            if oss_service.is_configured():
+                key = f"uploads/{filename}"
+                return await oss_service.upload_bytes(image_bytes, key)
+            return image_url
         except Exception as e:
-            print(f"Error processing image upload: {e}")
             return image_url
 
     recipe = request.recipe_data
@@ -441,11 +437,9 @@ async def generate_recipe_image(
                         updated_result["image_url"] = final_url
                         source_log.output_result = updated_result
                         await source_log.save(update_fields=['output_result'])
-                        print(f"Successfully updated log {request.source_log_id} with image_url")
                     else:
-                        print(f"Cannot update log {request.source_log_id}: output_result is not a dict")
+                        pass
             except Exception as e:
-                print(f"Failed to update source log: {e}")
                 import traceback
                 traceback.print_exc()
 
@@ -470,7 +464,6 @@ async def generate_recipe_image(
                     "text": step_text
                 })
             except Exception as e:
-                print(f"Failed to generate image for step {index}: {e}")
                 # Continue even if one fails
                 continue
                 
@@ -500,11 +493,9 @@ async def generate_recipe_image(
                         updated_result["step_images"] = steps_images
                         source_log.output_result = updated_result
                         await source_log.save(update_fields=['output_result'])
-                        print(f"Successfully updated log {request.source_log_id} with step_images")
                     else:
-                        print(f"Cannot update log {request.source_log_id}: output_result is not a dict")
+                        pass
             except Exception as e:
-                print(f"Failed to update source log: {e}")
                 import traceback
                 traceback.print_exc()
 

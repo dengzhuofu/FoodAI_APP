@@ -43,6 +43,29 @@ function patchContent(original) {
   return content;
 }
 
+function patchExpoGlCppBuildGradle(content) {
+  let next = content;
+  next = next.replace(
+    /task\s+androidSourcesJar\(type:\s*Jar\)\s*\{\s*classifier\s*=\s*['"]sources['"]\s*from\s+android\.sourceSets\.main\.java\.srcDirs\s*\}/s,
+    "task androidSourcesJar(type: Jar) {\n  archiveClassifier.set('sources')\n  from android.sourceSets.main.java.srcDirs\n}"
+  );
+  next = next.replace(
+    /compileSdkVersion\s+safeExtGet\("compileSdkVersion",\s*\d+\)/,
+    'compileSdk = safeExtGet("compileSdkVersion", 31)'
+  );
+  return next;
+}
+
+function patchExpoGlCpp(projectRoot) {
+  const buildGradlePath = path.join(projectRoot, 'node_modules', 'expo-gl-cpp', 'android', 'build.gradle');
+  if (!fs.existsSync(buildGradlePath)) return false;
+  const raw = fs.readFileSync(buildGradlePath, 'utf8');
+  const next = patchExpoGlCppBuildGradle(raw);
+  if (next === raw) return false;
+  fs.writeFileSync(buildGradlePath, next, 'utf8');
+  return true;
+}
+
 function main() {
   const projectRoot = path.resolve(__dirname, '..');
   const nodeModulesPath = path.join(projectRoot, 'node_modules');
@@ -64,6 +87,11 @@ function main() {
 
   if (patchedCount > 0) {
     console.log(`[fix-import-meta] Patched ${patchedCount} file(s) in node_modules`);
+  }
+
+  const expoGlPatched = patchExpoGlCpp(projectRoot);
+  if (expoGlPatched) {
+    console.log('[fix-import-meta] Patched expo-gl-cpp android build.gradle');
   }
 }
 

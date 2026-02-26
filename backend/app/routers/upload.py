@@ -3,7 +3,7 @@ import shutil
 import os
 import uuid
 from typing import List
-from app.services.cos_service import cos_service
+from app.services.oss_service import oss_service
 
 router = APIRouter()
 
@@ -16,21 +16,15 @@ async def upload_file(file: UploadFile = File(...)):
         file_extension = os.path.splitext(file.filename)[1]
         unique_filename = f"{uuid.uuid4()}{file_extension}"
         
-        # Try COS upload first if configured
-        if cos_service.is_configured():
+        # Try OSS upload first if configured
+        if oss_service.is_configured():
             try:
-                # We put uploads in an 'uploads/' folder in the bucket to keep it clean
                 key = f"uploads/{unique_filename}"
-                print(f"Attempting to upload to COS: {key}")
-                url = await cos_service.upload_file(file, key)
-                print(f"COS upload successful: {url}")
+                url = await oss_service.upload_file(file, key)
                 return {"url": url}
             except Exception as e:
-                print(f"COS upload failed, falling back to local: {e}")
                 # Fallback proceeds below, ensure file pointer is reset
                 await file.seek(0)
-        else:
-            print("COS not configured, using local storage.")
         
         # Local upload (Fallback)
         file_path = os.path.join(UPLOAD_DIR, unique_filename)

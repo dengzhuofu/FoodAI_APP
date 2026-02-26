@@ -9,9 +9,9 @@ const ENV_API_URL = (process.env as any)?.EXPO_PUBLIC_API_URL as string | undefi
 export const DEV_API_URL =
   ENV_API_URL ||
   Platform.select({
-    ios: 'http://159.75.135.120/api/v1',
-    android: 'http://159.75.135.120/api/v1',
-    default: 'http://159.75.135.120/api/v1',
+    ios: 'http://8.148.212.184/api/v1',
+    android: 'http://8.148.212.184/api/v1',
+    default: 'http://8.148.212.184/api/v1',
   });
 
 export const BASE_URL = DEV_API_URL.replace('/api/v1', '');

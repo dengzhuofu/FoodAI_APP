@@ -367,8 +367,9 @@ const styles = StyleSheet.create({
   
   // Tabs
   tabContainer: {
+    height: 50,
     backgroundColor: theme.colors.background,
-    paddingBottom: 20,
+    // paddingBottom: 70,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -376,32 +377,33 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   tabScrollContent: {
+    marginHorizontal: 12,
     paddingRight: 16,
     gap: 12,
   },
   tabItem: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 25,
     paddingVertical: 10,
     borderRadius: 16,
     backgroundColor: theme.colors.surface,
     borderWidth: 0,
     transform: [{ skewX: '-10deg' }], // Skewed tabs
     marginRight: 0, // Handled by gap
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    // shadowColor: '#000',
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.05,
+    // shadowRadius: 4,
+    // elevation: 2,
   },
   activeTabItem: {
     backgroundColor: theme.colors.primary,
     borderBottomWidth: 0,
     paddingBottom: 10,
     transform: [{ skewX: '-10deg' }, { scale: 1.05 }],
-    shadowColor: theme.colors.primary,
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 6,
+    // shadowColor: theme.colors.primary,
+    // shadowOpacity: 0.4,
+    // shadowRadius: 8,
+    // elevation: 6,
   },
   tabText: {
     fontSize: 15,
@@ -434,7 +436,7 @@ const styles = StyleSheet.create({
   
   // Content Layout
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 50,
   },
   contentContainer: {
     paddingHorizontal: 16,

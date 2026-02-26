@@ -241,6 +241,9 @@ const MyKitchenPage = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>我的冰箱</Text>
         <View style={styles.headerActions}>
+            <TouchableOpacity style={[styles.iconButton, styles.threeDButton]} onPress={() => (navigation as any).navigate('Fridge3D')}>
+                <Ionicons name="cube-outline" size={22} color={theme.colors.primary} />
+            </TouchableOpacity>
             <TouchableOpacity style={styles.iconButton} onPress={handleScanFridge}>
                 <Ionicons name="scan" size={24} color={theme.colors.primary} />
             </TouchableOpacity>
@@ -500,6 +503,10 @@ const styles = StyleSheet.create({
       borderWidth: 1,
       borderColor: theme.colors.border,
       ...theme.shadows.sm,
+  },
+  threeDButton: {
+      borderColor: 'rgba(0,200,150,0.6)',
+      backgroundColor: theme.colors.surface,
   },
   addButton: {
       backgroundColor: theme.colors.primary,

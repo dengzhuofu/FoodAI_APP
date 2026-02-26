@@ -65,15 +65,10 @@ class AIService:
         is_remote = image_url.startswith("http") and \
                    "localhost" not in image_url and \
                    "127.0.0.1" not in image_url and \
-                   "159.75.135.120" not in image_url # 排除自己的服务器IP，走本地文件读取更高效
+                   "8.148.212.184" not in image_url # 排除自己的服务器IP，走本地文件读取更高效
         
-        # 强制 COS URL 也走下载流程，即便它包含服务器IP（如果将来有变动）
-        if "myqcloud.com" in image_url:
-            is_remote = True
-
         if is_remote:
             try:
-                print(f"DEBUG: Downloading remote image from {image_url}")
                 import httpx
                 # Use synchronous download here since this method is synchronous
                 # Ideally this whole chain should be async, but for quick fix:
@@ -92,7 +87,6 @@ class AIService:
                         
                     return f"data:{mime_type};base64,{encoded_string}"
             except Exception as e:
-                print(f"Error downloading remote image: {e}")
                 # 如果下载失败，尝试返回原 URL 给 AI 服务，死马当活马医
                 return image_url
 
@@ -100,7 +94,7 @@ class AIService:
         local_path = None
         if image_url.startswith("/static/"):
             local_path = f"backend{image_url}" # e.g. backend/static/uploads/xxx.jpg
-        elif "localhost" in image_url or "127.0.0.1" in image_url or "159.75.135.120" in image_url:
+        elif "localhost" in image_url or "127.0.0.1" in image_url or "8.148.212.184" in image_url:
             # Try to extract the static part
             if "/static/" in image_url:
                 static_part = image_url.split("/static/")[1]
@@ -122,7 +116,6 @@ class AIService:
                     
                     return f"data:{mime_type};base64,{encoded_string}"
             except Exception as e:
-                print(f"Error processing local image: {e}")
                 # Fallback to original URL if reading fails
                 return image_url
         

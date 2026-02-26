@@ -13,3 +13,5 @@ export const useFrame = fiber.useFrame as AnyModule;
 export const useThree = fiber.useThree as AnyModule;
 export const OrbitControls = drei.OrbitControls as AnyModule;
 export const useGLTF = drei.useGLTF as AnyModule;
+export const RoundedBox = drei.RoundedBox as AnyModule;
+export const Edges = drei.Edges as AnyModule;

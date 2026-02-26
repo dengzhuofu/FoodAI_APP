@@ -28,10 +28,13 @@ export default function FoodDetailSheet({ visible, food, onClose }: FoodDetailSh
             <View style={styles.content}>
               <Text style={styles.foodName}>{food.name}</Text>
               <Text style={styles.foodMeta}>ID：{food.id}</Text>
-              <Text style={styles.foodMeta}>节点：{food.nodeName}</Text>
+              {food.category ? <Text style={styles.foodMeta}>分类：{food.category}</Text> : null}
+              {food.quantity ? <Text style={styles.foodMeta}>数量：{food.quantity}</Text> : null}
+              {food.expiry_date ? <Text style={styles.foodMeta}>到期：{food.expiry_date}</Text> : null}
+              {food.nodeName ? <Text style={styles.foodMeta}>节点：{food.nodeName}</Text> : null}
               <View style={styles.divider} />
               <Text style={styles.tip}>
-                可在这里接入库存/营养数据：数量、保质期、热量、建议菜谱等。
+                可在这里继续扩展：营养信息、提醒、推荐菜谱等。
               </Text>
             </View>
           ) : (
@@ -115,4 +118,3 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
-
