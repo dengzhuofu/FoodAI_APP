@@ -20,9 +20,21 @@ app = FastAPI(
     version="1.0.0"
 )
 
+def _cors_headers(request: Request) -> dict:
+    requested_headers = request.headers.get("access-control-request-headers")
+    return {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+        "Access-Control-Allow-Headers": requested_headers or "*",
+        "Access-Control-Max-Age": "86400",
+    }
+
 # Global Response Middleware
 @app.middleware("http")
 async def standard_response_middleware(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return Response(status_code=204, headers=_cors_headers(request))
+
     # Skip documentation and static files
     if request.url.path.startswith(("/docs", "/redoc", "/openapi.json", "/static")):
         return await call_next(request)
@@ -31,6 +43,9 @@ async def standard_response_middleware(request: Request, call_next):
     start_time = time.time()
     try:
         response = await call_next(request)
+
+        for k, v in _cors_headers(request).items():
+            response.headers.setdefault(k, v)
         
         # Calculate process time
         process_time = time.time() - start_time
@@ -94,7 +109,8 @@ async def standard_response_middleware(request: Request, call_next):
                 "message": str(exc),
                 "data": None,
                 "timestamp": int(time.time())
-            }
+            },
+            headers=_cors_headers(request)
         )
 
 # CORS Middleware

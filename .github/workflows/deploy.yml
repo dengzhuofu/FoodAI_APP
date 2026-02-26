@@ -89,6 +89,12 @@ jobs:
             
             # 重启服务
             sudo systemctl restart foodai
+
+            sudo systemctl is-active foodai
+            sudo systemctl status foodai --no-pager -l
+            sudo journalctl -u foodai -n 200 --no-pager
+            curl -sS -D- http://127.0.0.1:8000/ -o /dev/null
+            curl -sS -D- http://127.0.0.1:8000/api/v1/health -o /dev/null
             
             # 检查状态
             sudo systemctl status foodai | grep Active
