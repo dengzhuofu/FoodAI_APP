@@ -54,3 +54,5 @@ pip-log.txt
 pip-delete-this-directory.txt
 .venv
 .vscode/
+
+DEPLOY_GUIDE_CN.md
