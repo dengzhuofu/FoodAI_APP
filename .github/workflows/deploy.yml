@@ -34,7 +34,8 @@ jobs:
 
       - name: Compress backend files
         run: |
-          tar -czf release.tar.gz -C backend .
+          tar -czf release.tar.gz -C backend . --exclude='./static/uploads'
+          ls -lh release.tar.gz
 
       - name: Copy files to server via SCP
         uses: appleboy/scp-action@v0.1.7
@@ -45,6 +46,9 @@ jobs:
           # 如果使用密钥登录，请把 password 换成 key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "release.tar.gz"
           target: "/tmp"
+          debug: true
+          timeout: 10m
+          command_timeout: 30m
 
       - name: Execute remote commands via SSH
         uses: appleboy/ssh-action@v1.0.3
