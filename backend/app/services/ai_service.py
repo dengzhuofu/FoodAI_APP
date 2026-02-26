@@ -5,6 +5,7 @@ import json
 import base64
 import os
 from pathlib import Path
+import asyncio
 from app.models.inventory import FridgeItem, ShoppingItem
 from app.models.recipes import Recipe, Collection, Like
 from app.models.users import UserProfile
@@ -18,6 +19,7 @@ class AIService:
     def __init__(self):
         self.base_url = settings.SILICONFLOW_BASE_URL
         self.api_key = settings.SILICONFLOW_API_KEY
+        self.timeout_seconds = float(os.getenv("AI_TIMEOUT_SECONDS", "60"))
         
         # Initialize ChatOpenAI for Text Generation (Qwen)
         self.llm_text = ChatOpenAI(
@@ -39,6 +41,9 @@ class AIService:
             max_tokens=2048,
         )
 
+    async def _with_timeout(self, coro):
+        return await asyncio.wait_for(coro, timeout=self.timeout_seconds)
+
     async def _post(self, endpoint: str, json_data: Dict[str, Any]) -> Dict[str, Any]:
         """Raw HTTP post for endpoints not supported by LangChain ChatOpenAI (like image generation)"""
         headers = {
@@ -46,15 +51,15 @@ class AIService:
             "Content-Type": "application/json"
         }
         async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
+            response = await self._with_timeout(client.post(
                 f"{self.base_url}{endpoint}",
                 headers=headers,
                 json=json_data
-            )
+            ))
             response.raise_for_status()
             return response.json()
 
-    def _process_image_url(self, image_url: str) -> str:
+    async def _process_image_url(self, image_url: str) -> str:
         """
         If the image URL is local (starts with /static or http://localhost),
         read the file and convert to base64 data URI.
@@ -70,11 +75,8 @@ class AIService:
         
         if is_remote:
             try:
-                import httpx
-                # Use synchronous download here since this method is synchronous
-                # Ideally this whole chain should be async, but for quick fix:
-                with httpx.Client() as client:
-                    response = client.get(image_url)
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    response = await self._with_timeout(client.get(image_url))
                     response.raise_for_status()
                     image_data = response.content
                     
@@ -207,12 +209,12 @@ class AIService:
         prompt = PromptTemplate.from_template(template)
         chain = prompt | self.llm_text
         
-        response = await chain.ainvoke({"description": description, "preferences": preferences})
+        response = await self._with_timeout(chain.ainvoke({"description": description, "preferences": preferences}))
         return self._clean_recipe_response(response.content)
 
     async def generate_recipe_from_image(self, image_url: str) -> Dict[str, Any]:
         """Use LangChain (Vision) to generate recipe from image"""
-        processed_url = self._process_image_url(image_url)
+        processed_url = await self._process_image_url(image_url)
         
         # 调试：打印处理后的 URL 长度（如果是 base64 会很长）
         print(f"DEBUG: Processed URL length: {len(processed_url)}")
@@ -229,7 +231,7 @@ class AIService:
         )
         
         try:
-            response = await self.llm_vision.ainvoke([message])
+            response = await self._with_timeout(self.llm_vision.ainvoke([message]))
             return self._clean_recipe_response(response.content)
         except Exception as e:
             print(f"AI Service Error (Vision): {e}")
@@ -237,7 +239,7 @@ class AIService:
         
     async def estimate_calories(self, image_url: str) -> str:
         """Use LangChain (Vision) to estimate calories"""
-        processed_url = self._process_image_url(image_url)
+        processed_url = await self._process_image_url(image_url)
         
         # 调试日志
         print(f"DEBUG: Processed URL length: {len(processed_url)}")
@@ -250,7 +252,7 @@ class AIService:
         )
         
         try:
-            response = await self.llm_vision.ainvoke([message])
+            response = await self._with_timeout(self.llm_vision.ainvoke([message]))
             return response.content
         except Exception as e:
             print(f"AI Service Error (Calories): {e}")
@@ -270,12 +272,12 @@ class AIService:
         prompt = PromptTemplate.from_template(template)
         chain = prompt | self.llm_text
         
-        response = await chain.ainvoke({"items_str": ", ".join(items)})
+        response = await self._with_timeout(chain.ainvoke({"items_str": ", ".join(items)}))
         return self._clean_recipe_response(response.content)
 
     async def recognize_fridge_items(self, image_url: str) -> List[Dict[str, Any]]:
         """Use LangChain (Vision) to recognize fridge items"""
-        processed_url = self._process_image_url(image_url)
+        processed_url = await self._process_image_url(image_url)
         
         message = HumanMessage(
             content=[
@@ -285,7 +287,7 @@ class AIService:
         )
         
         try:
-            response = await self.llm_vision.ainvoke([message])
+            response = await self._with_timeout(self.llm_vision.ainvoke([message]))
             content = response.content
             
             # Clean content similar to recipe response
@@ -346,11 +348,11 @@ class AIService:
             }
             
             async with httpx.AsyncClient(timeout=60.0) as client:
-                response = await client.post(
+                response = await self._with_timeout(client.post(
                     f"{self.base_url}/audio/transcriptions",
                     headers=headers,
                     files=files
-                )
+                ))
                 response.raise_for_status()
                 result = response.json()
                 return result.get("text", "")
@@ -370,7 +372,7 @@ class AIService:
                 lc_messages.append(HumanMessage(content=msg["content"]))
             # Add AI/Assistant message support if needed
         
-        response = await self.llm_text.ainvoke(lc_messages)
+        response = await self._with_timeout(self.llm_text.ainvoke(lc_messages))
         return response.content
 
     async def generate_what_to_eat_options(self, categories: List[str], quantity: int) -> List[str]:
@@ -391,10 +393,10 @@ class AIService:
         prompt = PromptTemplate.from_template(template)
         chain = prompt | self.llm_text
         
-        response = await chain.ainvoke({
+        response = await self._with_timeout(chain.ainvoke({
             "categories_str": ", ".join(categories),
             "quantity": quantity
-        })
+        }))
         
         content = response.content.strip()
         try:

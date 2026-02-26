@@ -3,11 +3,14 @@ from langchain_core.prompts import PromptTemplate
 from app.core.config import settings
 from typing import Dict, Any, Optional
 import json
+import os
+import asyncio
 
 class HealthAIService:
     def __init__(self):
         self.base_url = settings.SILICONFLOW_BASE_URL
         self.api_key = settings.SILICONFLOW_API_KEY
+        self.timeout_seconds = float(os.getenv("AI_TIMEOUT_SECONDS", "60"))
         
         self.llm = ChatOpenAI(
             base_url=self.base_url,
@@ -16,6 +19,9 @@ class HealthAIService:
             temperature=0.7,
             max_tokens=2048,
         )
+
+    async def _with_timeout(self, coro):
+        return await asyncio.wait_for(coro, timeout=self.timeout_seconds)
 
     def _extract_json(self, content: str) -> Any:
         try:
@@ -52,7 +58,7 @@ class HealthAIService:
         prompt = PromptTemplate.from_template(template)
         chain = prompt | self.llm
         
-        response = await chain.ainvoke({"height": height, "weight": weight})
+        response = await self._with_timeout(chain.ainvoke({"height": height, "weight": weight}))
         data = self._extract_json(response.content)
         if not data:
             return {
@@ -87,12 +93,12 @@ class HealthAIService:
         prompt = PromptTemplate.from_template(template)
         chain = prompt | self.llm
         
-        response = await chain.ainvoke({
+        response = await self._with_timeout(chain.ainvoke({
             "breakfast": breakfast or "无",
             "lunch": lunch or "无",
             "dinner": dinner or "无",
             "exercise": exercise or "无"
-        })
+        }))
         data = self._extract_json(response.content)
         if not data:
             return {

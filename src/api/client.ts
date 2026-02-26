@@ -18,9 +18,6 @@ export const BASE_URL = DEV_API_URL.replace('/api/v1', '');
 
 const client = axios.create({
   baseURL: DEV_API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 // Request interceptor to add token

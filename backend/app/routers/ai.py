@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, Form, Depends, Body
+from fastapi import APIRouter, UploadFile, File, Form, Depends, Body, HTTPException
 from app.services.ai_service import ai_service
 from app.models.users import User
 from app.core.deps import get_current_user

@@ -44,11 +44,7 @@ export const uploadFile = async (
     });
   }
 
-  const response = await client.post('/upload', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
+  const response = await client.post('/upload', formData);
   
   // Return the full URL
   // If response.data.url is relative, prepend baseURL
