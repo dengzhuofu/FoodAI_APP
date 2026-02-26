@@ -3,11 +3,13 @@ import shutil
 import os
 import uuid
 from typing import List
+from pathlib import Path
 from app.services.oss_service import oss_service
 
 router = APIRouter()
 
-UPLOAD_DIR = "backend/static/uploads"
+BASE_DIR = Path(__file__).resolve().parents[2]
+UPLOAD_DIR = BASE_DIR / "static" / "uploads"
 
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
@@ -27,7 +29,8 @@ async def upload_file(file: UploadFile = File(...)):
                 await file.seek(0)
         
         # Local upload (Fallback)
-        file_path = os.path.join(UPLOAD_DIR, unique_filename)
+        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        file_path = UPLOAD_DIR / unique_filename
         
         # Save file
         with open(file_path, "wb") as buffer:

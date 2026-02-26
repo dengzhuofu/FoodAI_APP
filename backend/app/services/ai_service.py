@@ -4,6 +4,7 @@ from typing import List, Dict, Any, Optional
 import json
 import base64
 import os
+from pathlib import Path
 from app.models.inventory import FridgeItem, ShoppingItem
 from app.models.recipes import Recipe, Collection, Like
 from app.models.users import UserProfile
@@ -93,12 +94,14 @@ class AIService:
         # Case 2: Local File Path
         local_path = None
         if image_url.startswith("/static/"):
-            local_path = f"backend{image_url}" # e.g. backend/static/uploads/xxx.jpg
+            base_dir = Path(__file__).resolve().parents[2]
+            local_path = str(base_dir / image_url.lstrip("/"))
         elif "localhost" in image_url or "127.0.0.1" in image_url or "8.148.212.184" in image_url:
             # Try to extract the static part
             if "/static/" in image_url:
                 static_part = image_url.split("/static/")[1]
-                local_path = f"backend/static/{static_part}"
+                base_dir = Path(__file__).resolve().parents[2]
+                local_path = str(base_dir / "static" / static_part)
         
         if local_path and os.path.exists(local_path):
             try:

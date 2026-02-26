@@ -13,6 +13,7 @@ import os
 import time
 import json
 from typing import Union
+from pathlib import Path
 
 app = FastAPI(
     title="FoodAI API",
@@ -123,9 +124,10 @@ app.add_middleware(
 )
 
 # Mount static files
-if not os.path.exists("backend/static"):
-    os.makedirs("backend/static")
-app.mount("/static", StaticFiles(directory="backend/static"), name="static")
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / "static"
+STATIC_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
