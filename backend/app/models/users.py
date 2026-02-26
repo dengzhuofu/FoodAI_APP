@@ -13,7 +13,9 @@ class User(models.Model):
     created_at = fields.DatetimeField(auto_now_add=True)
 
     class Meta:
+        # table = "users"
         table = "users"
+
 
 class UserProfile(models.Model):
     user = fields.OneToOneField("models.User", related_name="profile", on_delete=fields.CASCADE)
