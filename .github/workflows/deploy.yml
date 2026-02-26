@@ -37,6 +37,12 @@ jobs:
           tar -czf release.tar.gz -C backend --exclude='./static/uploads' --exclude='./static/uploads/**' .
           ls -lh release.tar.gz
 
+      - name: Probe SSH connectivity
+        run: |
+          echo "Runner public IP: $(curl -s https://api.ipify.org)"
+          echo "Testing TCP connectivity to ${{ secrets.SERVER_IP }}:22"
+          timeout 10 bash -lc "cat < /dev/null > /dev/tcp/${{ secrets.SERVER_IP }}/22" && echo "Port 22 reachable" || (echo "Port 22 NOT reachable" && exit 1)
+
       - name: Copy files to server via SCP
         uses: appleboy/scp-action@v0.1.7
         with:
