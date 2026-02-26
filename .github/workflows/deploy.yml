@@ -34,7 +34,7 @@ jobs:
 
       - name: Compress backend files
         run: |
-          tar -czf release.tar.gz -C backend . --exclude='./static/uploads'
+          tar -czf release.tar.gz -C backend --exclude='./static/uploads' --exclude='./static/uploads/**' .
           ls -lh release.tar.gz
 
       - name: Copy files to server via SCP
