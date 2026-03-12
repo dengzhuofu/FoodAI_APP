@@ -17,3 +17,6 @@ email-validator
 bcrypt==4.0.1
 oss2
 mcp
+langgraph
+sentence-transformers
+faiss-cpu

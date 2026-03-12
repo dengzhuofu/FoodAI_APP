@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from tortoise.contrib.fastapi import register_tortoise
-from app.routers import auth, users, profile, inventory, content, explore, ai, upload, notifications, search, shopping, maps, chats, mcdonalds, health, admin
+from app.routers import auth, users, profile, inventory, content, explore, ai, upload, notifications, search, shopping, maps, chats, mcdonalds, health, admin, ai_search
 from app.mcp_server import mcp
 from mcp.server.sse import SseServerTransport
 from starlette.routing import Mount, Route
@@ -137,6 +137,7 @@ app.include_router(content.router, prefix="/api/v1", tags=["content"])
 app.include_router(explore.router, prefix="/api/v1/explore", tags=["explore"])
 app.include_router(search.router, prefix="/api/v1/search", tags=["search"])
 app.include_router(ai.router, prefix="/api/v1/ai", tags=["ai"])
+app.include_router(ai_search.router, prefix="/api/ai", tags=["ai_search"])
 app.include_router(upload.router, prefix="/api/v1", tags=["upload"])
 app.include_router(notifications.router, prefix="/api/v1", tags=["notifications"])
 app.include_router(chats.router, prefix="/api/v1", tags=["chats"])
