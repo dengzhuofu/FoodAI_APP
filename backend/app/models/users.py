@@ -25,7 +25,9 @@ class UserProfile(models.Model):
     settings = fields.JSONField(default=dict)
 
     class Meta:
+        # table = "user_profiles"
         table = "user_profiles"
+
 
 class Follow(models.Model):
     id = fields.IntField(pk=True)
