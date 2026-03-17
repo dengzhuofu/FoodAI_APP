@@ -34,7 +34,9 @@ def _cors_headers(request: Request) -> dict:
 @app.middleware("http")
 async def standard_response_middleware(request: Request, call_next):
     if request.method == "OPTIONS":
+        # return Response(status_code=204, headers=_cors_headers(request))
         return Response(status_code=204, headers=_cors_headers(request))
+
 
     # Skip documentation and static files
     if request.url.path.startswith(("/docs", "/redoc", "/openapi.json", "/static")):
